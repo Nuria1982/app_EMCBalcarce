@@ -1,0 +1,9 @@
+.fixed-footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background-color: #f8f9fa;
+  padding: 10px 0;
+  text-align: center;
+  z-index: 1000; /* Asegura que esté encima de otros elementos */
+}
