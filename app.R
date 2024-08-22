@@ -6,6 +6,7 @@ library(shinyWidgets)
 library(shinydashboard)
 library(shinycssloaders)
 library(DT)
+library(tidyr) 
 library(ggplot2)
 library(plotly)
 library(dplyr)
@@ -32,11 +33,6 @@ balcarce_EMC <- read_excel("balcarce_EMC.xlsx",
                                          "numeric", "numeric", "numeric", 
                                          "numeric", "numeric", "numeric", 
                                          "numeric", "numeric"))
-
-# ruta_excel <- "E:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo/balcarce_EMC.xlsx"
-# 
-# # Leer la Hoja6 del archivo Excel
-# balcarce_resumen <- read_excel(ruta_excel, sheet = "Hoja6")
 
 
 datos <- balcarce_EMC 
@@ -93,8 +89,8 @@ ui <- dashboardPage(
     selectInput(
       inputId = "ano_selector", 
       label = "Selecciona el Año:",
-      choices = c("Todos los años", unique(datos$Año)),
-      selected = "Todos los años"
+      choices = unique(datos$Año),
+      selected = "2024"
     ),
     
     checkboxGroupInput("mes_selector", "Selecciona los meses:",
@@ -105,26 +101,26 @@ ui <- dashboardPage(
                        selected = "Mostrar todos los meses"),
     br(),
     tags$p(
-          strong("Nuestras Redes sociales"),
-          br(),
-          tags$a(
-            icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
-          br(),
-          tags$a(
-            icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
-          br(),
-          tags$p(
-            strong("Para comunicarse con el grupo "),
-            tags$h6(
-              "Dra. Nuria Lewczuk : lewczuk.nuria@inta.gob.ar"),
-            tags$h6(
-              "Dra. Laura Echarte : echarte.laura@inta.gob.ar")
-            ),
-          br(),
-          tags$img(src = "Logo_INTA_Balcarce.png",
-                   height = "40px",
-                   width = "220px"
-          ))
+      strong("Nuestras Redes sociales"),
+      br(),
+      tags$a(
+        icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
+      br(),
+      tags$a(
+        icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
+      br(),
+      tags$p(
+        strong("Para comunicarse con el grupo "),
+        tags$h6(
+          "Dra. Nuria Lewczuk : lewczuk.nuria@inta.gob.ar"),
+        tags$h6(
+          "Dra. Laura Echarte : echarte.laura@inta.gob.ar")
+      ),
+      br(),
+      tags$img(src = "Logo_INTA_Balcarce.png",
+               height = "40px",
+               width = "220px"
+      ))
   ),
   
   
@@ -167,28 +163,28 @@ ui <- dashboardPage(
         br(),
         fluidRow( 
           box(
-            title = "Precipitaciones diarias (mm)"
+            title = "Precipitaciones acumuladas mensuales (mm)"
             ,status = "gray"
             ,solidHeader = TRUE 
             ,collapsible = TRUE
             ,plotlyOutput("grafico_lluvia", height = "300px")
           ),
           box(
-            title = "Precipitaciones y ETo mensuales (mm)"
+            title = "Precipitaciones y ETo acumuladas mensuales (mm)"
             ,status = "gray"
             ,solidHeader = TRUE 
             ,collapsible = TRUE
             ,plotlyOutput("grafico_lluvia_etp_acum", height = "300px")
           ),
           box(
-            title = "Temperaturas diarias (ºC)"
+            title = "Temperaturas medias mensuales (ºC)"
             ,status = "gray"
             ,solidHeader = TRUE 
             ,collapsible = TRUE 
             ,plotlyOutput("grafico_temperatura", height = "300px")
           ),
           box(
-            title = "Número de días con heladas"
+            title = "Número de días mensuales con heladas"
             ,status = "gray"
             ,solidHeader = TRUE 
             ,collapsible = TRUE 
@@ -199,7 +195,7 @@ ui <- dashboardPage(
       tabPanel(
         "Mapas",
         fluidRow(
-            column(
+          column(
             width = 12,
             div(
               style = "display: flex; justify-content: center; margin-bottom: 10px; margin-top: 20px; ",  
@@ -208,75 +204,75 @@ ui <- dashboardPage(
                 status = "navy",
                 solidHeader = FALSE,
                 width = 10,  
-            div(
-              style = "display: flex; align-items: center;",
-              div(
-                style = "flex: 1; text-align: center;",
-                tags$img(
-                  src = "agua.jpg",
-                  width = 700,
-                  alt = "Consumo de agua"
-                )
-              ),
-            div(
-              style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-              "El consumo de agua o evapotranspiración real (ETR) es la
+                div(
+                  style = "display: flex; align-items: center;",
+                  div(
+                    style = "flex: 1; text-align: center;",
+                    tags$img(
+                      src = "agua.jpg",
+                      width = 700,
+                      alt = "Consumo de agua"
+                    )
+                  ),
+                  div(
+                    style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+                    "El consumo de agua o evapotranspiración real (ETR) es la
                 cantidad de agua que es transpirada por la cubierta vegetal y aquella que
                 es perdida desde la superficie del suelo por evaporación.
                El consumo de agua puede ser utilizado para detectar la ocurrencia
                 de deficiencias de agua, cuando su valor no alcanza el requerido por el
                 cultivo."
-            )
-              ),
-          tags$figcaption(
-            "Evapotranspiración real máxima (en el periodo de 10 días) expresada en
+                  )
+                ),
+                tags$figcaption(
+                  "Evapotranspiración real máxima (en el periodo de 10 días) expresada en
               mm/día estimada mediante el uso de imágenes del sensor VIIRS del satélite
               Suomi-NPP con una resolución espacial de 500 metros. Elaborado por Instituto de
               Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."
-          )
+                )
+              )
             )
-          )
-        ),
-
+          ),
+          
           br(),
           
-        column(
-          width = 12,
-          div(
-            style = "display: flex; justify-content: center; margin-bottom: 10px; margin-top: 20px; ",  
-            box(
-              title = "% de agua útil",
-              status = "navy",
-              solidHeader = FALSE,
-              width = 10,  
-              div(
-                style = "display: flex; align-items: center;",
+          column(
+            width = 12,
+            div(
+              style = "display: flex; justify-content: center; margin-bottom: 10px; margin-top: 20px; ",  
+              box(
+                title = "% de agua útil",
+                status = "navy",
+                solidHeader = FALSE,
+                width = 10,  
                 div(
-                  style = "flex: 1; text-align: center;",
-                  tags$img(
-                    src = "agua_util.jpg",
-                    width = 700,
-                    alt = "agua útil"
-                  )
-                ),
-                div(
-                  style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-                  "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
+                  style = "display: flex; align-items: center;",
+                  div(
+                    style = "flex: 1; text-align: center;",
+                    tags$img(
+                      src = "agua_util.jpg",
+                      width = 700,
+                      alt = "agua útil"
+                    )
+                  ),
+                  div(
+                    style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+                    "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
                     que puede ser extraída por las plantas) puede ser estimado a través
                     de un balance de agua; donde se considera información del suelo, el
                     aporte de agua por lluvias y el consumo de agua de la cubierta
                     vegetal."
-                )
-              ),
-              tags$figcaption(
-                "Porcentaje de agua en el suelo.Resolución espacial: 500 m. 
+                  )
+                ),
+                tags$figcaption(
+                  "Porcentaje de agua en el suelo.Resolución espacial: 500 m. 
                   Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."
+                )
               )
             )
           )
         )
-      )
-    ),
+      ),
       tabPanel(
         "Pronósticos",
         fluidRow( 
@@ -311,34 +307,34 @@ ui <- dashboardPage(
         fluidRow(
           column(
             width = 3,
-          div(
-            style = "margin-left: 100px; margin-top: 50px;",  
-            tags$img(
-              src = "IMA.jpg",
-              width = 300,
-              height = 460,
-              alt = "Informe Mensual Agropecuario"
+            div(
+              style = "margin-left: 100px; margin-top: 50px;",  
+              tags$img(
+                src = "IMA.jpg",
+                width = 300,
+                height = 460,
+                alt = "Informe Mensual Agropecuario"
               ),
-            tags$br(),
-            tags$a(
-              icon("arrow-right"), "Descarga el informe completo aquí", href= "https://bit.ly/IMA-JUL24")
+              tags$br(),
+              tags$a(
+                icon("arrow-right"), "Descarga el informe completo aquí", href= "https://bit.ly/IMA-JUL24")
             )),
           column(
             width = 3,
-          div(
-            style = "margin-left: 100px; margin-top: 50px;",  
-            tags$img(
-              src = "chicharrita.jpg",
-              width = 300,
-              alt = "Achaparramiento del Maíz"
+            div(
+              style = "margin-left: 100px; margin-top: 50px;",  
+              tags$img(
+                src = "chicharrita.jpg",
+                width = 300,
+                alt = "Achaparramiento del Maíz"
+              ),
+              tags$br(),
+              tags$a(
+                icon("arrow-right"), "Descarga el informe completo aquí", href= "https://www.argentina.gob.ar/sites/default/files/2018/09/el_achaparramiento_del_maiz_y_las_decisiones_agricolas_en_argentina_mesatecnicanacional_inta.pdf")
             ),
-            tags$br(),
-            tags$a(
-              icon("arrow-right"), "Descarga el informe completo aquí", href= "https://www.argentina.gob.ar/sites/default/files/2018/09/el_achaparramiento_del_maiz_y_las_decisiones_agricolas_en_argentina_mesatecnicanacional_inta.pdf")
-          ),
+          )
         )
-      )
-    ),
+      ),
       tabPanel(
         "Datos disponibles",
         dataTableOutput("datos"),
@@ -373,8 +369,8 @@ ui <- dashboardPage(
         ),
         downloadButton("Datos_meteo_Balcarce", "Descargar .csv")
       )
-  )))
-  
+    )))
+
 
 
 # Define server logic ----
@@ -415,7 +411,7 @@ server <- function(input, output, session) {
   Tmin_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Minima
   
   
- datasetInput <- reactive({
+  datasetInput <- reactive({
     if (input$ano_selector == "Todos los años") {
       datos_filtrados <- datos
     } else {
@@ -430,8 +426,8 @@ server <- function(input, output, session) {
     
     return(datos_filtrados)
   })
- 
-   output$value1 <- renderInfoBox({
+  
+  output$value1 <- renderInfoBox({
     infoBox(
       title = div(p("Ultima fecha", 
                     style = "text-align: center; font-size: 14px;"), 
@@ -514,68 +510,192 @@ server <- function(input, output, session) {
     )
   })
   
+  ## Gráficos ##
   
+  #### lluvias mensuales ####
   output$grafico_lluvia <- renderPlotly({
-    gg <- ggplot(datasetInput(), aes(x = Fecha)) +
-      geom_bar(aes(y = Precipitacion_Pluviometrica), stat = "identity", fill = "#003459", alpha = 0.8) +
-      labs(x = "", y = "mm") +
+    # 
+    dataset_acumulado <- datasetInput() %>%
+      mutate(Mes = month(Fecha, label = TRUE)) %>%
+      group_by(Mes) %>%
+      summarise(Precipitacion_Acumulada = round(sum(Precipitacion_Pluviometrica, 
+                                                    na.rm = TRUE), 1)) %>%
+      ungroup()
+    
+    # 
+    historical_precipitation <- datos_historicos %>%
+      mutate(Mes = month(Fecha, label = TRUE)) %>%
+      group_by(Año, Mes) %>%
+      summarise(Precipitacion_Historica = sum(Precipitacion_Pluviometrica, 
+                                              na.rm = TRUE), 
+                .groups = 'drop') 
+    
+    historical_precipitation_mensual <- historical_precipitation %>%
+      group_by(Mes) %>%
+      summarise(Precipitacion_Historica_Mensual = round(mean(Precipitacion_Historica, 
+                                                             na.rm = TRUE), 1),
+                .groups = 'drop')
+    
+    # 
+    dataset_completo <- dataset_acumulado %>%
+      left_join(historical_precipitation_mensual, by = "Mes")
+    
+    # 
+    anio_seleccionado_label <- input$ano_selector
+
+    # 
+    dataset_completo_long <- dataset_completo %>%
+      pivot_longer(cols = c(Precipitacion_Historica_Mensual, 
+                            Precipitacion_Acumulada),
+                   names_to = "Tipo_Precipitacion",
+                   values_to = "Precipitacion") %>%
+      mutate(Tipo_Precipitacion = factor(Tipo_Precipitacion,
+                                         levels = c("Precipitacion_Historica_Mensual", 
+                                                    "Precipitacion_Acumulada"),
+                                         labels = c("Histórico (1991 - 2020)", 
+                                                    paste("Año", anio_seleccionado_label))))
+    
+    ll <- ggplot(dataset_completo, aes(x = Mes)) +
+      geom_bar(aes(y = Precipitacion_Historica_Mensual), 
+               stat = "identity", 
+               fill = "#6C757D", 
+               color = "#495057", 
+               alpha = 0.5) +
+      geom_bar(aes(y = Precipitacion_Acumulada), 
+               stat = "identity", 
+               fill = "#007EA7", 
+               color = "#003459", 
+               alpha = 0.5) +
+      labs(x = "", y = "Precipitación acumulada \nmensual (mm)", fill = "") +
       ggtitle("") +
       theme_minimal() +
-      theme(
-        panel.grid.major = element_blank(),  # Elimina las líneas de la grilla
-        panel.grid.minor = element_blank(),  # Elimina las líneas de la grilla
-        axis.ticks = element_blank(),         # Elimina los ticks del eje
-        axis.line = element_line(color = "black"))
+      theme(axis.text.x = element_text(angle = 0, hjust = 1),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            axis.ticks = element_blank(),
+            axis.line = element_line(color = "black"))
     
-    ggplotly(gg)
+    ggplotly(ll) %>%
+      layout(legend = list(orientation = "h", 
+                           x = 0.3, 
+                           y = 1.2))    
   })
   
+  ##### lluvia y ETP ####
   output$grafico_lluvia_etp_acum <- renderPlotly({
     dataset_acumulado <- datasetInput() %>%
       mutate(Mes = month(Fecha, label = TRUE)) %>%
       group_by(Mes) %>%
-      summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE),
-                Evapotranspiracion_Acumulada = round(sum(Evapotranspiracion_Potencial, na.rm = TRUE)), 2)
+      summarise(Precipitacion_Acumulada = round(sum(Precipitacion_Pluviometrica, 
+                                              na.rm = TRUE), 1),
+                Evapotranspiracion_Acumulada = round(sum(Evapotranspiracion_Potencial, 
+                                                         na.rm = TRUE)), 1)
     
     
-    # Crear el gráfico de barras superpuestas
+    #
     acum <- ggplot(dataset_acumulado, aes(x = Mes)) +
-      geom_bar(aes(y = Precipitacion_Acumulada), stat = "identity", fill = "#007EA7", color = "#003459",alpha = 0.5) +
-      geom_bar(aes(y = Evapotranspiracion_Acumulada), stat = "identity", fill = "#BF4342", color = "#8C1C13", alpha = 0.5) +
-      scale_fill_manual(values = c("Precipitaciones acumuladas" = "#007EA7", "Evapotranspiracion Potencial" = "#BF4342"), name = "") +
-      labs(x = "", y = "Valor acumulado mensual (mm)", fill = "") +  
+      geom_bar(aes(y = Precipitacion_Acumulada), 
+               stat = "identity", 
+               fill = "#007EA7", 
+               color = "#003459", 
+               alpha = 0.5) +
+      geom_bar(aes(y = Evapotranspiracion_Acumulada), 
+               stat = "identity", 
+               fill = "#BF4342", 
+               color = "#8C1C13", 
+               alpha = 0.5) +
+      scale_fill_manual(values = c("Precipitaciones acumuladas" = "#007EA7", 
+                                   "Evapotranspiracion Potencial" = "#BF4342"), 
+                        name = "") +
+      labs(x = "", y = "Acumulado mensual (mm)", 
+           fill = "") +  
       ggtitle("") +
       theme_minimal() +
-      theme(axis.text.x = element_text(angle = 0, hjust = 1),
-            panel.grid.major = element_blank(),  # Elimina las líneas de la grilla
-            panel.grid.minor = element_blank(),  # Elimina las líneas de la grilla
-            axis.ticks = element_blank(),         # Elimina los ticks del eje
+      theme(axis.text.x = element_text(angle = 0, 
+                                       hjust = 1),
+            panel.grid.major = element_blank(),  
+            panel.grid.minor = element_blank(),  
+            axis.ticks = element_blank(),         
             axis.line = element_line(color = "black"))
     
     ggplotly(acum) %>%
-      layout(legend = list(orientation = "h", x = 0.1, y = 1.2))  
+      layout(legend = list(orientation = "h", 
+                           x = 0.1, 
+                           y = 1.2))  
   })
   
+  #### temp mensuales ####
   output$grafico_temperatura <- renderPlotly({
-    tt <- ggplot(datasetInput(), aes(x = Fecha)) +
-      geom_line(aes(y = Temperatura_Abrigo_150cm, color = "Temperatura Media"), na.rm = TRUE, show.legend = FALSE) +
-      geom_line(aes(y = Temperatura_Abrigo_150cm_Maxima, color = "Temperatura Máxima"), na.rm = TRUE, show.legend = FALSE) +
-      geom_line(aes(y = Temperatura_Abrigo_150cm_Minima, color = "Temperatura Mínima"), na.rm = TRUE, show.legend = FALSE) +
-      labs(title = "",
-           x = "",
-           y = "°C") +
-      scale_color_manual(values = c("Temperatura Media" = "#136F63", 
-                                    "Temperatura Máxima" = "#D00000",
-                                    "Temperatura Mínima" = "#FFBA08")) +
-      theme_minimal() +
-      theme(
-        panel.grid.major = element_blank(),  # Elimina las líneas de la grilla
-        panel.grid.minor = element_blank(),  # Elimina las líneas de la grilla
-        axis.ticks = element_blank(),         # Elimina los ticks del eje
-        axis.line = element_line(color = "black"))
+    # Datos de temperaturas para el año seleccionado
+    temperaturas_mensuales <- datasetInput() %>%
+      mutate(Mes = month(Fecha, 
+                         label = TRUE)) %>%
+      group_by(Mes) %>%
+      summarise(Temperatura_Maxima = round(mean(Temperatura_Abrigo_150cm_Maxima, 
+                                                na.rm = TRUE), 1),
+                Temperatura_Minima = round(mean(Temperatura_Abrigo_150cm_Minima, 
+                                                na.rm = TRUE), 1))
     
-    ggplotly(tt) %>% 
-      layout(legend = list(orientation = "h", x = 0.1, y = 1.2))
+    # Datos históricos de temperaturas
+    historico_temperaturas_mensual <- datos_historicos %>%
+      mutate(Mes = month(Fecha, 
+                         label = TRUE)) %>%
+      group_by(Mes) %>%
+      summarise(Temp_Max_Historica = round(mean(Temperatura_Abrigo_150cm_Maxima, 
+                                                na.rm = TRUE), 1),
+                Temp_Min_Historica = round(mean(Temperatura_Abrigo_150cm_Minima, 
+                                                na.rm = TRUE), 1)) %>%
+      ungroup()
+    
+    
+    #
+    dataset_completo_temperatura <- temperaturas_mensuales %>%
+      left_join(historico_temperaturas_mensual, 
+                by = "Mes")
+    
+    dataset_completo_temperatura_long <- dataset_completo_temperatura %>%
+      pivot_longer(cols = c(Temp_Max_Historica, Temp_Min_Historica, 
+                            Temperatura_Maxima, Temperatura_Minima),
+                   names_to = "Temperatura",
+                   values_to = "temperatura") %>%
+      mutate(Temperatura = factor(Temperatura,
+                                       levels = c("Temperatura_Maxima",
+                                                  "Temp_Max_Historica", 
+                                                  "Temperatura_Minima",
+                                                  "Temp_Min_Historica"),                                                  
+                                       labels = c("Máxima Año Seleccionado",
+                                                  "Máxima Histórica (1991 - 2020)",
+                                                  "Mínima Año Seleccionado",
+                                                  "Mínima Histórica (1991 - 2020)")))
+  
+  
+    temp_plot <- ggplot(dataset_completo_temperatura_long, aes(x = Mes, 
+                                                               y = temperatura, 
+                                                               color = Temperatura, 
+                                                               group = Temperatura,
+                                                               text = paste("Mes:", Mes, "<br>", Temperatura, "<br>Temperatura:", temperatura))) +
+      geom_line(size = 1) +
+      geom_point(size = 1) +
+      scale_color_manual(values = c("Máxima Año Seleccionado" = "#D00000",
+                                    "Máxima Histórica (1991 - 2020)" = "#FCB9B2",
+                                    "Mínima Año Seleccionado" = "#FFBA08",
+                                    "Mínima Histórica (1991 - 2020)" = "#EDDEA4"
+                                    )) +
+      labs(x = "", y = "Temperatura media mensual (ºC)", 
+           color = "") +
+      ggtitle("") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 0, 
+                                       hjust = 1),
+            panel.grid.major = element_blank(),
+            panel.grid.minor = element_blank(),
+            axis.ticks = element_blank(),
+            axis.line = element_line(color = "black"))
+    
+    ggplotly(temp_plot, tooltip = "text") %>%
+      layout(legend = list(orientation = "v", 
+                           x = 0.4, 
+                           y = 1.2))
   })
   
   
@@ -585,26 +705,31 @@ server <- function(input, output, session) {
       filter(Temperatura_Abrigo_150cm_Minima < 3) %>%
       group_by(Mes) %>%
       summarise(Dias_Temperatura_Minima_Menor_3C = n()) %>%
-      mutate(Mes = factor(substr(Mes, 1, 3), levels = c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"),
-                          ordered = TRUE)) # Aquí se establecen los niveles ordenados
+      mutate(Mes = factor(substr(Mes, 1, 3), levels = c("ene", "feb", "mar", "abr", 
+                                                        "may", "jun", "jul", "ago", 
+                                                        "sep", "oct", "nov", "dic"),
+                          ordered = TRUE)) 
     
     
-    hh <- ggplot(promedio_heladas, aes(x = Mes, y = Dias_Temperatura_Minima_Menor_3C)) +
+    hh <- ggplot(promedio_heladas, aes(x = Mes, 
+                                       y = Dias_Temperatura_Minima_Menor_3C)) +
       geom_bar(stat = "identity", fill = "#FFBA08", color = "#FF9F1C") +  
       labs(title = "",
            x = "",
            y = "Número de días con\nTemperatura mínimas < 3ºC") +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 0, hjust = 1),
-            panel.grid.major = element_blank(),  # Elimina las líneas de la grilla
-            panel.grid.minor = element_blank(),  # Elimina las líneas de la grilla
-            axis.ticks = element_blank(),         # Elimina los ticks del eje
+            panel.grid.major = element_blank(),  
+            panel.grid.minor = element_blank(),  
+            axis.ticks = element_blank(),         
             axis.line = element_line(color = "black")) 
     
     ggplotly(hh) %>% 
       layout(legend = list(orientation = "h", x = 0.1, y = 1.2))
   })
   
+  
+  ## Descarga de datos ##
   output$datos <- renderDT (
     datos,
     rownames = FALSE,
@@ -626,34 +751,40 @@ server <- function(input, output, session) {
       
       # Filtrar por el rango de fechas seleccionado si se han proporcionado ambas fechas
       if (!is.null(input$fecha_inicio) && !is.null(input$fecha_fin)) {
-        datos_filtrados3 <- subset(datos_filtrados3, Fecha >= input$fecha_inicio & Fecha <= input$fecha_fin)
+        datos_filtrados3 <- subset(datos_filtrados3, 
+                                   Fecha >= input$fecha_inicio & Fecha <= input$fecha_fin)
       } else if (!is.null(input$fecha_inicio)) {
-        datos_filtrados3 <- subset(datos_filtrados3, Fecha >= input$fecha_inicio)
+        datos_filtrados3 <- subset(datos_filtrados3, 
+                                   Fecha >= input$fecha_inicio)
       } else if (!is.null(input$fecha_fin)) {
-        datos_filtrados3 <- subset(datos_filtrados3, Fecha <= input$fecha_fin)
+        datos_filtrados3 <- subset(datos_filtrados3, 
+                                   Fecha <= input$fecha_fin)
       }
       
-      # Seleccionar solo las variables elegidas por el usuario
-      datos_filtrados3 <- datos_filtrados3[, c("Fecha", input$variables), drop = FALSE]
+      # SSelección de variables
+      datos_filtrados3 <- datos_filtrados3[, c("Fecha", input$variables), 
+                                           drop = FALSE]
       
-      # Guardar el archivo CSV
-      write.csv(datos_filtrados3, file, row.names = FALSE)
+      #
+      write.csv(datos_filtrados3, 
+                file, 
+                row.names = FALSE)
     }
   )
   
-  observeEvent(input$enviar, {
-    comentario <- input$text
-    if (comentario != "Aquí...") {
-      enviar_correo(comentario)
-      showNotification("Mensaje enviado", duration = 5)
-    }
-  })
-
+  # observeEvent(input$enviar, {
+  #   comentario <- input$text
+  #   if (comentario != "Aquí...") {
+  #     enviar_correo(comentario)
+  #     showNotification("Mensaje enviado", duration = 5)
+  #   }
+  # })
+  # 
   
 }
 
- 
-  
+
+
 
 
 # Run the app ----
