@@ -283,92 +283,102 @@ ui <- dashboardPage(
           )
         )
       ),
+      
       tabPanel(
         "Balance de agua",
         br(),
-        h5(strong("Cálculo de balance de agua")),
-        p("Ingresando los datos solicitados a continuación, puede estimar el balance de agua diario de su campo."),
-        p("Puede ingresar el dato solicitado o bien utilizar el valor por default."),
+        h5(strong("Cálculo de balance de agua para MAÍZ de ciclo largo")),
+        h6(HTML("Usted puede estimar el balance de agua diario de su campo.
+               <br>
+               Puede ingresar los datos solicitados en los recuadros o bien utilizar los valores por default.")),
+        
         br(),
+        
         fluidRow(
           # Fecha de siembra 
           column(12,
                  dateInput("fecha_siembra",
-                           label = strong("Ingresar Fecha de siembra:"),
-                           value = "2024-01-01"),
-                 br()  
+                           label = strong("Ingrese la fecha de siembra:"),
+                           value = "2024-01-01")
+          )
+        ),
+        fluidRow(
+          # Fecha de siembra 
+          column(6,
+                 div(style = "background-color: #f2f2f2; padding: 15px; border-radius: 10px;",
+                 h4(strong("Datos de manejo"))
+                 )
+          ),
+          column(3,
+                 div(style = "background-color: #e6ffe6; padding: 15px; border-radius: 10px;",
+                 h4(strong("Datos de cultivo"))
+                 )
           )
         ),
 
           fluidRow(
+            
             # "Datos de manejo"
             column(3,
-                   div(style = "background-color: #f2f2f2; padding: 15px; border-radius: 10px;",
-                       h4(strong("Datos de manejo")),
+                   div(style = "background-color: #f2f2f2; padding-left: 15px; padding-right: 5px; padding-bottom: 15px; border-radius: 10px;",
                        numericInput("profundidad",  
                                     label = strong("Profundidad máxima (cm)"),
                                     value = 100),
-                       numericInput("capacidad_agua",  
-                                    label = strong("Límite Máximo de almacenamiento de agua (capacidad de campo; mm/cm)"), 
+                       br(),
+                       br(),
+                       numericInput("capacidad_campo",  
+                                    label = strong(HTML("Capacidad de Campo (mm/cm)
+                                                        <br><small>
+                                                        (Límite Máximo de almacenamiento de agua)</small>")), 
                                     value = 3.70),
                        textOutput("almacenamiento_maximo")
                    )
             ),
             column(3,
-                   div(style = "background-color: #f2f2f2; padding: 15px; border-radius: 10px;",
+                   div(style = "background-color: #f2f2f2; padding-left: 5px; padding-bottom: 15px; border-radius: 10px;",
                        numericInput("fraccion_min",  
-                                    label = strong("Fracción de almacenamiento mínimo respecto del máximo"), 
+                                    label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
                                     value = 0.55),
                        textOutput("almacenamiento_minimo"),
                        textOutput("agua_util_total"),
                        br(),
                        numericInput("fraccion_inicial",  
-                                    label = strong("Fracción inicial de agua útil"), 
+                                    label = strong("Fracción inicial de agua útil (0 - 1)"), 
                                     value = 0.50)
                    )
-            )
-          ,
+            ),
             
             # "Datos de cultivo"
-            column(4,
+            column(3,
                    div(style = "background-color: #e6ffe6; padding: 15px; border-radius: 10px;",
-                       h4(strong("Datos de cultivo")),
                        numericInput("umbral_et",  
-                                    label = strong("Umbral de fracción de agua útil por debajo del cual reduce ET"), value = 0.8),
+                                    label = strong(HTML("Umbral de fracción de agua útil 
+                                                        <br><small>
+                                                        (Debajo del cual se reduce la evapotranspiración)</small>")), 
+                                    value = 0.8),
                        textOutput("disminucion_et")
                    )
             )
           ),
+        br(),
           
-          # 
-          column(12,
-                 div(style = "margin-bottom: 30px;",   
-                 actionButton("calcular", "Calcular")
+       fluidRow( 
+          box(
+            title = "Balance de agua",
+            status = "gray-dark",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("consumo_agua", height = "300px")
+          ),
+          box(
+            title = "Deficiencias hídricas y precipitaciones",
+            status = "gray-dark",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("deficit_agua", height = "300px")
           )
-        ),
-        
-        
-          fluidRow(
-            column(6,
-                   box(
-                     title = "Balance de agua",
-                     status = "gray-dark",
-                     solidHeader = TRUE,
-                     collapsible = TRUE,
-                     plotlyOutput("consumo_agua", height = "300px")
-                   )
-            ),
-            column(6,
-                   box(
-                     title = "Deficiencias hídricas y precipitaciones",
-                     status = "gray-dark",
-                     solidHeader = TRUE,
-                     collapsible = TRUE,
-                     plotlyOutput("deficit_agua", height = "300px")
-                   )
-            )
-          )
-        ),
+        )
+      ),
           
       tabPanel(
         "Pronósticos",
@@ -725,6 +735,7 @@ server <- function(input, output, session) {
   
   #### temp mensuales ####
   output$grafico_temperatura <- renderPlotly({
+    
     # Datos de temperaturas para el año seleccionado
     temperaturas_mensuales <- datasetInput() %>%
       mutate(Mes = month(Fecha, 
@@ -771,8 +782,7 @@ server <- function(input, output, session) {
     temp_plot <- ggplot(dataset_completo_temperatura_long, aes(x = Mes, 
                                                                y = temperatura, 
                                                                color = Temperatura, 
-                                                               group = Temperatura,
-                                                               text = paste("Mes:", Mes, "<br>", Temperatura, "<br>Temperatura:", temperatura))) +
+                                                               group = Temperatura)) +
       geom_line(size = 1) +
       geom_point(size = 1) +
       scale_color_manual(values = c("Máxima Año Seleccionado" = "#D00000",
@@ -791,7 +801,7 @@ server <- function(input, output, session) {
             axis.ticks = element_blank(),
             axis.line = element_line(color = "black"))
     
-    ggplotly(temp_plot, tooltip = "text") %>%
+    ggplotly(temp_plot) %>%
       layout(legend = list(orientation = "v", 
                            x = 0.4, 
                            y = 1.2))
@@ -831,7 +841,7 @@ server <- function(input, output, session) {
   
   # Calcular Almacenamiento máximo de agua
   almacenamiento_maximo <- reactive({
-    input$capacidad_agua * input$profundidad
+    input$capacidad_campo * input$profundidad
   })
   
   # Calcular Almacenamiento mínimo de agua
@@ -849,29 +859,28 @@ server <- function(input, output, session) {
     1 / input$umbral_et
   })
   
-  # Render outputs for UI
+   
   output$almacenamiento_maximo <- renderText({
-    paste("Almacenamiento máximo de agua:", round(almacenamiento_maximo(), 2), "mm")
+    paste("Almacenamiento máximo de agua (mm):", round(almacenamiento_maximo(), 2))
   })
   
   output$almacenamiento_minimo <- renderText({
-    paste("Almacenamiento mínimo de agua:", round(almacenamiento_minimo(), 2), "mm")
+    paste("Almacenamiento mínimo de agua (mm):", round(almacenamiento_minimo(), 2))
   })
   
   output$agua_util_total <- renderText({
-    paste("Agua útil total:", round(agua_util_total(), 2), "mm")
+    paste("Agua útil total (mm):", round(agua_util_total(), 2))
   })
   
   output$disminucion_et <- renderText({
-    paste("Disminución de ET:", round(disminucion_et(), 2))
+    paste("Disminución de evapotranspiración:", round(disminucion_et(), 2))
   })
   
   
-  balance_agua <- eventReactive(input$calcular, {
-    datos <- datasetInput()
-    
+  balance_agua <- reactive({
     fecha_siembra <- as.Date(input$fecha_siembra)
-    # fecha_siembra <- as.Date("2023-10-10")
+    # fecha_siembra <- as.Date("2024-01-01") 
+    fecha_dia_18 <- fecha_siembra + 17
     
     datos_filtrados <- datos %>%
       filter(Fecha >= fecha_siembra) %>%
@@ -880,10 +889,8 @@ server <- function(input, output, session) {
     datos_filtrados <- datos_filtrados %>%
       mutate(Dia_Mes = format(Fecha, "%m-%d"))
     
-    datos_historicos <- datos_historicos %>%
-      mutate(Dia_Mes = format(Fecha, "%m-%d"))
-    
     datos_historicos_avg <- datos_historicos %>%
+      mutate(Dia_Mes = format(Fecha, "%m-%d")) %>%
       group_by(Dia_Mes) %>%
       summarise(
         Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE),
@@ -892,20 +899,33 @@ server <- function(input, output, session) {
       ) 
     
     fraccion_inicial <- input$fraccion_inicial
-    agua_util_total_val <- agua_util_total() 
-    disminucion_et_val <- disminucion_et() 
+    agua_util_total_val <- agua_util_total()
+    disminucion_et_val <- disminucion_et()
+    
+    # fraccion_inicial <- 0.5
+    # agua_util_total_val <- 166.5
+    # disminucion_et_val <- 1.25
     
     
     datos_filtrados <- datos_filtrados %>%
       left_join(datos_historicos_avg, by = "Dia_Mes") %>%
       arrange(Fecha) %>%
       mutate(
-        Temperatura_Abrigo_150cm = coalesce(Temperatura_Abrigo_150cm, Temperatura_media),
+        Temperatura_Abrigo_150cm = coalesce(Temperatura_Abrigo_150cm, Temperatura_media), 
         Evapotranspiracion_Potencial = coalesce(Evapotranspiracion_Potencial, Evapotranspiracion_media),
         
-        TTB = if_else(Temperatura_Abrigo_150cm - 8 < 0, 0, Temperatura_Abrigo_150cm - 8),
-        GD_acum = cumsum(TTB),
-        Ttrelativo = GD_acum / 1790,
+        
+        TTB = if_else(Fecha >= fecha_dia_18, 
+                      if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                                    0, 
+                                                    Temperatura_Abrigo_150cm - 8), NA_real_),
+        GD_acum = case_when(
+          Fecha >= fecha_dia_18 ~ cumsum(replace_na(TTB, 0)),
+          TRUE ~ 0),
+        Ttrelativo = if_else(Fecha >= fecha_dia_18,  
+                             GD_acum / 1790, 
+                             0),
+        
         Kc = if_else(Ttrelativo > 0.16, 
                      2.988041 * Ttrelativo^4 - 4.052411 * Ttrelativo^3 - 3.999317 * Ttrelativo^2 + 6.015032 * Ttrelativo - 0.390632, 
                      0.4),
@@ -949,42 +969,64 @@ server <- function(input, output, session) {
       )
       
       datos_filtrados$deficiencia[i] <- if_else(
-        is.na(datos_filtrados$ETM[i]) | is.na(datos_filtrados$ETR[i]),
+        is.na(datos_filtrados$ETR[i]) | is.na(datos_filtrados$ETM[i]),
         NA_real_,
-        datos_filtrados$ETM[i] - datos_filtrados$ETR[i]
+        datos_filtrados$ETR[i] - datos_filtrados$ETM[i]
       )
     }
-    # print(head(datos_filtrados))
-    # View(datos_filtrados)
+    return(datos_filtrados)
+    # write_xlsx(datos_filtrados, "datos_filtrados2.xlsx")
   })
   
   ## Gráficos balance de agua ##
-  output$consumo_agua <- renderPlot({
-    datos_balance <- balance_agua()
+  output$consumo_agua <- renderPlotly({
+    df_siembra <- balance_agua()
     
-    print(colnames(datos_balance))
     
-    ggplot(datos_balance, aes(x = Fecha)) +
+    cons_agua <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_line(aes(y = ETM, color = "ETM")) +
       geom_line(aes(y = ETR, color = "ETR")) +
-      geom_line(aes(y = Fr_agua_util, color = "Fr_agua_util")) +
-      labs(title = "Consumo de Agua", x = "", y = "") +
+      geom_line(aes(y = Fr_agua_util, color = "Fr_agua_util")) +  
+      labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_color_manual(values = c("ETM" = "blue", "ETR" = "red", "Fr_agua_util" = "yellow"))
+      scale_color_manual(values = c("#E76F51", "#2A9D8F", "#E9C46A"),
+                         labels = c("ETM", 
+                                    "ETR", 
+                                    "Fracción de Agua Útil")) +
+      guides(color = guide_legend(title = NULL))
+    
+    ggplotly(cons_agua) %>% 
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.2),
+             annotations = list(
+               x = 0.6, 
+               y = -0.18, 
+               text = "ETM: Máximo consumo de agua si no hubiera deficiencias de agua\nETR: Consumo de agua REAL",
+               showarrow = FALSE,
+               xref = 'paper', 
+               yref = 'paper', 
+               xanchor = 'left', 
+               yanchor = 'left', 
+               font = list(size = 8)
+             ))
   })
   
   
-  output$deficit_agua <- renderPlot({
-    datos_balance <- balance_agua()
+  output$deficit_agua <- renderPlotly({
+    df_siembra <- balance_agua()
     
-    print(colnames(datos_balance))
-    
-    ggplot(datos_balance, aes(x = Fecha)) +
-      geom_line(aes(y = Precipitacion_Pluviometrica, color = "Precipitacion_Pluviometrica")) +
-      geom_line(aes(y = deficiencia, color = "deficiencia")) +
-      labs(title = "Déficit de Agua", x = "", y = "") +
+    def_agua <- ggplot(df_siembra, aes(x = Fecha)) +
+      geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
+               stat = "identity", position = "dodge") +
+      geom_bar(aes(y = deficiencia, fill = "deficiencia"),
+               stat = "identity", position = "dodge") +
+      labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_color_manual(values = c("Precipitacion_Pluviometrica" = "blue", "deficiencia" = "red"))
+      scale_fill_manual(values = c("#007EA7", "#BC4749"),
+                         labels = c("Precipitacion", "Deficiencia hídrica")) +
+      guides(fill = guide_legend(title = NULL))
+    
+    ggplotly(def_agua) %>% 
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.2))
   })
   
   
