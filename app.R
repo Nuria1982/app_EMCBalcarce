@@ -15,6 +15,7 @@ library(bs4Dash)
 library(lubridate)
 library(png)
 library(readxl)
+library(writexl)
 
 
 balcarce_EMC <- read_excel("balcarce_EMC.xlsx", 
@@ -38,8 +39,14 @@ datos$Fecha <- as.Date(datos$Fecha, format = "%Y-%m-%d")
 datos <- datos[order(datos$Fecha, decreasing = TRUE), ]
 datos
 
-ultima_fecha <- max(datos$Fecha)
-ultimos_datos <- datos[datos$Fecha == ultima_fecha, ]
+
+datos_actuales <- datos[!is.na(datos$Precipitacion_Pluviometrica) & 
+                           !is.na(datos$Temperatura_Abrigo_150cm_Maxima) & 
+                           !is.na(datos$Temperatura_Abrigo_150cm_Minima), ]
+
+
+ultima_fecha <- max(datos_actuales$Fecha)
+ultimos_datos <- datos_actuales[datos_actuales$Fecha == ultima_fecha, ]
 lluvia_ultimo_dia <- ultimos_datos$Precipitacion_Pluviometrica
 Tmax_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Maxima
 Tmin_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Minima
@@ -125,6 +132,11 @@ ui <- dashboardPage(
           "Dra. Nuria Lewczuk : lewczuk.nuria@inta.gob.ar"),
         tags$h6(
           "Dra. Laura Echarte : echarte.laura@inta.gob.ar")
+      ),
+      
+      tags$img(src = "Logo_Red_Agromet.jpg",
+               height = "80px",
+               width = "200px"
       ),
       br(),
       tags$img(src = "Logo_INTA_Balcarce.png",
@@ -287,10 +299,9 @@ ui <- dashboardPage(
       tabPanel(
         "Balance de agua",
         br(),
-        h5(strong("Cálculo de balance de agua para MAÍZ de ciclo largo")),
-        h6(HTML("Usted puede estimar el balance de agua diario de su campo.
-               <br>
-               Puede ingresar los datos solicitados en los recuadros o bien utilizar los valores por default.")),
+        h4(HTML("<strong>Cálculo de balance de agua para MAÍZ<sup>1</sup></strong>")),
+        h5(HTML("A partir de los datos del suelo y del cultivo, podemos calcular el balance de agua diario de tu campo. <br> 
+                Podes ingresar los datos en los recuadros o usar los valores predeterminados.")),
         
         br(),
         
@@ -306,30 +317,30 @@ ui <- dashboardPage(
           # Fecha de siembra 
           column(6,
                  div(style = "background-color: #f2f2f2; padding: 15px; border-radius: 10px;",
-                 h4(strong("Datos de manejo"))
+                 h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>")))
                  )
           ),
           column(3,
                  div(style = "background-color: #e6ffe6; padding: 15px; border-radius: 10px;",
-                 h4(strong("Datos de cultivo"))
+                     h4(strong("Datos de cultivo"))
                  )
           )
         ),
 
           fluidRow(
             
-            # "Datos de manejo"
+            # "Datos de suelo"
             column(3,
                    div(style = "background-color: #f2f2f2; padding-left: 15px; padding-right: 5px; padding-bottom: 15px; border-radius: 10px;",
                        numericInput("profundidad",  
-                                    label = strong("Profundidad máxima (cm)"),
+                                    label = strong("Profundidad (cm)"),
                                     value = 100),
                        br(),
                        br(),
                        numericInput("capacidad_campo",  
                                     label = strong(HTML("Capacidad de Campo (mm/cm)
                                                         <br><small>
-                                                        (Límite Máximo de almacenamiento de agua)</small>")), 
+                                                        (Límite máximo de almacenamiento de agua)</small>")), 
                                     value = 3.70),
                        textOutput("almacenamiento_maximo")
                    )
@@ -350,13 +361,17 @@ ui <- dashboardPage(
             
             # "Datos de cultivo"
             column(3,
-                   div(style = "background-color: #e6ffe6; padding: 15px; border-radius: 10px;",
+                   div(style = "background-color: #e6ffe6; padding-left: 15px; padding-bottom: 15px; border-radius: 10px;",
                        numericInput("umbral_et",  
                                     label = strong(HTML("Umbral de fracción de agua útil 
                                                         <br><small>
                                                         (Debajo del cual se reduce la evapotranspiración)</small>")), 
                                     value = 0.8),
-                       textOutput("disminucion_et")
+                       textOutput("disminucion_et"),
+                       br(),
+                       numericInput("GD",  
+                                    label = strong(HTML("Grados días de siembra a madurez fisiológica")), 
+                                    value = 1800),
                    )
             )
           ),
@@ -364,20 +379,37 @@ ui <- dashboardPage(
           
        fluidRow( 
           box(
-            title = "Balance de agua",
+            title = "Fracción de agua útil",
+            status = "gray-dark",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("agua_util", height = "300px")
+          ),
+          box(
+            title = "Consumo de agua",
             status = "gray-dark",
             solidHeader = TRUE,
             collapsible = TRUE,
             plotlyOutput("consumo_agua", height = "300px")
           ),
           box(
-            title = "Deficiencias hídricas y precipitaciones",
+            title = "Balance de agua",
             status = "gray-dark",
             solidHeader = TRUE,
             collapsible = TRUE,
             plotlyOutput("deficit_agua", height = "300px")
-          )
-        )
+          ),
+          tags$img(
+            src = "Mapa_Estacion_Met.png",
+            style = "max-width: 35%; height: 100%; display: block; margin: 0 auto;",
+            alt = "ubicacion_EMC"
+            )
+          ),
+       
+       p(tags$sup("1"),": Híbrido de 1800 grados días de siembra a madurez fisiológica 
+         (aprox. 160-170 días de siembra a madurez fisiológica para siembras de mediados de octubre en Balcarce)"),
+       p(tags$sup("2"),": Valores de referencia para un suelo Argiudol típico"),
+       p("Los recuadros en los gráficos indican el período crítico, correspondiente a 670 - 1120 GD (grados-días) desde la siembra")
       ),
           
       tabPanel(
@@ -390,8 +422,7 @@ ui <- dashboardPage(
                 style = "text-align: center;",
                 tags$img(
                   src = "pronostico_lluvia.png",
-                  style = "max-width: 80%; height: auto;", 
-                  
+                  style = "max-width: 80%; height: auto;",
                   alt = "Pronóstico semanal de lluvia"
                 )
               )
@@ -457,7 +488,7 @@ ui <- dashboardPage(
         selectInput(
           "variables", 
           "Seleccionar Variables:",
-          choices = c("Fecha", "Temperatura_Abrigo_150cm",
+          choices = c("Temperatura_Abrigo_150cm",
                       "Temperatura_Abrigo_150cm_Maxima", "Temperatura_Abrigo_150cm_Minima",
                       "Temperatura_Intemperie_5cm_Minima", "Temperatura_Intemperie_50cm_Minima",	
                       "Temperatura_Suelo_5cm_Media", "Temperatura_Suelo_10cm_Media",
@@ -475,7 +506,7 @@ ui <- dashboardPage(
           selected = "Fecha",
           multiple = TRUE
         ),
-        downloadButton("Datos_meteo_Balcarce", "Descargar .csv")
+        downloadButton("Datos_meteo_Balcarce", "Descargar (.xlsx)")
       )
     )))
 
@@ -501,19 +532,19 @@ server <- function(input, output, session) {
   
   
   # Calculating current year cumulative precipitation
-  current_year <- max(datos$Año)
-  pp_acum <- sum(subset(datos, Año == current_year)$Precipitacion_Pluviometrica)
+  current_year <- max(datos_actuales$Año)
+  pp_acum <- sum(subset(datos_actuales, Año == current_year)$Precipitacion_Pluviometrica)
   
   # Calculating current temp max
-  ttmax_anual <- mean(subset(datos, Año == current_year)$Temperatura_Abrigo_150cm_Maxima)
+  ttmax_anual <- mean(subset(datos_actuales, Año == current_year)$Temperatura_Abrigo_150cm_Maxima)
   
   # Calculating current temp min
-  ttmin_anual <- mean(subset(datos, Año == current_year)$Temperatura_Abrigo_150cm_Minima, na.rm = TRUE)
+  ttmin_anual <- mean(subset(datos_actuales, Año == current_year)$Temperatura_Abrigo_150cm_Minima, na.rm = TRUE)
   
   
   
-  ultima_fecha <- max(datos$Fecha)
-  ultimos_datos <- datos[datos$Fecha == ultima_fecha, ]
+  ultima_fecha <- max(datos_actuales$Fecha)
+  ultimos_datos <- datos_actuales[datos_actuales$Fecha == ultima_fecha, ]
   lluvia_ultimo_dia <- ultimos_datos$Precipitacion_Pluviometrica
   Tmax_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Maxima
   Tmin_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Minima
@@ -521,9 +552,9 @@ server <- function(input, output, session) {
   
   datasetInput <- reactive({
     if (input$ano_selector == "Todos los años") {
-      datos_filtrados <- datos
+      datos_filtrados <- datos_actuales
     } else {
-      datos_filtrados <- subset(datos, Año == input$ano_selector)
+      datos_filtrados <- subset(datos_actuales, Año == input$ano_selector)
     }
     
     # Filtrar los datos por los meses seleccionados si no se elige "Mostrar todos los meses"
@@ -879,8 +910,7 @@ server <- function(input, output, session) {
   
   balance_agua <- reactive({
     fecha_siembra <- as.Date(input$fecha_siembra)
-    # fecha_siembra <- as.Date("2024-01-01") 
-    fecha_dia_18 <- fecha_siembra + 17
+
     
     datos_filtrados <- datos %>%
       filter(Fecha >= fecha_siembra) %>%
@@ -895,36 +925,30 @@ server <- function(input, output, session) {
       summarise(
         Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE),
         Evapotranspiracion_media = mean(Evapotranspiracion_Potencial, na.rm = TRUE),
+        Precipitacion_media = mean(Precipitacion_Pluviometrica, na.rm = TRUE),
         .groups = "drop"
       ) 
     
     fraccion_inicial <- input$fraccion_inicial
     agua_util_total_val <- agua_util_total()
     disminucion_et_val <- disminucion_et()
+
     
-    # fraccion_inicial <- 0.5
-    # agua_util_total_val <- 166.5
-    # disminucion_et_val <- 1.25
-    
-    
+
     datos_filtrados <- datos_filtrados %>%
       left_join(datos_historicos_avg, by = "Dia_Mes") %>%
       arrange(Fecha) %>%
       mutate(
         Temperatura_Abrigo_150cm = coalesce(Temperatura_Abrigo_150cm, Temperatura_media), 
         Evapotranspiracion_Potencial = coalesce(Evapotranspiracion_Potencial, Evapotranspiracion_media),
+        Precipitacion_Pluviometrica = coalesce(Precipitacion_Pluviometrica, Precipitacion_media),
         
         
-        TTB = if_else(Fecha >= fecha_dia_18, 
-                      if_else(Temperatura_Abrigo_150cm - 8 < 0, 
-                                                    0, 
-                                                    Temperatura_Abrigo_150cm - 8), NA_real_),
-        GD_acum = case_when(
-          Fecha >= fecha_dia_18 ~ cumsum(replace_na(TTB, 0)),
-          TRUE ~ 0),
-        Ttrelativo = if_else(Fecha >= fecha_dia_18,  
-                             GD_acum / 1790, 
-                             0),
+        TTB = if_else(Temperatura_Abrigo_150cm - 8 < 0,
+                      0,
+                      Temperatura_Abrigo_150cm - 8),
+        GD_acum = cumsum(TTB),
+        Ttrelativo = GD_acum / input$GD,
         
         Kc = if_else(Ttrelativo > 0.16, 
                      2.988041 * Ttrelativo^4 - 4.052411 * Ttrelativo^3 - 3.999317 * Ttrelativo^2 + 6.015032 * Ttrelativo - 0.390632, 
@@ -942,11 +966,15 @@ server <- function(input, output, session) {
     
     for (i in 2:nrow(datos_filtrados)) {
       
+      if (datos_filtrados$GD_acum[i - 1] > input$GD) {
+        break
+      }
+      
       datos_filtrados$ETR[i] <- if_else(
         is.na(datos_filtrados$Fr_agua_util[i - 1]) | is.na(datos_filtrados$ETM[i]), 
         NA_real_, 
         if_else(
-          datos_filtrados$Fr_agua_util[i - 1] >= agua_util_total_val, 
+          datos_filtrados$Fr_agua_util[i - 1] >= input$umbral_et, 
           datos_filtrados$ETM[i], 
           disminucion_et_val * datos_filtrados$Fr_agua_util[i - 1] * datos_filtrados$ETM[i]
         )
@@ -975,58 +1003,105 @@ server <- function(input, output, session) {
       )
     }
     return(datos_filtrados)
-    # write_xlsx(datos_filtrados, "datos_filtrados2.xlsx")
+   
   })
   
   ## Gráficos balance de agua ##
+  output$agua_util <- renderPlotly({
+    df_siembra <- balance_agua()
+    df_siembra <- df_siembra %>% filter(GD_acum <= input$GD)
+    
+    fecha_actual <- Sys.Date()
+    
+    fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], 
+                     na.rm = TRUE)
+    fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], 
+                     na.rm = TRUE)
+    
+    agua_util <- ggplot(df_siembra, aes(x = Fecha)) +
+      geom_line(aes(y = Fr_agua_util , color = "Fr_agua_util")) + 
+      geom_rect(aes(xmin = fecha_min, 
+                    xmax = fecha_max, 
+                    ymin = 0, ymax = 1),
+                fill = "blue", 
+                alpha = 0.2, 
+                color = NA) +
+      labs(title = "", x = "", 
+           y = "Fracción de Agua Útil (0 - 1)") +
+      theme_minimal() +
+      scale_color_manual(values = c("#E9C46A")) +
+      guides(color = "none") +
+      coord_cartesian(ylim = c(0, NA))
+    
+    ggplotly(agua_util)  %>% 
+      plotly::style(name = "Fracción de Agua Útil", traces = 1) 
+})
+    
   output$consumo_agua <- renderPlotly({
     df_siembra <- balance_agua()
+    df_siembra <- df_siembra %>% filter(GD_acum <= input$GD)
     
+    fecha_actual <- Sys.Date()
+    
+    fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], 
+                     na.rm = TRUE)
+    fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], 
+                     na.rm = TRUE)
+    ymax_ETM <- max(df_siembra$ETM,
+                     na.rm = TRUE)
     
     cons_agua <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_line(aes(y = ETM, color = "ETM")) +
       geom_line(aes(y = ETR, color = "ETR")) +
-      geom_line(aes(y = Fr_agua_util, color = "Fr_agua_util")) +  
+      geom_rect(aes(xmin = fecha_min,
+                    xmax = fecha_max,
+                    ymin = 0, ymax = ymax_ETM),
+                fill = "blue",
+                alpha = 0.2,
+                color = NA) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_color_manual(values = c("#E76F51", "#2A9D8F", "#E9C46A"),
-                         labels = c("ETM", 
-                                    "ETR", 
-                                    "Fracción de Agua Útil")) +
+      scale_color_manual(values = c("#E76F51", "#2A9D8F")) +
       guides(color = guide_legend(title = NULL))
     
     ggplotly(cons_agua) %>% 
-      layout(legend = list(orientation = "h", x = 0.3, y = 1.2),
-             annotations = list(
-               x = 0.6, 
-               y = -0.18, 
-               text = "ETM: Máximo consumo de agua si no hubiera deficiencias de agua\nETR: Consumo de agua REAL",
-               showarrow = FALSE,
-               xref = 'paper', 
-               yref = 'paper', 
-               xanchor = 'left', 
-               yanchor = 'left', 
-               font = list(size = 8)
-             ))
+      layout(legend = list(orientation = "v", x = 0.1, y = 1.3)) %>% 
+      plotly::style(name = "ETM: Máximo consumo de agua si no hubiera deficiencias de agua", traces = 1)  %>% 
+      plotly::style(name = "ETR: Consumo de agua REAL", traces = 2) 
   })
-  
+
   
   output$deficit_agua <- renderPlotly({
     df_siembra <- balance_agua()
+    df_siembra <- df_siembra %>% filter(GD_acum <= input$GD)
+    
+    fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], 
+                     na.rm = TRUE)
+    fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], 
+                     na.rm = TRUE)
+    ymax_pp <- max(df_siembra$Precipitacion_Pluviometrica,
+                     na.rm = TRUE)
     
     def_agua <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
                stat = "identity", position = "dodge") +
       geom_bar(aes(y = deficiencia, fill = "deficiencia"),
                stat = "identity", position = "dodge") +
+      geom_rect(aes(xmin = fecha_min,
+                    xmax = fecha_max,
+                    ymin = 0, ymax = ymax_pp),
+                fill = "blue",
+                alpha = 0.2,
+                color = NA) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_fill_manual(values = c("#007EA7", "#BC4749"),
-                         labels = c("Precipitacion", "Deficiencia hídrica")) +
+      scale_fill_manual(values = c("#007EA7", "#BC4749")) +
       guides(fill = guide_legend(title = NULL))
     
     ggplotly(def_agua) %>% 
-      layout(legend = list(orientation = "h", x = 0.3, y = 1.2))
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.2)) %>% 
+      plotly::style(name = "Precipitación", traces = 1) %>% 
+      plotly::style(name = "Déficit hídrico", traces = 2)
   })
   
   
@@ -1044,7 +1119,7 @@ server <- function(input, output, session) {
   
   output$Datos_meteo_Balcarce <- downloadHandler(
     filename = function() {
-      paste("Datos_metereologicos_balcarce", Sys.Date(), ".csv", sep="")
+      paste("Datos_metereologicos_balcarce_", Sys.Date(), ".xlsx", sep=",")
     },
     content = function(file) {
       # Filtra los datos según las variables seleccionadas
@@ -1067,9 +1142,8 @@ server <- function(input, output, session) {
                                            drop = FALSE]
       
       #
-      write.csv(datos_filtrados3, 
-                file, 
-                row.names = FALSE)
+      write_xlsx(datos_filtrados3, 
+                file)
     }
   )
   
