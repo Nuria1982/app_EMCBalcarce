@@ -217,84 +217,55 @@ ui <- dashboardPage(
       tabPanel(
         "Mapas",
         fluidRow(
-          column(
-            width = 12,
-            div(
-              style = "display: flex; justify-content: center; margin-bottom: 10px; margin-top: 20px; ",  
-              box(
-                title = "Consumo de agua",
-                status = "navy",
-                solidHeader = FALSE,
-                width = 10,  
-                div(
-                  style = "display: flex; align-items: center;",
-                  div(
-                    style = "flex: 1; text-align: center;",
-                    tags$img(
-                      src = "agua.jpg",
-                      width = 700,
-                      alt = "Consumo de agua"
-                    )
-                  ),
-                  div(
-                    style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-                    "El consumo de agua o evapotranspiración real (ETR) es la
+          box(title = "Consumo de agua"
+              ,status = "navy"
+              ,solidHeader = FALSE
+              ,div(
+                style = "text-align: center;",
+                tags$img(
+                  src = "agua.jpg",
+                  style = "max-width: 80%; height: auto;",
+                  alt = "Mapa-Consumo de agua"
+                )
+              ),
+              tags$figcaption("Evapotranspiración real máxima (en el periodo de 10 días) expresada en
+              mm/día estimada mediante el uso de imágenes del sensor VIIRS del satélite
+              Suomi-NPP con una resolución espacial de 500 metros. Elaborado por Instituto de
+              Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."),
+              div(
+                style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+                "El consumo de agua o evapotranspiración real (ETR) es la
                 cantidad de agua que es transpirada por la cubierta vegetal y aquella que
                 es perdida desde la superficie del suelo por evaporación.
                El consumo de agua puede ser utilizado para detectar la ocurrencia
                 de deficiencias de agua, cuando su valor no alcanza el requerido por el
-                cultivo."
-                  )
-                ),
-                tags$figcaption(
-                  "Evapotranspiración real máxima (en el periodo de 10 días) expresada en
-              mm/día estimada mediante el uso de imágenes del sensor VIIRS del satélite
-              Suomi-NPP con una resolución espacial de 500 metros. Elaborado por Instituto de
-              Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."
-                )
-              )
-            )
+                cultivo.")
           ),
-          
-          br(),
-          
-          column(
-            width = 12,
-            div(
-              style = "display: flex; justify-content: center; margin-bottom: 10px; margin-top: 20px; ",  
-              box(
-                title = "% de agua útil",
-                status = "navy",
-                solidHeader = FALSE,
-                width = 10,  
-                div(
-                  style = "display: flex; align-items: center;",
-                  div(
-                    style = "flex: 1; text-align: center;",
-                    tags$img(
-                      src = "agua_util.jpg",
-                      width = 700,
-                      alt = "agua útil"
-                    )
-                  ),
-                  div(
-                    style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-                    "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
+          box(title = "% de agua útil"
+              ,status = "navy"
+              ,solidHeader = FALSE
+              ,div(
+                style = "text-align: center;",
+                tags$img(
+                  src = "agua_util.jpg",
+                  style = "max-width: 80%; height: auto;",
+                  alt = "Mapa-agua útil"
+                )
+              ),
+              br(),
+              br(),
+              tags$figcaption("Porcentaje de agua en el suelo.Resolución espacial: 500 m. 
+                  Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."),
+              div(
+                style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+                "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
                     que puede ser extraída por las plantas) puede ser estimado a través
                     de un balance de agua; donde se considera información del suelo, el
                     aporte de agua por lluvias y el consumo de agua de la cubierta
-                    vegetal."
-                  )
-                ),
-                tags$figcaption(
-                  "Porcentaje de agua en el suelo.Resolución espacial: 500 m. 
-                  Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."
-                )
-              )
-            )
-          )
-        )
-      ),
+                    vegetal.")
+          ))
+        ),
+          
       
       tabPanel(
         "Balance de agua",
@@ -401,7 +372,7 @@ ui <- dashboardPage(
           ),
           tags$img(
             src = "Mapa_Estacion_Met.png",
-            style = "max-width: 35%; height: 100%; display: block; margin: 0 auto;",
+            style = "max-width: 30%; height: 100%; display: block; margin: 0 auto;",
             alt = "ubicacion_EMC"
             )
           ),
@@ -415,7 +386,7 @@ ui <- dashboardPage(
       tabPanel(
         "Pronósticos",
         fluidRow( 
-          box(title = "Pronóstico semanal del 15 al 20 de agosto 2024"
+          box(title = "Pronóstico semanal"
               ,status = "navy"
               ,solidHeader = FALSE
               ,div(
@@ -427,7 +398,7 @@ ui <- dashboardPage(
                 )
               )
           ),
-          box(title = "Pronóstico trimestral - AGOSTO / SEPTIEMBRE / OCTUBRE"
+          box(title = "Pronóstico trimestral"
               ,status = "navy"
               ,solidHeader = FALSE
               ,div(
@@ -451,12 +422,12 @@ ui <- dashboardPage(
               tags$img(
                 src = "IMA.jpg",
                 width = 300,
-                height = 460,
+                height = 420,
                 alt = "Informe Mensual Agropecuario"
               ),
               tags$br(),
               tags$a(
-                icon("arrow-right"), "Descarga el informe completo aquí", href= "https://bit.ly/IMA-JUL24")
+                "Descarga el informe completo aquí", href= "https://bit.ly/IMA-AGO24")
             )),
           column(
             width = 3,
@@ -465,15 +436,32 @@ ui <- dashboardPage(
               tags$img(
                 src = "chicharrita.jpg",
                 width = 300,
+                height = 420,
                 alt = "Achaparramiento del Maíz"
               ),
               tags$br(),
               tags$a(
-                icon("arrow-right"), "Descarga el informe completo aquí", href= "https://www.argentina.gob.ar/sites/default/files/2018/09/el_achaparramiento_del_maiz_y_las_decisiones_agricolas_en_argentina_mesatecnicanacional_inta.pdf")
+                "Descarga el informe completo aquí", href= "https://www.argentina.gob.ar/sites/default/files/2018/09/el_achaparramiento_del_maiz_y_las_decisiones_agricolas_en_argentina_mesatecnicanacional_inta.pdf")
+            ),
+          ),
+          column(
+            width = 3,
+            div(
+              style = "margin-left: 100px; margin-top: 50px;",  
+              tags$img(
+                src = "ENSO.jpg",
+                width = 300,
+                height = 420,
+                alt = "ENSO y precipitaciones"
+              ),
+              tags$br(),
+              downloadLink(
+                outputId = "downloadReport", 
+                label = "Descarga el informe completo aquí"
             ),
           )
         )
-      ),
+      )),
       tabPanel(
         "Datos disponibles",
         dataTableOutput("datos"),
@@ -503,7 +491,7 @@ ui <- dashboardPage(
                       "Evapotranspiracion_Potencial", "Profundidad_Napa", "Horas_Frio",	
                       "Unidad_Frio"
           ),
-          selected = "Fecha",
+          selected = "Temperatura_Abrigo_150cm",
           multiple = TRUE
         ),
         downloadButton("Datos_meteo_Balcarce", "Descargar (.xlsx)")
@@ -1104,6 +1092,15 @@ server <- function(input, output, session) {
       plotly::style(name = "Déficit hídrico", traces = 2)
   })
   
+  ## Descarga de informes ##
+  output$downloadReport <- downloadHandler(
+    filename = function() {
+      "ENSO_Balcarce.pdf"
+    },
+    content = function(file) {
+      file.copy("www/ENSO_Balcarce.pdf", file)
+    }
+  )
   
   ## Descarga de datos ##
   output$datos <- renderDT (
