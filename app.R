@@ -16,6 +16,7 @@ library(lubridate)
 library(png)
 library(readxl)
 library(writexl)
+library(patchwork)
 
 
 balcarce_EMC <- read_excel("balcarce_EMC.xlsx", 
@@ -41,8 +42,8 @@ datos
 
 
 datos_actuales <- datos[!is.na(datos$Precipitacion_Pluviometrica) & 
-                           !is.na(datos$Temperatura_Abrigo_150cm_Maxima) & 
-                           !is.na(datos$Temperatura_Abrigo_150cm_Minima), ]
+                          !is.na(datos$Temperatura_Abrigo_150cm_Maxima) & 
+                          !is.na(datos$Temperatura_Abrigo_150cm_Minima), ]
 
 
 ultima_fecha <- max(datos_actuales$Fecha)
@@ -70,26 +71,12 @@ datos_historicos <- datos %>%
 
 #################
 
-# enviar_correo <- function(comentario) {
-#   correo_destino <- "lewczuk.nuria@inta.gob.ar"  
-#   
-#   # Configurar los detalles del correo electrónico
-#   from <- "tu_correo@ejemplo.com"
-#   to <- correo_destino
-#   subject <- "Nuevo comentario recibido"
-#   body <- paste("Nuevo comentario recibido:", comentario)
-#   
-#   # Enviar el correo electrónico
-#   sendmail(from = from,
-#            to = to,
-#            subject = subject,
-#            msg = body,
-#            smtp = list(host.name = "smtp.tu_servidor_smtp.com"))
-# }
-
-
 # Define UI ----
 ui <- dashboardPage(
+  
+  
+  title = "Agrometeorología Balcarce",
+  skin = "#2596be",
   
   header = dashboardHeader(
     title = div(
@@ -101,22 +88,54 @@ ui <- dashboardPage(
   
   sidebar = dashboardSidebar(
     
-    width = 400,
     
-    selectInput(
-      inputId = "ano_selector", 
-      label = "Selecciona el Año:",
-      choices = unique(datos$Año),
-      selected = "2024"
+    
+    fluid = FALSE,
+    position = "left",
+    # collapsible = TRUE,
+    # collapsed = FALSE,
+    br(),
+    br(),
+    div(
+      style = "text-align: center;",
+      tags$img(src = "EstacionBalcarce.jpg",
+               height = "80px",
+               width = "220px")
     ),
     
-    checkboxGroupInput("mes_selector", "Selecciona los meses:",
-                       choices = c("Mostrar todos los meses", 
-                                   "enero", "febrero", "marzo", "abril",
-                                   "mayo", "junio", "julio", "agosto", 
-                                   "septiembre", "octubre", "noviembre", "diciembre"),
-                       selected = "Mostrar todos los meses"),
     br(),
+    br(),
+    
+    sidebarMenu(id = "siderbarID",
+                menuItem("Condiciones actuales", 
+                         tabName = "condiciones",
+                         icon = icon("calendar")),
+                menuItem("Mapas",
+                         tabName = "mapas", 
+                         icon = icon("map")),
+                menuItem("Manejo de los cultivos", 
+                         icon = icon("cogs"),
+                         menuSubItem("Ambiente",
+                                     tabName = "ambiente"),
+                         menuSubItem("Balance de agua",
+                                     tabName = "balance")),
+                menuItem("Pronósticos",
+                         tabName = "pronosticos", 
+                         icon = icon("bar-chart")),
+                menuItem("informes",
+                         tabName = "informes", 
+                         icon = icon("file")),
+                menuItem("Descarga de datos",
+                         tabName = "descarga", 
+                         icon = icon("download")),
+                menuItem("Referencias bibliográficas",
+                         tabName = "referencias", 
+                         icon = icon("book"))),
+    br(),
+    br(),
+    br(),
+    
+    
     tags$p(
       strong("Nuestras Redes sociales"),
       br(),
@@ -134,15 +153,17 @@ ui <- dashboardPage(
           "Dra. Laura Echarte : echarte.laura@inta.gob.ar")
       ),
       
-      tags$img(src = "Logo_Red_Agromet.jpg",
-               height = "80px",
-               width = "200px"
-      ),
-      br(),
-      tags$img(src = "Logo_INTA_Balcarce.png",
-               height = "40px",
-               width = "220px"
-      ))
+      div(
+        style = "text-align: center;",
+        tags$img(src = "IPADS.png",
+                 height = "80px",
+                 width = "150px"
+        ),
+        tags$img(src = "Logo_Red_Agromet.jpg",
+                 height = "80px",
+                 width = "200px")
+      )
+    )
   ),
   
   
@@ -166,56 +187,86 @@ ui <- dashboardPage(
         "))
     ),
     
-    tabsetPanel(
-      tabPanel(
-        "Gráficos",
-        fluidRow(
-          infoBoxOutput(width = 2, "value5"),
-          infoBoxOutput(width = 2, "value1"),
-          infoBoxOutput(width = 2, "value2"),
-          infoBoxOutput(width = 2, "value3"),
-          infoBoxOutput(width = 2, "value4")
-        ),
-        br(),
-        fluidRow(
-          infoBoxOutput(width = 4, "precipitation_info_box"),
-          infoBoxOutput(width = 4, "tempMax_info_box"),
-          infoBoxOutput(width = 4, "tempMin_info_box")
-        ),
-        br(),
-        fluidRow( 
-          box(
-            title = "Precipitaciones acumuladas mensuales (mm)"
-            ,status = "gray"
-            ,solidHeader = TRUE 
-            ,collapsible = TRUE
-            ,plotlyOutput("grafico_lluvia", height = "300px")
-          ),
-          box(
-            title = "Precipitaciones y ETo acumuladas mensuales (mm)"
-            ,status = "gray"
-            ,solidHeader = TRUE 
-            ,collapsible = TRUE
-            ,plotlyOutput("grafico_lluvia_etp_acum", height = "300px")
-          ),
-          box(
-            title = "Temperaturas medias mensuales (ºC)"
-            ,status = "gray"
-            ,solidHeader = TRUE 
-            ,collapsible = TRUE 
-            ,plotlyOutput("grafico_temperatura", height = "300px")
-          ),
-          box(
-            title = "Número de días mensuales con heladas"
-            ,status = "gray"
-            ,solidHeader = TRUE 
-            ,collapsible = TRUE 
-            ,plotlyOutput("grafico_heladas", height = "300px")
-          ) 
-        )
+    tabItems(
+      tabItem(tabName = "condiciones",
+              fluidRow(
+                infoBoxOutput(width = 2, "value5"),
+                infoBoxOutput(width = 2, "value1"),
+                infoBoxOutput(width = 2, "value2"),
+                infoBoxOutput(width = 2, "value3"),
+                infoBoxOutput(width = 2, "value4")
+              ),
+              br(),
+              fluidRow(
+                infoBoxOutput(width = 4, "precipitation_info_box"),
+                infoBoxOutput(width = 4, "tempMax_info_box"),
+                infoBoxOutput(width = 4, "tempMin_info_box")
+              ),
+              br(),
+              fluidRow(
+                column(6,
+                       fluidRow(
+                         column(6,
+                                selectInput(
+                                  inputId = "ano_selector", 
+                                  label = "Selecciona el Año:",
+                                  choices = unique(datos$Año),
+                                  selected = "2024"
+                                )
+                         ),
+                         column(6,
+                                selectInput(
+                                  inputId = "mes_selector", 
+                                  label = "Selecciona los meses:",
+                                  choices = c("Mostrar todos los meses", 
+                                              "enero", "febrero", "marzo", "abril",
+                                              "mayo", "junio", "julio", "agosto", 
+                                              "septiembre", "octubre", "noviembre", "diciembre"),
+                                  selected = "Mostrar todos los meses",
+                                  multiple = TRUE
+                                )
+                         )
+                       )
+                )
+              ),
+              br(),
+              fluidRow( 
+                box(
+                  title = "Precipitaciones acumuladas mensuales (mm)"
+                  ,status = "gray"
+                  ,solidHeader = TRUE 
+                  ,collapsible = TRUE
+                  ,plotlyOutput("grafico_lluvia", height = "300px")
+                ),
+                box(
+                  title = "Precipitaciones y ETo acumuladas mensuales (mm)"
+                  ,status = "gray"
+                  ,solidHeader = TRUE 
+                  ,collapsible = TRUE
+                  ,plotlyOutput("grafico_lluvia_etp_acum", height = "300px")
+                ),
+                box(
+                  title = "Temperaturas medias mensuales (ºC)"
+                  ,status = "gray"
+                  ,solidHeader = TRUE 
+                  ,collapsible = TRUE 
+                  ,plotlyOutput("grafico_temperatura", height = "300px")
+                ),
+                box(
+                  title = "Número de días mensuales con heladas"
+                  ,status = "gray"
+                  ,solidHeader = TRUE 
+                  ,collapsible = TRUE 
+                  ,plotlyOutput("grafico_heladas", height = "300px")
+                ) 
+              )
       ),
-      tabPanel(
-        "Mapas",
+      tabItem(
+        tabName = "mapas",
+        h4(HTML("<strong>Mapas de suelo</strong>")),
+        h5(HTML("Recortes de la zona de influencia de EEA Balcarce, realizados por el Inst. de Clima y agua - INTA Castelar")),
+        br(),
+        br(),
         fluidRow(
           box(title = "Consumo de agua"
               ,status = "navy"
@@ -264,127 +315,343 @@ ui <- dashboardPage(
                     aporte de agua por lluvias y el consumo de agua de la cubierta
                     vegetal.")
           ))
-        ),
-          
+      ),
       
-      tabPanel(
-        "Balance de agua",
+      tabItem(
+        tabName = "ambiente",
         br(),
-        h4(HTML("<strong>Cálculo de balance de agua para MAÍZ<sup>1</sup></strong>")),
-        h5(HTML("A partir de los datos del suelo y del cultivo, podemos calcular el balance de agua diario de tu campo. <br> 
+        h4(HTML("<strong>Ambiente de los cultivos</strong>")),
+        h5(HTML("Te mostramos como fue cambiando el ambiente del cultivo durante el perdíodo crítico (PC), según la fecha de siembra desde el año 1991.")),
+        
+        br(),
+        
+        fluidRow(
+          # elección cultivo 
+          column(3,
+                 div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
+                     selectInput("cultivo_ambiente",
+                                 label = strong("Cultivo:"),
+                                 choices = list("Maíz" = "maiz",
+                                                "Soja" = "soja"
+                                                # ,
+                                                # "Girasol" = "girasol",
+                                                # "Hortalizas" = "hortalizas"
+                                 ),
+                                 selected = "maiz")
+                 )
+          ),
+          column(3,
+                 div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
+                     numericInput("dia_siembra",
+                                  label = strong("Día de siembra:"),
+                                  value = 1, 
+                                  min = 1, max = 31)
+                 )
+          ),
+          column(3,
+                 div(style = "background-color: #81B29A80; padding: 10px; border-radius: 10px;",
+                     selectInput("mes_siembra",
+                                 label = strong("Mes de siembra:"),
+                                 choices = list("Enero" = 1, "Febrero" = 2, "Marzo" = 3,
+                                                "Abril" = 4, "Mayo" = 5, "Junio" = 6,
+                                                "Julio" = 7, "Agosto" = 8, "Septiembre" = 9,
+                                                "Octubre" = 10, "Noviembre" = 11, "Diciembre" = 12),
+                                 selected = 1)
+                 )
+          ),
+          column(3,
+                 div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                     fileInput("ambiente_precip_riego", "Subir archivo de precipitaciones y riego (opcional)",
+                               accept = c(".csv", ".xlsx")),
+                     helpText("El archivo debe contener los datos diarios y las columnas: Fecha, Lluvia, Riego")
+                 )
+          ),
+        ),
+        br(),
+        br(),
+        
+        fluidRow( 
+          box(
+            title = "Precipitaciones y ET0 acumuladas durante el período crítico",
+            status = "olive",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("pp_acum_PC", height = "300px")
+          ),
+          box(
+            title = "Radiación y días con temp. máx. > 35ºC durante el período crítico",
+            status = "olive",
+            solidHeader = TRUE,
+            collapsible = TRUE,
+            plotlyOutput("rad_temp", height = "300px")
+          ),
+          h6(HTML("ET0: Evapotranspiración de referencia (mm)<br />Valores decádicos corresponden a la mediana."))
+        ),
+        br(),
+        br(),
+        h5(HTML("Podes comparar el ambiente de tu cultivo en 3 fechas de siembra 
+                diferentes")),
+        h6(HTML("(consideramos desde el año 2010, 
+                donde se observa un cambio en las temperaturas a nivel país).")),
+        
+        br(),
+        
+        fluidRow(
+          column(3,
+                 div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
+                     selectInput("cultivo_fecha",
+                                 label = strong("Cultivo:"),
+                                 choices = list("Maíz" = "maiz",
+                                                "Soja" = "soja"
+                                                # ,
+                                                # "Girasol" = "girasol",
+                                                # "Hortalizas" = "hortalizas"
+                                 ),
+                                 selected = "maiz")
+                 ),
+                 br(),
+                 br(),
+                 column(12, align = "center",
+                        actionButton("btn_calcular", label = "Calcular", icon = icon("calculator"),
+                                     style = "color: white; background-color: #81B29A; border-color: #81B29A; border-radius: 10px; padding: 10px;")
+                 )
+                 
+          ),
+          column(3,
+                 div(style = "background-color: #E07A5F80; padding: 10px;  border-radius: 10px;",
+                     h6(HTML("<strong>Fecha 1:</strong>")),
+                     
+                     selectInput("mes_siembra1",
+                                 label = strong("Mes de siembra:"),
+                                 choices = list("Enero" = 1, "Febrero" = 2, "Marzo" = 3,
+                                                "Abril" = 4, "Mayo" = 5, "Junio" = 6,
+                                                "Julio" = 7, "Agosto" = 8, "Septiembre" = 9,
+                                                "Octubre" = 10, "Noviembre" = 11, "Diciembre" = 12),
+                                 selected = 1),
+                     numericInput("dia_siembra1",
+                                  label = strong("Día de siembra:"),
+                                  value = 1, 
+                                  min = 1, max = 31)
+                 )
+          ),
+          column(3,
+                 div(style = "background-color: #3D405B80; padding: 10px;  border-radius: 10px;",
+                     h6(HTML("<strong>Fecha 2:</strong>")),
+                     
+                     selectInput("mes_siembra2",
+                                 label = strong("Mes de siembra:"),
+                                 choices = list("Enero" = 1, "Febrero" = 2, "Marzo" = 3,
+                                                "Abril" = 4, "Mayo" = 5, "Junio" = 6,
+                                                "Julio" = 7, "Agosto" = 8, "Septiembre" = 9,
+                                                "Octubre" = 10, "Noviembre" = 11, "Diciembre" = 12),
+                                 selected = 1),
+                     numericInput("dia_siembra2",
+                                  label = strong("Día de siembra:"),
+                                  value = 1, 
+                                  min = 1, max = 31)
+                 )
+          ),
+          column(3,
+                 div(style = "background-color: #AEC3B080; padding: 10px;  border-radius: 10px;",
+                     h6(HTML("<strong>Fecha 3:</strong>")),
+                     
+                     selectInput("mes_siembra3",
+                                 label = strong("Mes de siembra:"),
+                                 choices = list("Enero" = 1, "Febrero" = 2, "Marzo" = 3,
+                                                "Abril" = 4, "Mayo" = 5, "Junio" = 6,
+                                                "Julio" = 7, "Agosto" = 8, "Septiembre" = 9,
+                                                "Octubre" = 10, "Noviembre" = 11, "Diciembre" = 12),
+                                 selected = 1),
+                     numericInput("dia_siembra3",
+                                  label = strong("Día de siembra:"),
+                                  value = 1, 
+                                  min = 1, max = 31)
+                 )
+          )
+        ),
+        
+        br(),
+        fluidRow(
+          column(4, 
+                 box(
+                   title = "Precipitaciones y ET0 acumuladas",
+                   status = "olive",
+                   solidHeader = TRUE,
+                   collapsible = TRUE,
+                   plotlyOutput("gg_lluvia", height = "300px", width = "100%"),
+                   width = 12
+                 )
+          ),
+          # column(3, 
+          #        box(
+          #          title = "Evapotranspiración potencial",
+          #          status = "olive",
+          #          solidHeader = TRUE,
+          #          collapsible = TRUE,
+          #          plotlyOutput("gg_etp", height = "300px", width = "100%"),
+          #          width = 12
+          #        )
+          # ),
+          column(4, 
+                 box(
+                   title = "Radiación global",
+                   status = "olive",
+                   solidHeader = TRUE,
+                   collapsible = TRUE,
+                   plotlyOutput("gg_radiacion", height = "300px", width = "100%"),
+                   width = 12
+                 )
+          ),
+          column(4, 
+                 box(
+                   title = "Días con temperaturas máximas > a 35ºC",
+                   status = "olive",
+                   solidHeader = TRUE,
+                   collapsible = TRUE,
+                   plotlyOutput("gg_dias_35", height = "300px", width = "100%"),
+                   width = 12
+                 )
+          ),
+        )
+      ),
+      
+      tabItem(
+        tabName = "balance",
+        br(),
+        h4(HTML("<strong>Cálculo de balance de agua</strong>")),
+        h5(HTML("A partir de los datos del suelo y del cultivo seleccionado, podemos calcular el balance de agua diario de tu campo. <br> 
                 Podes ingresar los datos en los recuadros o usar los valores predeterminados.")),
         
         br(),
         
         fluidRow(
-          # Fecha de siembra 
-          column(12,
+          # elección cultivo 
+          column(3,
+                 selectInput("cultivo",
+                             label = strong("Seleccione el cultivo:"),
+                             choices = list("Maíz" = "maiz",
+                                            "Soja" = "soja"
+                                            # ,
+                                            # "Girasol" = "girasol",
+                                            # "Hortalizas" = "hortalizas"
+                             ),
+                             selected = "maiz")
+          ),
+          column(3,
                  dateInput("fecha_siembra",
                            label = strong("Ingrese la fecha de siembra:"),
                            value = "2024-01-01")
           )
         ),
         fluidRow(
-          # Fecha de siembra 
           column(6,
-                 div(style = "background-color: #f2f2f2; padding: 15px; border-radius: 10px;",
-                 h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>")))
+                 div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
+                     h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>"))),
+                     fluidRow(
+                       column(6,
+                              numericInput("profundidad",  
+                                           label = strong("Profundidad (cm)"),
+                                           value = 100),
+                              br(),
+                              numericInput("capacidad_campo",  
+                                           label = strong(HTML("Capacidad de Campo (mm/cm)
+                                                        <br><small>
+                                                        (Límite máximo de almacenamiento de agua)</small>")), 
+                                           value = 3.70),
+                              textOutput("almacenamiento_maximo")
+                       ),
+                       column(6,
+                              numericInput("fraccion_min",  
+                                           label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
+                                           value = 0.55,
+                                           min = 0,
+                                           max = 1),
+                              textOutput("almacenamiento_minimo"),
+                              textOutput("agua_util_total"),
+                              br(),
+                              numericInput("fraccion_inicial",  
+                                           label = strong("Fracción inicial de agua útil (0 - 1)"), 
+                                           value = 0.50,
+                                           min = 0,
+                                           max = 1)
+                       )
+                     )
                  )
           ),
           column(3,
-                 div(style = "background-color: #e6ffe6; padding: 15px; border-radius: 10px;",
-                     h4(strong("Datos de cultivo"))
+                 div(style = "background-color: #21838050; padding: 15px; border-radius: 10px;",
+                     h4(strong("Datos de cultivo")),
+                     numericInput("umbral_et",  
+                                  label = strong(HTML("Umbral de fracción de agua útil 
+                                                        <br><small>
+                                                        (Debajo del cual se reduce la evapotranspiración)</small>")), 
+                                  value = NULL),
+                     textOutput("disminucion_et"),
+                     br(),
+                     textOutput("GD"),
+                 )
+          ),
+          column(3,
+                 div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                     fileInput("balance_precip_riego", "Subir archivo de precipitaciones y riego (opcional)",
+                               accept = c(".csv", ".xlsx")),
+                     helpText("El archivo debe contener las columnas: Fecha, Precipitacion, Riego")
                  )
           )
         ),
-
-          fluidRow(
-            
-            # "Datos de suelo"
-            column(3,
-                   div(style = "background-color: #f2f2f2; padding-left: 15px; padding-right: 5px; padding-bottom: 15px; border-radius: 10px;",
-                       numericInput("profundidad",  
-                                    label = strong("Profundidad (cm)"),
-                                    value = 100),
-                       br(),
-                       br(),
-                       numericInput("capacidad_campo",  
-                                    label = strong(HTML("Capacidad de Campo (mm/cm)
-                                                        <br><small>
-                                                        (Límite máximo de almacenamiento de agua)</small>")), 
-                                    value = 3.70),
-                       textOutput("almacenamiento_maximo")
-                   )
-            ),
-            column(3,
-                   div(style = "background-color: #f2f2f2; padding-left: 5px; padding-bottom: 15px; border-radius: 10px;",
-                       numericInput("fraccion_min",  
-                                    label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
-                                    value = 0.55),
-                       textOutput("almacenamiento_minimo"),
-                       textOutput("agua_util_total"),
-                       br(),
-                       numericInput("fraccion_inicial",  
-                                    label = strong("Fracción inicial de agua útil (0 - 1)"), 
-                                    value = 0.50)
-                   )
-            ),
-            
-            # "Datos de cultivo"
-            column(3,
-                   div(style = "background-color: #e6ffe6; padding-left: 15px; padding-bottom: 15px; border-radius: 10px;",
-                       numericInput("umbral_et",  
-                                    label = strong(HTML("Umbral de fracción de agua útil 
-                                                        <br><small>
-                                                        (Debajo del cual se reduce la evapotranspiración)</small>")), 
-                                    value = 0.8),
-                       textOutput("disminucion_et"),
-                       br(),
-                       numericInput("GD",  
-                                    label = strong(HTML("Grados días de siembra a madurez fisiológica")), 
-                                    value = 1800),
-                   )
-            )
-          ),
         br(),
-          
-       fluidRow( 
+        
+        fluidRow( 
           box(
             title = "Fracción de agua útil",
-            status = "gray-dark",
+            status = "lightblue",
             solidHeader = TRUE,
             collapsible = TRUE,
             plotlyOutput("agua_util", height = "300px")
           ),
           box(
             title = "Consumo de agua",
-            status = "gray-dark",
+            status = "lightblue",
             solidHeader = TRUE,
             collapsible = TRUE,
             plotlyOutput("consumo_agua", height = "300px")
           ),
           box(
             title = "Balance de agua",
-            status = "gray-dark",
+            status = "lightblue",
             solidHeader = TRUE,
             collapsible = TRUE,
             plotlyOutput("deficit_agua", height = "300px")
           ),
-          tags$img(
-            src = "Mapa_Estacion_Met.png",
-            style = "max-width: 30%; height: 100%; display: block; margin: 0 auto;",
-            alt = "ubicacion_EMC"
-            )
+          column(6,
+                 div(tags$img(
+                   src = "Mapa_Estacion_Met.png",
+                   style = "max-width: 60%; height: 100%; display: block; margin: 0 auto;",
+                   alt = "ubicacion_EMC"
+                 )
+                 )
+          )
+        ),
+        
+        fluidRow(  
+          column(12,
+                 br(),
+                 br(),
+                 div(uiOutput("mensaje_cultivo"),
+                 )
           ),
-       
-       p(tags$sup("1"),": Híbrido de 1800 grados días de siembra a madurez fisiológica 
-         (aprox. 160-170 días de siembra a madurez fisiológica para siembras de mediados de octubre en Balcarce)"),
-       p(tags$sup("2"),": Valores de referencia para un suelo Argiudol típico"),
-       p("Los recuadros en los gráficos indican el período crítico, correspondiente a 670 - 1120 GD (grados-días) desde la siembra")
-      ),
           
-      tabPanel(
-        "Pronósticos",
+        )
+      ),
+      
+      tabItem(
+        tabName = "pronosticos",
+        br(),
+        h4(HTML("<strong>Pronósticos meteorológicos del área de influencia de EEA Balcarce</strong>")),
+        h6(HTML("Elaborados por el SMN y el Instituto de Clima y Agua - INTA Castelar.")),
+        br(),
+        br(),
+        
         fluidRow( 
           box(title = "Pronóstico semanal"
               ,status = "navy"
@@ -412,8 +679,11 @@ ui <- dashboardPage(
           ),
         )
       ),
-      tabPanel(
-        "Informes",
+      
+      tabItem(
+        tabName = "informes",
+        br(),
+        h4(HTML("<strong>Informes elaborados por el grupo de agrometeorología de INTA Balcarce</strong>")),
         fluidRow(
           column(
             width = 3,
@@ -458,12 +728,17 @@ ui <- dashboardPage(
               downloadLink(
                 outputId = "downloadReport", 
                 label = "Descarga el informe completo aquí"
-            ),
+              ),
+            )
           )
-        )
-      )),
-      tabPanel(
-        "Datos disponibles",
+        )),
+      
+      tabItem(
+        tabName = "descarga",
+        br(),
+        h4(HTML("<strong>Datos disponibles de la EMA Balcarce</strong>")),
+        br(),
+        
         dataTableOutput("datos"),
         br(),
         "Selecciona el periodo:",
@@ -495,8 +770,28 @@ ui <- dashboardPage(
           multiple = TRUE
         ),
         downloadButton("Datos_meteo_Balcarce", "Descargar (.xlsx)")
+      ),
+      
+      tabItem(
+        tabName = "referencias",
+        br(),
+        h4(HTML("<strong>Referencias bibliográficas</strong>")),
+        br(),
+        br(),
+        h6(HTML("<strong>Allen</strong>, R.G.; Pereira, L.S. Raes, D. Y D. Smith. 1998. Crop evapotranspiration. Guides for computing crop water requirements. FAO Irrig. Drain. Nº 56. Italy, 300 p.")),
+        h6(HTML("<strong>Andrade</strong>, FH., Otegui, ME., Cirilo, A., Uhart, S. 2023.  “Ecofisiología y manejo del cultivo de maíz”.  Maizar.")),
+        h6(HTML("<strong>Cerrudo</strong>, A, Di Matteo J, Fernandez E, Robles M, Pico LO, Andrade FH. 2013. Yield components of maize as affected by short shading periods and thinning. Crop and Pasture Science 64, 580.")),
+        h6(HTML("<strong>Della Maggiora</strong>, A.I., A.I. Irigoyen, J. M. Gardiol, O. Caviglia and L. Echarte. 2002/03. Evaluación de un balance de agua en el suelo para maíz. Revista Argentina de Agrometeorología, 2(2):167-176.")),
+        h6(HTML("<strong>Echarte</strong>, L., Otegui, M.E. 2023. Consumo y eficiencia en el uso del agua. En: Andrade, FH., Otegui, ME., Cirilo, A., Uhart, S. (Eds) “Ecofisiología y manejo del cultivo de maíz” (pp. 221-244).  Maizar.")),
+        h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A. Irigoyen, A. 2002. Curvas de coeficientes de cultivo de maíz, girasol y soja. IX Reunión Argentina de Agrometeorología. Córdoba.")),
+        h6(HTML("<strong>Gardiol</strong>, J. M., Leonardo, A. S., & Aida, I. D.M. 2003. Modeling evapotranspiration of corn (Zea mays) under different plant densities. Journal of Hydrology, 271, 291–308. https://doi.org/10.1016/S0022-1694(02)00347-5.")),
+        h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A.; Irigoyen, A. 2006. Coeficientes de cultivo de soja basados en la evapotranspiración de referencia Penman-Monteith.")),
+        h6(HTML("<strong>Monzon</strong>, J. P., Cafaro La Menza, N., Cerrudo, A., Canepa, M., Rattalino Edreira, J. I., Specht, J., et al. 2021. Critical period for seed number determination in soybean as determined by crop growth rate, duration, and dry matter accumulation. Field Crops Res. 261:108016. doi: 10.1016/j.fcr.2020.108016.")),
+        h6(HTML("<strong>RECSO</strong>, Base de datos de RECSO Balcarce periodo 2013-2023. Compilada por Marina Montoya, INTA Balcarce. Agosto 2023. Colaboradores: Auxilares Walter Suarez, Silvio Giuliano, Carlos Antonelli, Mauro Zabaleta, Mariano Ruberto (INTA Balcarce). Fuente: Información publicada anualmente por Comunicaciones INTA Balcarce. Actividades incluidas en el convenio INTA-ASA.")),
       )
-    )))
+    )
+  )
+)
 
 
 
@@ -545,10 +840,11 @@ server <- function(input, output, session) {
       datos_filtrados <- subset(datos_actuales, Año == input$ano_selector)
     }
     
-    # Filtrar los datos por los meses seleccionados si no se elige "Mostrar todos los meses"
     if (!"Mostrar todos los meses" %in% input$mes_selector) {
       meses_seleccionados <- input$mes_selector
       datos_filtrados <- subset(datos_filtrados, Mes %in% meses_seleccionados)
+    } else {
+      datos_filtrados <- datos_filtrados
     }
     
     return(datos_filtrados)
@@ -621,8 +917,8 @@ server <- function(input, output, session) {
   output$tempMax_info_box <- renderInfoBox({
     infoBox(
       title = "Temperaturas Máximas",
-      value = paste("Promedio Año ", current_year, ": ", round(ttmax_anual, 0), "ºC"),
-      subtitle = paste("Promedio Histórico anual (1991-2020): ", round(promedio_historico_ttmax, 0), "ºC"),
+      value = paste("Promedio Año ", current_year, ": ", round(ttmax_anual, 2), "ºC"),
+      subtitle = paste("Promedio Histórico anual (1991-2020): ", round(promedio_historico_ttmax, 2), "ºC"),
       icon = icon("sun"),
       color = "danger"
     )
@@ -631,8 +927,8 @@ server <- function(input, output, session) {
   output$tempMin_info_box <- renderInfoBox({
     infoBox(
       title = "Temperaturas Mínimas",
-      value = paste("Promedio Año ", current_year, ": ", round(ttmin_anual, 0),"ºC"),
-      subtitle = paste("Promedio Histórico anual (1991-2020): ", round(promedio_historico_ttmin, 0), "ºC"), 
+      value = paste("Promedio Año ", current_year, ": ", round(ttmin_anual, 2),"ºC"),
+      subtitle = paste("Promedio Histórico anual (1991-2020): ", round(promedio_historico_ttmin, 2), "ºC"), 
       icon = icon("snowflake"),
       color = "warning"
     )
@@ -670,7 +966,7 @@ server <- function(input, output, session) {
     
     # 
     anio_seleccionado_label <- input$ano_selector
-
+    
     # 
     dataset_completo_long <- dataset_completo %>%
       pivot_longer(cols = c(Precipitacion_Historica_Mensual, 
@@ -708,14 +1004,19 @@ server <- function(input, output, session) {
                            x = 0.3, 
                            y = 1.2))    
   })
-  
+
   ##### lluvia y ETP ####
   output$grafico_lluvia_etp_acum <- renderPlotly({
+    
+    # datos_historicos_avg <- datos_historicos_avg %>%
+    #   mutate(Dia_Mes = as.character(Dia_Mes))  
+    
+    
     dataset_acumulado <- datasetInput() %>%
       mutate(Mes = month(Fecha, label = TRUE)) %>%
       group_by(Mes) %>%
       summarise(Precipitacion_Acumulada = round(sum(Precipitacion_Pluviometrica, 
-                                              na.rm = TRUE), 1),
+                                                    na.rm = TRUE), 1),
                 Evapotranspiracion_Acumulada = round(sum(Evapotranspiracion_Potencial, 
                                                          na.rm = TRUE)), 1)
     
@@ -732,9 +1033,7 @@ server <- function(input, output, session) {
                fill = "#BF4342", 
                color = "#8C1C13", 
                alpha = 0.5) +
-      scale_fill_manual(values = c("Precipitaciones acumuladas" = "#007EA7", 
-                                   "Evapotranspiracion Potencial" = "#BF4342"), 
-                        name = "") +
+      scale_fill_manual(name = "") +
       labs(x = "", y = "Acumulado mensual (mm)", 
            fill = "") +  
       ggtitle("") +
@@ -788,27 +1087,27 @@ server <- function(input, output, session) {
                    names_to = "Temperatura",
                    values_to = "temperatura") %>%
       mutate(Temperatura = factor(Temperatura,
-                                       levels = c("Temperatura_Maxima",
-                                                  "Temp_Max_Historica", 
-                                                  "Temperatura_Minima",
-                                                  "Temp_Min_Historica"),                                                  
-                                       labels = c("Máxima Año Seleccionado",
-                                                  "Máxima Histórica (1991 - 2020)",
-                                                  "Mínima Año Seleccionado",
-                                                  "Mínima Histórica (1991 - 2020)")))
-  
-  
+                                  levels = c("Temperatura_Maxima",
+                                             "Temp_Max_Historica", 
+                                             "Temperatura_Minima",
+                                             "Temp_Min_Historica"),                                                  
+                                  labels = c("Máxima Año Seleccionado",
+                                             "Máxima Histórica (1991 - 2020)",
+                                             "Mínima Año Seleccionado",
+                                             "Mínima Histórica (1991 - 2020)")))
+    
+    
     temp_plot <- ggplot(dataset_completo_temperatura_long, aes(x = Mes, 
                                                                y = temperatura, 
                                                                color = Temperatura, 
                                                                group = Temperatura)) +
-      geom_line(size = 1) +
+      geom_line(linewidth = 1) +
       geom_point(size = 1) +
       scale_color_manual(values = c("Máxima Año Seleccionado" = "#D00000",
                                     "Máxima Histórica (1991 - 2020)" = "#FCB9B2",
                                     "Mínima Año Seleccionado" = "#FFBA08",
                                     "Mínima Histórica (1991 - 2020)" = "#EDDEA4"
-                                    )) +
+      )) +
       labs(x = "", y = "Temperatura media mensual (ºC)", 
            color = "") +
       ggtitle("") +
@@ -856,7 +1155,601 @@ server <- function(input, output, session) {
       layout(legend = list(orientation = "h", x = 0.1, y = 1.2))
   })
   
+  
+  ##### AMBIENTE #####
+  
+  data_usuario <- reactive({
+    if (is.null(input$file_precip_riego)) {
+      return(NULL)  # Si no hay archivo subido, devuelve NULL
+    }
+    
+    ext <- tools::file_ext(input$file_precip_riego$name)
+    
+    if (ext == "csv") {
+      data <- read.csv(input$file_precip_riego$datapath)
+    } else if (ext == "xlsx") {
+      data <- readxl::read_xlsx(input$file_precip_riego$datapath)
+    } else {
+      showNotification("Formato de archivo no soportado.", type = "error")
+      return(NULL)
+    }
+    
+    # Verificar si el archivo tiene las columnas requeridas
+    required_columns <- c("Fecha", "Lluvia", "Riego")
+    if (all(required_columns %in% colnames(data))) {
+      showNotification("Archivo subido correctamente.", type = "message")
+    } else {
+      showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego.", type = "error")
+      return(NULL)  # Si no tiene las columnas requeridas, devolver NULL
+    }
+    
+    return(data)
+  })
+  
+  datos_actualizados <- reactive({
+    # Si no hay archivo subido, usar los datos originales
+    if (is.null(data_usuario())) {
+      return(datos)  # Usar los datos originales si no se sube archivo
+    }
+    
+    # Si hay archivo subido, procesar los datos del usuario
+    data_user <- data_usuario() %>%
+      mutate(Fecha = as.Date(Fecha, format = "%Y-%m-%d"))
+    
+    # Combinamos los datos del archivo con los datos existentes
+    datos_actualizados <- datos %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      left_join(data_user, by = "Fecha", suffix = c("", "_usuario")) %>%
+      mutate(
+        Precipitacion_Pluviometrica = coalesce(Lluvia_usuario, Precipitacion_Pluviometrica),  # Reemplazar precipitaciones
+        Riego = Riego_usuario  # Agregar la columna de riego
+      ) %>%
+      select(-Lluvia_usuario, -Riego_usuario)  # Limpiar columnas extra
+    
+    return(datos_actualizados)
+  })
+  
+ 
+  observeEvent(input$cultivo_ambiente, {
+    if (input$cultivo == "maiz") {
+      updateSelectInput(session, "mes_siembra",
+                        selected = 1,
+                        choices = list("Enero" = 1, "Febrero" = 2, "Marzo" = 3,
+                                       "Abril" = 4, "Mayo" = 5, "Junio" = 6,
+                                       "Julio" = 7, "Agosto" = 8, "Septiembre" = 9,
+                                       "Octubre" = 10, "Noviembre" = 11, "Diciembre" = 12))
+    } else if (input$cultivo_ambiente == "soja") {
+      updateSelectInput(session, "mes_siembra",
+                        selected = 11,
+                        choices = list("Noviembre" = 11))
+    }
+  })
+  
+  periodo_critico <- reactive({
+    
+    req(input$mes_siembra, input$dia_siembra)
+    
+    dia_siembra <- as.numeric(input$dia_siembra)
+    mes_siembra <- as.numeric(input$mes_siembra)
+    
+    fecha_siembra_dia_mes <- sprintf("%02d-%02d", mes_siembra, dia_siembra)
+    
+    cultivo <- input$cultivo
+    
+    # Rango de GD_acum según el cultivo seleccionado
+    if (cultivo == "maiz") {
+      gd_min <- 670
+      gd_max <- 1120
+    } else if (cultivo == "soja") { # Soja
+      gd_min <- 620
+      gd_max <- 1010
+    }
+    
+    historicos_periodo_critico <- data.frame(
+      ano = integer(),
+      lluvia_acumulada = numeric(),
+      etp_acumulada = numeric(),
+      radiacion_global_media = numeric(),
+      dias_mayores_35 = numeric()
+    )
+    
+    for (ano in 1991:2025) {
+      
+      # Filtrar los datos de cada año específico
+      datos_ano <- datos %>%
+        filter(
+          (format(Fecha, "%Y") == as.character(ano) & format(Fecha, "%m-%d") >= fecha_siembra_dia_mes) |
+            (format(Fecha, "%Y") == as.character(ano + 1) & format(Fecha, "%m-%d") < "04-01")  
+        ) %>%
+        arrange(Fecha) %>%
+        mutate(
+          Dia_Mes = format(Fecha, "%m-%d"),
+          TTB = case_when(
+            cultivo == "Maíz" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                        0, 
+                                        Temperatura_Abrigo_150cm - 8),  
+            cultivo == "Soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, 
+                                        0, 
+                                        Temperatura_Abrigo_150cm - 11),  
+            TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 
+                           0, 
+                           Temperatura_Abrigo_150cm - 9)
+          ),
+          GD_acum = cumsum(TTB)
+          # ,
+          # Evapotranspiracion_Potencial = coalesce(Evapotranspiracion_Potencial,
+          #                                         datos_historicos_avg$Evapotranspiracion_media[match(Dia_Mes, datos_historicos_avg$Dia_Mes)])
+          # Precipitacion_Pluviometrica = coalesce(Precipitacion_Pluviometrica, 
+          #                                         datos_historicos_avg$Precipitacion_media[match(Dia_Mes, datos_historicos_avg$Dia_Mes)])
+        )
+      
+      datos_periodo_critico <- datos_ano %>%
+        filter(GD_acum >= gd_min & GD_acum <= gd_max)
+      
+      lluvia_acumulada <- 0
+      etp_acumulada <- 0
+      radiacion_global_media <- NA
+      dias_mayores_35 <- 0
+      
+      if (nrow(datos_periodo_critico) > 0) {
+        lluvia_acumulada <- sum(round(datos_periodo_critico$Precipitacion_Pluviometrica, 0), na.rm = TRUE)
+        etp_acumulada <- sum(round(datos_periodo_critico$Evapotranspiracion_Potencial, 0), na.rm = TRUE)
+        radiacion_global_media <- mean(round(datos_periodo_critico$Radiacion_Global, 1), na.rm = TRUE)
+        dias_mayores_35 <- sum(datos_periodo_critico$Temperatura_Abrigo_150cm_Maxima >= 35, na.rm = TRUE)
+      }
+      
+      historicos_periodo_critico <- add_row(
+        historicos_periodo_critico,
+        data.frame(
+          ano = ano, 
+          lluvia_acumulada = lluvia_acumulada,
+          etp_acumulada = etp_acumulada,
+          radiacion_global_media = radiacion_global_media,
+          dias_mayores_35 = dias_mayores_35
+        )
+      )
+    }
+    
+    return(historicos_periodo_critico)
+  })
+  
+
+  output$pp_acum_PC <- renderPlotly({
+    historicos_periodo_critico <- periodo_critico()
+    
+    historicos_periodo_critico$decada <- ifelse(historicos_periodo_critico$ano >= 2011,
+                                                2011, 
+                                                floor(historicos_periodo_critico$ano / 11) * 11)
+    historicos_periodo_critico <- historicos_periodo_critico %>%
+      filter(decada <= 2024)
+    
+    mediana_lluvia_decada <- historicos_periodo_critico %>%
+      group_by(decada) %>%
+      reframe(mediana_lluvia = median(lluvia_acumulada, na.rm = TRUE),
+                mediana_etp = median(etp_acumulada, na.rm = TRUE),
+                decada_fin = ifelse(decada == 2011, 2024, decada + 10))
+    
+    pp_acum <- ggplot(historicos_periodo_critico, 
+                      aes(x = ano)) +
+      geom_bar(aes(y = etp_acumulada,
+                   fill = "ET0 Acumulada"), 
+               stat = "identity",
+               color = "#8C1C13", 
+               alpha = 0.5) +
+      geom_bar(aes(y = lluvia_acumulada,
+                   fill = "Lluvia Acumulada"), 
+               stat = "identity",               , 
+               color = "#003459", 
+               alpha = 0.5) +
+      geom_segment(data = mediana_lluvia_decada,
+                   aes(x = decada, xend = decada_fin,
+                       y = mediana_lluvia + 100, yend = mediana_lluvia + 100),
+                   linetype = "dashed", color = "#284B63", linewidth = 0.5) +
+      geom_text(data = mediana_lluvia_decada,
+                aes(x = (decada + decada_fin) / 2, y = mediana_lluvia + 120,
+                    label = paste0(round(mediana_lluvia, 0), " mm")),
+                color = "#284B63", size = 3, vjust = -0.5) +
+      # geom_segment(data = mediana_lluvia_decada,
+      #              aes(x = decada, xend = decada_fin,
+      #                  y = mediana_etp + 50, yend = mediana_etp + 50),
+      #              linetype = "dashed", color = "#8C1C13", linewidth = 0.5) +
+      # geom_text(data = mediana_lluvia_decada,
+      #           aes(x = (decada + decada_fin) / 2, y = mediana_etp + 70,
+      #               label = paste0(round(mediana_etp, 0), " mm")),
+      #           color = "#8C1C13", size = 3, vjust = -0.5) +
+      ylim(0, 300) +
+      labs(x = "Año", 
+           y = "(mm)", 
+           title = "",
+           caption = "* Mediana de la precipitación acumulada",
+           fill = NULL) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 60, hjust = 1),
+            plot.caption = element_text(hjust = 1, size = 10, vjust = 5)) +
+      scale_x_continuous(breaks = seq(min(historicos_periodo_critico$ano), 
+                                      max(historicos_periodo_critico$ano), by = 5)) +
+      scale_fill_manual(values = c("ET0 Acumulada" = "#BF4342", "Lluvia Acumulada" = "#007EA7")) 
+    
+    
+    ggplotly(pp_acum) %>% 
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.2))
+    
+  })
+  
+  output$rad_temp <- renderPlotly({
+    historicos_periodo_critico <- periodo_critico()
+
+    historicos_periodo_critico$decada <- ifelse(historicos_periodo_critico$ano >= 2011,
+                                                2011, 
+                                                floor(historicos_periodo_critico$ano / 11) * 11)
+    historicos_periodo_critico <- historicos_periodo_critico %>%
+      filter(decada <= 2024)
+    
+    mediana_dias_35_decada <- historicos_periodo_critico %>%
+      group_by(decada) %>%
+      reframe(mediana_dias_mayores_35 = median(dias_mayores_35, na.rm = TRUE),
+                decada_fin = ifelse(decada == 2011, 2024, decada + 10))
+    
+    
+    historicos_long <- historicos_periodo_critico %>%
+      pivot_longer(cols = c(radiacion_global_media, dias_mayores_35), 
+                   names_to = "variable", 
+                   values_to = "valor")
+    
+    promedio_radiacion <- mean(historicos_periodo_critico$radiacion_global_media, na.rm = TRUE)
+    promedio_dias_mayores_35 <- median(historicos_periodo_critico$dias_mayores_35, na.rm = TRUE)
+    
+    rad_temp <- ggplot(historicos_long, aes(x = ano, 
+                                            y = valor, 
+                                            fill = variable)) +
+      geom_bar(stat = "identity", 
+               position = "dodge") +
+      annotate("text", x = 2016, y = 47, label = paste0("Radiación\n(1991-2020): ", round(promedio_radiacion, 0), " Mj / m2 * día"),
+               color = "#FFBC42", size = 3.5, vjust = 2) +
+      annotate("text", x = 1995, y = 47, label = paste0("Días temp. máx. > 35ºC\n(1991-2020): ", round(promedio_dias_mayores_35, 0), " Mj / m2 * día"),
+               color = "#D00000", size = 3.5, vjust = 2) +
+      # geom_segment(data = mediana_dias_35_decada,
+      #              aes(x = decada, xend = decada + 10,
+      #                  y = mediana_dias_mayores_35 + 20, yend = mediana_dias_mayores_35 + 20),
+      #              linetype = "dashed", color = "#D00000", size = 1) +
+      # geom_text(data = mediana_dias_35_decada,
+      #           aes(x = decada + 5, y = mediana_dias_mayores_35 + 30,
+      #               label = paste0(round(mediana_dias_mayores_35, 0), " mm")),
+      #           color = "#D00000", size = 3.5, vjust = -0.5) +
+      labs(
+        title = "",
+        x = "Año",
+        y = "",
+        color = "Variables",
+        fill = ""
+      ) +
+      ylim(0, 50) +
+      scale_fill_manual(name = "", values = c("radiacion_global_media" = "#FFBC42",
+                                              "dias_mayores_35" = "#D00000")) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+      scale_x_continuous(breaks = seq(min(historicos_periodo_critico$ano), 
+                                      max(historicos_periodo_critico$ano), by = 5)) +
+      guides(fill = "none")
+
+    ggplotly(rad_temp) %>%
+      layout(legend = list(orientation = "h", x = 0.05, y = 1.2))
+    
+  })
+  
+  ####### Comparación fechas de siembra ############
+  
+  
+  calcular_periodo_critico <- function(mes_siembra, dia_siembra, cultivo, datos, datos_historicos_avg) {
+    dia_siembra <- as.numeric(dia_siembra)
+    mes_siembra <- as.numeric(mes_siembra)
+    fecha_siembra_dia_mes <- sprintf("%02d-%02d", mes_siembra, dia_siembra)
+    
+    # Rango de GD_acum según el cultivo seleccionado
+    if (cultivo == "maiz") {
+      gd_min <- 670
+      gd_max <- 1120
+    } else if (cultivo == "soja") {
+      gd_min <- 620
+      gd_max <- 1010
+    }
+    
+    historicos_periodo_critico <- data.frame(
+      ano = integer(),
+      lluvia_acumulada = numeric(),
+      etp_acumulada = numeric(),
+      radiacion_global_media = numeric(),
+      dias_mayores_35 = numeric()
+    )
+    
+    for (ano in 2010:2024) {
+      datos_ano <- datos %>%
+        filter(
+          (format(Fecha, "%Y") == as.character(ano) & format(Fecha, "%m-%d") >= fecha_siembra_dia_mes) |
+            (format(Fecha, "%Y") == as.character(ano + 1) & format(Fecha, "%m-%d") < "03-01")
+        ) %>%
+        arrange(Fecha) %>%
+        mutate(
+          Dia_Mes = format(Fecha, "%m-%d"),
+          TTB = case_when(
+            cultivo == "maiz" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 0, Temperatura_Abrigo_150cm - 8),
+            cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, 0, Temperatura_Abrigo_150cm - 11),
+            TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 0, Temperatura_Abrigo_150cm - 9)
+          ),
+          GD_acum = cumsum(TTB)
+          # ,
+          # Evapotranspiracion_Potencial = coalesce(
+          #   Evapotranspiracion_Potencial,
+          #   datos_historicos_avg$Evapotranspiracion_media[match(Dia_Mes, datos_historicos_avg$Dia_Mes)]
+          # )
+          # Precipitacion_Pluviometrica = coalesce(
+          #   Precipitacion_Pluviometrica, 
+          #   datos_historicos_avg$Precipitacion_media[match(Dia_Mes, datos_historicos_avg$Dia_Mes)]
+          # )
+        )
+      
+      datos_periodo_critico <- datos_ano %>%
+        filter(GD_acum >= gd_min & GD_acum <= gd_max)
+      
+      lluvia_acumulada <- if (nrow(datos_periodo_critico) > 0) {
+        sum(round(datos_periodo_critico$Precipitacion_Pluviometrica, 0), na.rm = TRUE)
+      } else 0
+      
+      etp_acumulada <- if (nrow(datos_periodo_critico) > 0) {
+        sum(round(datos_periodo_critico$Evapotranspiracion_Potencial, 0), na.rm = TRUE)
+      } else 0
+      
+      radiacion_global_media <- if (nrow(datos_periodo_critico) > 0) {
+        mean(round(datos_periodo_critico$Radiacion_Global, 1), na.rm = TRUE)
+      } else NA
+      
+      dias_mayores_35 <- if (nrow(datos_periodo_critico) > 0) {
+        sum(datos_periodo_critico$Temperatura_Abrigo_150cm_Maxima >= 35, na.rm = TRUE)
+      } else 0
+      
+      historicos_periodo_critico <- rbind(
+        historicos_periodo_critico,
+        data.frame(
+          ano = ano,
+          lluvia_acumulada = lluvia_acumulada,
+          etp_acumulada = etp_acumulada,
+          radiacion_global_media = radiacion_global_media,
+          dias_mayores_35 = dias_mayores_35
+        )
+      )
+    }
+    
+    return(historicos_periodo_critico)
+  }
+  
+
+  periodo_critico1 <- reactive({
+    req(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha)
+    calcular_periodo_critico(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  periodo_critico2 <- reactive({
+    req(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha)
+    calcular_periodo_critico(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  periodo_critico3 <- reactive({
+    req(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha)
+    calcular_periodo_critico(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  
+  observeEvent(input$btn_calcular, {
+    #Lluvia
+  output$gg_lluvia <- renderPlotly({
+    historicos_periodo_critico1 <- periodo_critico1()
+    historicos_periodo_critico2 <- periodo_critico2()
+    historicos_periodo_critico3 <- periodo_critico3()
+    
+    
+    # Calcular estadísticas
+    mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
+    
+    mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
+    
+    mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
+    
+    # Crear un nuevo dataframe con las estadísticas
+    estadisticas <- data.frame(
+      fecha = c("Fecha 1", "Fecha 2", "Fecha 3"),
+      lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+      etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+      radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+      dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
+    )
+    
+    # Graficar
+    gg_lluvia <- ggplot(estadisticas, 
+                           aes(x = fecha, 
+                               y = lluvia_acumulada, 
+                               fill = fecha)) +
+      geom_bar(aes(y = lluvia_acumulada, fill = fecha), 
+               stat = "identity", 
+               position = position_dodge(0.9)) +
+      geom_bar(aes(y = etp_acumulada, fill = fecha), 
+               stat = "identity", 
+               alpha = 0.4,   
+               position = position_dodge(0.9)) +
+      geom_text(aes(y = lluvia_acumulada, label = lluvia_acumulada), 
+                position = position_dodge(0.9),  
+                vjust = -0.5, size = 3) +
+      geom_text(aes(y = etp_acumulada, label = etp_acumulada), 
+                position = position_dodge(0.9), 
+                vjust = -0.5, size = 3, color = "black") +
+      labs(title = "",
+           x = "",
+           y = " mm",
+           fill = NULL) +
+      theme_minimal() +
+      scale_fill_manual(name = "", values = c("Fecha 1" = "#E07A5F",
+                                              "Fecha 2" = "#3D405B",
+                                              "Fecha 3" = "#AEC3B0")) +
+      theme(axis.text.x = element_text(size = 8),
+            axis.ticks.x = element_blank()) +
+      guides(fill = "none")
+    
+    
+    ggplotly(gg_lluvia) 
+  })
+  
+  
+    #Radiacion
+  output$gg_radiacion <- renderPlotly({
+    historicos_periodo_critico1 <- periodo_critico1()
+    historicos_periodo_critico2 <- periodo_critico2()
+    historicos_periodo_critico3 <- periodo_critico3()
+    
+    
+    # Calcular estadísticas
+    mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
+    
+    mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
+    
+    mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
+    
+    # Crear un nuevo dataframe con las estadísticas
+    estadisticas <- data.frame(
+      fecha = c("Fecha 1", "Fecha 2", "Fecha 3"),
+      lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+      etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+      radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+      dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
+    )
+    
+    # Graficar
+    gg_radiacion <- ggplot(estadisticas, aes(x = fecha, y = radiacion_media, fill = fecha)) +
+      geom_bar(stat = "identity") +
+      geom_text(aes(label = round(radiacion_media)), 
+                position = position_stack(vjust = 1.05),  
+                size = 3) +
+      labs(title = "",
+           x = "",
+           y = " Mj / m2 * día") +
+      theme_minimal() +
+      scale_fill_manual(name = "", values = c("Fecha 1" = "#E07A5F",
+                                              "Fecha 2" = "#3D405B",
+                                              "Fecha 3" = "#AEC3B0")) +
+      theme(axis.text.x = element_text(size = 8),
+            axis.ticks.x = element_blank()) +
+      guides(fill = "none") 
+    
+    
+    ggplotly(gg_radiacion) 
+  })
+  
+  #Dias>35ºC
+  output$gg_dias_35 <- renderPlotly({
+    historicos_periodo_critico1 <- periodo_critico1()
+    historicos_periodo_critico2 <- periodo_critico2()
+    historicos_periodo_critico3 <- periodo_critico3()
+    
+    
+    # Calcular estadísticas
+    mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
+    
+    mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
+    
+    mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
+    mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
+    promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
+    mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
+    
+    # Crear un nuevo dataframe con las estadísticas
+    estadisticas <- data.frame(
+      fecha = c("Fecha 1", "Fecha 2", "Fecha 3"),
+      lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+      etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+      radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+      dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
+    )
+    
+    # Graficar
+    gg_dias_35 <- ggplot(estadisticas, aes(x = fecha, y = dias_mayores_35, fill = fecha)) +
+      geom_bar(stat = "identity") +
+      geom_text(aes(label = dias_mayores_35), 
+                position = position_stack(vjust = 1.05),  
+                size = 3) +
+      labs(title = "",
+           x = "",
+           y = "# días") +
+      theme_minimal() +
+      scale_fill_manual(name = "", values = c("Fecha 1" = "#E07A5F",
+                                              "Fecha 2" = "#3D405B",
+                                              "Fecha 3" = "#AEC3B0")) +
+      theme(axis.text.x = element_text(size = 8),
+            axis.ticks.x = element_blank()) +
+      guides(fill = "none") 
+    
+    
+    ggplotly(gg_dias_35) 
+  })
+  })
+  
+  
   ##### Balance de agua ########
+  
+  observeEvent(input$cultivo, {
+    
+    if (input$cultivo == "maiz") {
+      updateNumericInput(session, "umbral_et", value = 0.8)
+
+    } else if (input$cultivo == "soja") {
+      updateNumericInput(session, "umbral_et", value = 0.5)
+    }
+    
+  })
+
+  output$mensaje_cultivo <- renderUI({
+    if (input$cultivo == "maiz") {
+      tagList(
+        p("Híbrido de maíz de 1890 GD (grados-días) a madurez fisiológica 
+            (aprox. 160-170 días de siembra a madurez fisiológica, para siembras de mediados de octubre en Balcarce)."),
+        p("Los recuadros en los gráficos indican el período crítico, correspondiente a 670 - 1120 GD (grados-días) desde la siembra."),
+        p(tags$sup("2"), ": Valores de referencia para un suelo Argiudol típico.")
+      )
+    } else if (input$cultivo == "soja") {
+      tagList(
+        p("Variedad de soja de 1080 GD (grados-días) a madurez fisiológica 
+            (aprox. 120 días de siembra a madurez fisiológica, con Tb=11ºC, para siembras de mediados de noviembre en Balcarce)."),
+        p("Los recuadros en los gráficos indican el período crítico (R3 - R6), correspondiente a 620 - 1010 GD (grados-días) desde la siembra."),
+        p("Las precipitaciones históricas en el período crítico son representativas de sojas de primera sembradas en noviembre. 
+          En Balcarce, fechas de siembra más tarde, acortan la etapa reproductiva y por lo tanto las precipitaciones acumuladas pueden ser diferentes a las de la figura."),
+        p(tags$sup("2"), ": Valores de referencia para un suelo Argiudol típico.")
+      )
+    }
+  })
+  
+  
+  
   
   # Calcular Almacenamiento máximo de agua
   almacenamiento_maximo <- reactive({
@@ -878,7 +1771,16 @@ server <- function(input, output, session) {
     1 / input$umbral_et
   })
   
-   
+  # GD por cultivo
+  GD <- reactive({
+    if (input$cultivo == "maiz") {
+      return(1890)
+    } else if (input$cultivo == "soja") {
+      return(1080)
+    }
+  })
+  
+  
   output$almacenamiento_maximo <- renderText({
     paste("Almacenamiento máximo de agua (mm):", round(almacenamiento_maximo(), 2))
   })
@@ -895,14 +1797,30 @@ server <- function(input, output, session) {
     paste("Disminución de evapotranspiración:", round(disminucion_et(), 2))
   })
   
+  output$GD <- renderText({
+    paste("Grados-Días:", GD())
+  })
   
   balance_agua <- reactive({
     fecha_siembra <- as.Date(input$fecha_siembra)
-
+    
     
     datos_filtrados <- datos %>%
       filter(Fecha >= fecha_siembra) %>%
       select(Fecha, Temperatura_Abrigo_150cm, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
+    
+    # if (is.null(input$file1)) {
+    #   # Si no se sube archivo, usar los datos originales
+    #   datos_filtrados <- datos %>%
+    #     filter(Fecha >= fecha_siembra) %>%
+    #     select(Fecha, Temperatura_Abrigo_150cm, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
+    # } else {
+    #   # Si se sube archivo, utilizar los datos subidos
+    #   datos_actualizados <- read.csv(input$file1$datapath)  # Leer archivo subido
+    #   datos_filtrados <- datos_actualizados %>%
+    #     filter(Fecha >= fecha_siembra) %>%
+    #     select(Fecha, Temperatura_Abrigo_150cm, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
+    # }
     
     datos_filtrados <- datos_filtrados %>%
       mutate(Dia_Mes = format(Fecha, "%m-%d"))
@@ -920,9 +1838,9 @@ server <- function(input, output, session) {
     fraccion_inicial <- input$fraccion_inicial
     agua_util_total_val <- agua_util_total()
     disminucion_et_val <- disminucion_et()
-
+    GD <- GD()
     
-
+    
     datos_filtrados <- datos_filtrados %>%
       left_join(datos_historicos_avg, by = "Dia_Mes") %>%
       arrange(Fecha) %>%
@@ -931,12 +1849,19 @@ server <- function(input, output, session) {
         Evapotranspiracion_Potencial = coalesce(Evapotranspiracion_Potencial, Evapotranspiracion_media),
         Precipitacion_Pluviometrica = coalesce(Precipitacion_Pluviometrica, Precipitacion_media),
         
-        
-        TTB = if_else(Temperatura_Abrigo_150cm - 8 < 0,
-                      0,
-                      Temperatura_Abrigo_150cm - 8),
+        TTB = case_when(
+          input$cultivo == "maiz" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                            0, 
+                                            Temperatura_Abrigo_150cm - 8),  # Umbral para maíz
+          input$cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, 
+                                            0, 
+                                            Temperatura_Abrigo_150cm - 11),  # Umbral para soja
+          TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 
+                         0, 
+                         Temperatura_Abrigo_150cm - 9)  
+        ),
         GD_acum = cumsum(TTB),
-        Ttrelativo = GD_acum / input$GD,
+        Ttrelativo = GD_acum / GD,
         
         Kc = if_else(Ttrelativo > 0.16, 
                      2.988041 * Ttrelativo^4 - 4.052411 * Ttrelativo^3 - 3.999317 * Ttrelativo^2 + 6.015032 * Ttrelativo - 0.390632, 
@@ -954,7 +1879,7 @@ server <- function(input, output, session) {
     
     for (i in 2:nrow(datos_filtrados)) {
       
-      if (datos_filtrados$GD_acum[i - 1] > input$GD) {
+      if (datos_filtrados$GD_acum[i - 1] > GD) {
         break
       }
       
@@ -991,29 +1916,39 @@ server <- function(input, output, session) {
       )
     }
     return(datos_filtrados)
-   
+    
   })
   
   ## Gráficos balance de agua ##
   output$agua_util <- renderPlotly({
+    GD <- GD()
     df_siembra <- balance_agua()
-    df_siembra <- df_siembra %>% filter(GD_acum <= input$GD)
+    df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
     fecha_actual <- Sys.Date()
     
-    fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], 
-                     na.rm = TRUE)
-    fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], 
-                     na.rm = TRUE)
+    if (input$cultivo == "maiz") {
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], na.rm = TRUE)
+      color_rect <- "cornsilk3"
+    } else if (input$cultivo == "soja") {
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 620], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1010], na.rm = TRUE)
+      color_rect <- "darkgreen"
+    } else {
+      # Valores por defecto o para otros cultivos
+      fecha_min <- NA
+      fecha_max <- NA
+    }
     
     agua_util <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_line(aes(y = Fr_agua_util , color = "Fr_agua_util")) + 
       geom_rect(aes(xmin = fecha_min, 
                     xmax = fecha_max, 
                     ymin = 0, ymax = 1),
-                fill = "blue", 
+                fill = color_rect, 
                 alpha = 0.2, 
                 color = NA) +
+      geom_line(aes(y = Fr_agua_util , color = "Fr_agua_util")) +
       labs(title = "", x = "", 
            y = "Fracción de Agua Útil (0 - 1)") +
       theme_minimal() +
@@ -1023,20 +1958,31 @@ server <- function(input, output, session) {
     
     ggplotly(agua_util)  %>% 
       plotly::style(name = "Fracción de Agua Útil", traces = 1) 
-})
-    
+  })
+  
   output$consumo_agua <- renderPlotly({
+    GD <- GD()
     df_siembra <- balance_agua()
-    df_siembra <- df_siembra %>% filter(GD_acum <= input$GD)
+    df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
     fecha_actual <- Sys.Date()
     
-    fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], 
-                     na.rm = TRUE)
-    fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], 
-                     na.rm = TRUE)
+    if (input$cultivo == "maiz") {
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], na.rm = TRUE)
+      color_rect <- "cornsilk3"
+    } else if (input$cultivo == "soja") {
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 620], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1010], na.rm = TRUE)
+      color_rect <- "darkgreen"
+    } else {
+      # Valores por defecto o para otros cultivos
+      fecha_min <- NA
+      fecha_max <- NA
+    }
+    
     ymax_ETM <- max(df_siembra$ETM,
-                     na.rm = TRUE)
+                    na.rm = TRUE)
     
     cons_agua <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_line(aes(y = ETM, color = "ETM")) +
@@ -1044,7 +1990,7 @@ server <- function(input, output, session) {
       geom_rect(aes(xmin = fecha_min,
                     xmax = fecha_max,
                     ymin = 0, ymax = ymax_ETM),
-                fill = "blue",
+                fill = color_rect,
                 alpha = 0.2,
                 color = NA) +
       labs(title = "", x = "", y = "mm") +
@@ -1057,18 +2003,29 @@ server <- function(input, output, session) {
       plotly::style(name = "ETM: Máximo consumo de agua si no hubiera deficiencias de agua", traces = 1)  %>% 
       plotly::style(name = "ETR: Consumo de agua REAL", traces = 2) 
   })
-
+  
   
   output$deficit_agua <- renderPlotly({
+    GD <- GD()
     df_siembra <- balance_agua()
-    df_siembra <- df_siembra %>% filter(GD_acum <= input$GD)
+    df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
-    fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], 
-                     na.rm = TRUE)
-    fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], 
-                     na.rm = TRUE)
+    if (input$cultivo == "maiz") {
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], na.rm = TRUE)
+      color_rect <- "cornsilk3"
+    } else if (input$cultivo == "soja") {
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 620], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1010], na.rm = TRUE)
+      color_rect <- "darkgreen"
+    } else {
+      # Valores por defecto o para otros cultivos
+      fecha_min <- NA
+      fecha_max <- NA
+    }
+    
     ymax_pp <- max(df_siembra$Precipitacion_Pluviometrica,
-                     na.rm = TRUE)
+                   na.rm = TRUE)
     
     def_agua <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
@@ -1078,12 +2035,12 @@ server <- function(input, output, session) {
       geom_rect(aes(xmin = fecha_min,
                     xmax = fecha_max,
                     ymin = 0, ymax = ymax_pp),
-                fill = "blue",
+                fill = color_rect,
                 alpha = 0.2,
                 color = NA) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_fill_manual(values = c("#007EA7", "#BC4749")) +
+      scale_fill_manual(values = c("#BC4749", "#007EA7")) +
       guides(fill = guide_legend(title = NULL))
     
     ggplotly(def_agua) %>% 
@@ -1092,13 +2049,19 @@ server <- function(input, output, session) {
       plotly::style(name = "Déficit hídrico", traces = 2)
   })
   
+  
+  
+  
+  
+  
+  
   ## Descarga de informes ##
   output$downloadReport <- downloadHandler(
     filename = function() {
-      "ENSO_Balcarce.pdf"
+      "ENSO.pdf"
     },
     content = function(file) {
-      file.copy("www/ENSO_Balcarce.pdf", file)
+      file.copy("www/ENSO.pdf", file)
     }
   )
   
@@ -1140,19 +2103,9 @@ server <- function(input, output, session) {
       
       #
       write_xlsx(datos_filtrados3, 
-                file)
+                 file)
     }
   )
-  
-  # observeEvent(input$enviar, {
-  #   comentario <- input$text
-  #   if (comentario != "Aquí...") {
-  #     enviar_correo(comentario)
-  #     showNotification("Mensaje enviado", duration = 5)
-  #   }
-  # })
-  # 
-  
 }
 
 
