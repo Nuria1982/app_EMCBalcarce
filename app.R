@@ -17,6 +17,8 @@ library(png)
 library(readxl)
 library(writexl)
 library(leaflet)
+library(webshot)
+
 
 
 
@@ -438,7 +440,7 @@ ui <- dashboardPage(
         
         fluidRow(
           # elección cultivo 
-          column(3,
+          column(4,
                  div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
                      selectInput("cultivo_ambiente",
                                  label = strong("Cultivo:"),
@@ -451,7 +453,7 @@ ui <- dashboardPage(
                                  selected = "maiz")
                  )
           ),
-          column(3,
+          column(4,
                  div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
                      numericInput("dia_siembra_ambiente",
                                   label = strong("Día de siembra:"),
@@ -459,7 +461,7 @@ ui <- dashboardPage(
                                   min = 1, max = 31)
                  )
           ),
-          column(3,
+          column(4,
                  div(style = "background-color: #81B29A80; padding: 10px; border-radius: 10px;",
                      selectInput("mes_siembra_ambiente",
                                  label = strong("Mes de siembra:"),
@@ -468,13 +470,7 @@ ui <- dashboardPage(
                                  selected = 10)
                  )
           ),
-          # column(3,
-          #        div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
-          #            fileInput("ambiente_precip_riego", "Subir archivo de precipitaciones y riego (opcional)",
-          #                      accept = c(".csv", ".xlsx")),
-          #            helpText("El archivo debe contener los datos diarios y las columnas: Fecha, Lluvia, Riego")
-          #        )
-          # ),
+          
         ),
         br(),
         br(),
@@ -696,13 +692,14 @@ ui <- dashboardPage(
                      textOutput("GD"),
                  )
           ),
-          # column(3,
-          #        div(style = "background-color: #E0E1DD40; padding: 10px; border-radius: 10px;",
-          #            fileInput("balance_precip_riego", "Subir archivo de precipitaciones y riego (opcional)",
-          #                      accept = c(".csv", ".xlsx")),
-          #            helpText("El archivo debe contener las columnas: Fecha, Precipitacion, Riego")
-          #        )
-          # )
+          column(3,
+                 div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                     fileInput("balance_precip_riego", "Ingresar datos propios (opcional)",
+                               accept = c(".csv", ".xlsx"))
+                     ,
+                     helpText("El archivo debe contener datos diarios y las columnas: Fecha, Lluvia, Riego (primera letra mayúscula)")
+                 )
+          ),
         ),
         br(),
         
@@ -748,7 +745,7 @@ ui <- dashboardPage(
           
         )
       ),
-      
+
       # tabItem(
       #   tabName = "Dalbulus",
       #   br(),
@@ -756,14 +753,15 @@ ui <- dashboardPage(
       #   br(),
       #   h5(HTML("Al seleccionar la fecha, se muestra la probabilidad de emergencia de maíz guacho")),
       #   br(),
-      #   
+      # 
       #   fluidRow(
       #     dateInput("fecha_dalbulus",
       #               label = strong("Ingrese la fecha:"),
-      #               value = "2024-01-01") 
+      #               value = "2024-01-01")
       #     ),
-      #     
-      #     leafletOutput("mapa_arg") 
+      # 
+      #     leafletOutput("mapa_arg"),
+      #   downloadButton("downloadMap", "Descargar mapa")
       #   ),
       
       tabItem(
@@ -1544,58 +1542,7 @@ server <- function(input, output, session) {
   
   
   ##### AMBIENTE #####
-  
-  # data_usuario <- reactive({
-  #   if (is.null(input$file_precip_riego)) {
-  #     return(NULL)  # Si no hay archivo subido, devuelve NULL
-  #   }
-  #   
-  #   ext <- tools::file_ext(input$file_precip_riego$name)
-  #   
-  #   if (ext == "csv") {
-  #     data <- read.csv(input$file_precip_riego$datapath)
-  #   } else if (ext == "xlsx") {
-  #     data <- readxl::read_xlsx(input$file_precip_riego$datapath)
-  #   } else {
-  #     showNotification("Formato de archivo no soportado.", type = "error")
-  #     return(NULL)
-  #   }
-  #   
-  #   # Verificar si el archivo tiene las columnas requeridas
-  #   required_columns <- c("Fecha", "Lluvia", "Riego")
-  #   if (all(required_columns %in% colnames(data))) {
-  #     showNotification("Archivo subido correctamente.", type = "message")
-  #   } else {
-  #     showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego.", type = "error")
-  #     return(NULL)  # Si no tiene las columnas requeridas, devolver NULL
-  #   }
-  #   
-  #   return(data)
-  # })
-  
-  # datos_actualizados <- reactive({
-  #   # Si no hay archivo subido, usar los datos originales
-  #   if (is.null(data_usuario())) {
-  #     return(datos)  # Usar los datos originales si no se sube archivo
-  #   }
-  #   
-  #   # Si hay archivo subido, procesar los datos del usuario
-  #   data_user <- data_usuario() %>%
-  #     mutate(Fecha = as.Date(Fecha, format = "%Y-%m-%d"))
-  #   
-  #   # Combinamos los datos del archivo con los datos existentes
-  #   datos_actualizados <- datos %>%
-  #     mutate(Fecha = as.Date(Fecha)) %>%
-  #     left_join(data_user, by = "Fecha", suffix = c("", "_usuario")) %>%
-  #     mutate(
-  #       Precipitacion_Pluviometrica = coalesce(Lluvia_usuario, Precipitacion_Pluviometrica),  # Reemplazar precipitaciones
-  #       Riego = Riego_usuario  # Agregar la columna de riego
-  #     ) %>%
-  #     select(-Lluvia_usuario, -Riego_usuario)  # Limpiar columnas extra
-  #   
-  #   return(datos_actualizados)
-  # })
-  
+
  periodo_critico <- reactive({
     
     req(input$mes_siembra_ambiente, input$dia_siembra_ambiente)
@@ -1603,8 +1550,6 @@ server <- function(input, output, session) {
     dia_siembra <- as.numeric(input$dia_siembra_ambiente)
     mes_siembra <- as.numeric(input$mes_siembra_ambiente)
     
-    # fecha_siembra_dia_mes <- sprintf("%02d-%02d", dia_siembra, mes_siembra)
-    # fecha_siembra_dia_mes <- as.Date(fecha_siembra_dia_mes, format = "%d-%m")
     fecha_siembra_dia_mes <- as.Date(sprintf("%02d-%02d", mes_siembra, dia_siembra), format = "%m-%d")
     
     cultivo <- input$cultivo_ambiente
@@ -1613,10 +1558,7 @@ server <- function(input, output, session) {
       gd_min <- 670
       gd_max <- 1120
     } else if (cultivo == "soja") {
-      # gd_min <- 620
-      # gd_max <- 1010
-      
-      
+
       dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
       
       if (dia_juliano < 60) {
@@ -2191,6 +2133,73 @@ server <- function(input, output, session) {
   
   
   ##### Balance de agua ########
+
+  data_usuario <- reactive({
+    if (is.null(input$balance_precip_riego)) {
+      return(NULL)  # Si no hay archivo subido, devuelve NULL
+    }
+
+    ext <- tools::file_ext(input$balance_precip_riego$name)
+
+    if (ext == "csv") {
+      data <- read.csv(input$balance_precip_riego$datapath)
+    } else if (ext == "xlsx") {
+      data <- readxl::read_xlsx(input$balance_precip_riego$datapath)
+    } else {
+      showNotification("Formato de archivo no soportado.", type = "error")
+      return(NULL)
+    }
+
+    # Verificar si el archivo tiene las columnas requeridas
+    required_columns <- c("Fecha", "Lluvia", "Riego")
+    if (all(required_columns %in% colnames(data))) {
+      showNotification("Archivo subido correctamente.", type = "message")
+    } else {
+      showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego.", type = "error")
+      return(NULL)  # Si no tiene las columnas requeridas, devolver NULL
+    }
+
+    return(data)
+    
+  })
+ 
+  datos_actualizados <- reactive({
+    # Si no hay archivo subido, se usan los datos originales "datos"
+    if (is.null(data_usuario())) {
+      
+      # si la columna Riego no existe en el df original se la agrego con valores 0
+      if (!"Riego" %in% colnames(datos)) {
+        datos <- datos %>%
+          mutate(Riego = 0)  
+      }
+      return(datos)  
+    }
+    
+    data_user <- data_usuario() %>%
+      mutate(Fecha = as.Date(Fecha, format = "%Y-%m-%d"))
+    
+    # Se combinan los datos del archivo subido por el usuario con los datos originales
+    datos_actualizados <- datos %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      left_join(data_user, by = "Fecha", suffix = c("", "_usuario"))
+    
+    # Reemplazo los valores de Precipitacion_Pluviometica por los de Lluvia del usuario
+    if ("Lluvia" %in% colnames(datos_actualizados)) {
+      
+      datos_actualizados <- datos_actualizados %>%
+        mutate(Precipitacion_Pluviometrica = coalesce(Lluvia, Precipitacion_Pluviometrica))
+    }
+    
+    # Reemplazo los valores de Riego por los de Riego del usuario (sino hay riego el valor = 0)
+    if ("Riego" %in% colnames(datos_actualizados)) {
+      datos_actualizados <- datos_actualizados %>%
+        mutate(Riego = coalesce(Riego, Riego, 0))  
+    }
+    
+    return(datos_actualizados)
+    
+  })
+
   
   observeEvent(input$cultivo, {
     
@@ -2289,22 +2298,9 @@ server <- function(input, output, session) {
   balance_agua <- reactive({
     fecha_siembra <- as.Date(input$fecha_siembra)
     
-    datos_filtrados <- datos %>%
+    datos_filtrados <- datos_actualizados() %>%
       filter(Fecha >= fecha_siembra) %>%
-      select(Fecha, Temperatura_Abrigo_150cm, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
-    
-    # if (is.null(input$file1)) {
-    #   # Si no se sube archivo, usar los datos originales
-    #   datos_filtrados <- datos %>%
-    #     filter(Fecha >= fecha_siembra) %>%
-    #     select(Fecha, Temperatura_Abrigo_150cm, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
-    # } else {
-    #   # Si se sube archivo, utilizar los datos subidos
-    #   datos_actualizados <- read.csv(input$file1$datapath)  # Leer archivo subido
-    #   datos_filtrados <- datos_actualizados %>%
-    #     filter(Fecha >= fecha_siembra) %>%
-    #     select(Fecha, Temperatura_Abrigo_150cm, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
-    # }
+      select(Fecha, Temperatura_Abrigo_150cm, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
     
     datos_filtrados <- datos_filtrados %>%
       mutate(Dia_Mes = format(Fecha, "%m-%d"))
@@ -2316,7 +2312,6 @@ server <- function(input, output, session) {
     
     
     datos_filtrados <- datos_filtrados %>%
-      # left_join(datos_historicos_avg, by = "Dia_Mes") %>%
       arrange(Fecha) %>%
       mutate(
         TTB = case_when(
@@ -2365,12 +2360,12 @@ server <- function(input, output, session) {
       )
       
       datos_filtrados$agua_util[i] <- if_else(
-        is.na(datos_filtrados$agua_util[i - 1]) | is.na(datos_filtrados$Precipitacion_Pluviometrica[i]) | is.na(datos_filtrados$ETR[i]),
+        is.na(datos_filtrados$agua_util[i - 1]) | is.na(datos_filtrados$Precipitacion_Pluviometrica[i]) | is.na(datos_filtrados$Riego[i]) | is.na(datos_filtrados$ETR[i]),
         NA_real_,
         if_else(
-          datos_filtrados$agua_util[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] - datos_filtrados$ETR[i] > agua_util_total_val,
+          datos_filtrados$agua_util[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] + datos_filtrados$Riego[i] - datos_filtrados$ETR[i] > agua_util_total_val,
           agua_util_total_val,
-          datos_filtrados$agua_util[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] - datos_filtrados$ETR[i]
+          datos_filtrados$agua_util[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] + datos_filtrados$Riego[i] - datos_filtrados$ETR[i]
         )
       )
       
@@ -2543,6 +2538,9 @@ server <- function(input, output, session) {
                stat = "identity", position = "dodge") +
       geom_bar(aes(y = deficiencia, fill = "deficiencia"),
                stat = "identity", position = "dodge") +
+      geom_bar(aes(y = Riego, fill = "Riego"),
+               stat = "identity", position = "dodge") +
+      
       geom_rect(aes(xmin = fecha_min,
                     xmax = fecha_max,
                     ymin = 0, ymax = ymax_pp),
@@ -2551,13 +2549,14 @@ server <- function(input, output, session) {
                 color = NA) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_fill_manual(values = c("#BC4749", "#007EA7")) +
+      scale_fill_manual(values = c("#BC4749", "#007EA7", "#BDE0FE")) +
       guides(fill = guide_legend(title = NULL))
     
     ggplotly(def_agua) %>% 
       layout(legend = list(orientation = "h", x = 0.3, y = 1.2)) %>% 
       plotly::style(name = "Precipitación", traces = 1) %>% 
-      plotly::style(name = "Déficit hídrico", traces = 2)
+      plotly::style(name = "Déficit hídrico", traces = 2)%>% 
+      plotly::style(name = "Riego", traces = 2)
   })
   
   
@@ -2610,6 +2609,54 @@ server <- function(input, output, session) {
                 title = "Capacidad de supervivencia del vector",
                 opacity = 1)
   })
+  
+  #Descargar mapa
+  output$downloadMap <- downloadHandler(
+    filename = function() {
+      paste("map-", Sys.Date(), ".png", sep = "")
+    },
+    content = function(file) {
+      # Create a temporary HTML file to save the leaflet map
+      tempFile <- tempfile(fileext = ".html")
+      saveWidget(
+        leaflet(data = dalbulus_filtrados()) %>%
+          addTiles() %>%
+          setView(lng = -65.0, lat = -31.5, zoom = 5) %>%
+          addPolygons(
+            lng = c(-66.9, -66.9, -56.80, -55.57, -56.04, -58.55, -57.67, -62.79),
+            lat = c(-21.9, -29.8, -29.8, -28.15, -27.32, -27.24, -25.34, -21.9),
+            color = "#BC4B51", fillColor = "#BC4B51", weight = 2, fillOpacity = 0.4,
+            label = "Zona Alta Carga"
+          ) %>%
+          addPolygons(
+            lng = c(-66.9, -66.9, -58.40, -57.50),
+            lat = c(-29.8, -32.4, -32.4, -29.8),
+            color = "#F4A259", fillColor = "#F4A259", weight = 2, fillOpacity = 0.4,
+            label = "Zona Transición"
+          ) %>%
+          addPolygons(
+            lng = c(-66.9, -66.9, -57.90, -56.77, -58.44, -58.40),
+            lat = c(-32.4, -38.5, -38.5, -36.34, -34.57, -32.4),
+            color = "#8CB369", fillColor = "#8CB369", weight = 2, fillOpacity = 0.4,
+            label = "Zona Baja Carga"
+          ) %>%
+          addCircles(lng = ~lng, lat = ~lat, radius = 30000) %>%
+          addCircleMarkers(lng = ~lng, lat = ~lat, color = ~pal(MG),
+                           popup = ~paste0("<b>Estación: </b>", Nombre, "<hr>",
+                                           "<b>Probabilidad de maíz guacho: </b>", MG),
+                           label = ~Nombre) %>%
+          addLegend(position = "bottomright",
+                    pal = pal_poligono, values = c("Zona Alta", "Zona transición", "Zona Baja"),
+                    title = "Capacidad de supervivencia del vector",
+                    opacity = 1),
+        file = tempFile,
+        selfcontained = TRUE
+      )
+      
+      # Take a screenshot of the HTML file
+      webshot(tempFile, file = file)
+    }
+  )
 
   
   
