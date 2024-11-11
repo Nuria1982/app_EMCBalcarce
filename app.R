@@ -1,5 +1,4 @@
 library(rsconnect)
-library(sendmailR)
 library(shiny)
 library(shinyWidgets)
 library(shinydashboard)
@@ -18,6 +17,37 @@ library(readxl)
 library(writexl)
 library(leaflet)
 library(webshot)
+library(httr)
+library(jsonlite)
+library(digest)
+# library(shinyjs)
+# library(shinyauthr)
+# library(sodium)
+
+
+# get_clima_balcarce <- function() {
+#   url <- "https://ws.smn.gob.ar/map_items/weather"
+#   
+#   # Hacemos la petición GET a la API
+#   response <- GET(url)
+#   
+#   # Verificamos si la consulta fue exitosa
+#   if (status_code(response) == 200) {
+#     # Parseamos el contenido a JSON
+#     content <- content(response, "text", encoding = "UTF-8")
+#     data <- fromJSON(content)
+#     
+#     # Filtramos la estación de Balcarce
+#     balcarce_weather <- data[data$name == "Mar del Plata", ]
+#     
+#     # print(balcarce_weather)
+#     
+#     return(balcarce_weather)
+#   } else {
+#     return(NULL)  # En caso de error
+#   }
+# }
+
 
 
 
@@ -47,8 +77,8 @@ head(datos_EMC)
 
 
 datos_actuales <- datos_EMC[!is.na(datos_EMC$Precipitacion_Pluviometrica) & 
-                          !is.na(datos_EMC$Temperatura_Abrigo_150cm_Maxima) & 
-                          !is.na(datos_EMC$Temperatura_Abrigo_150cm_Minima), ]
+                              !is.na(datos_EMC$Temperatura_Abrigo_150cm_Maxima) & 
+                              !is.na(datos_EMC$Temperatura_Abrigo_150cm_Minima), ]
 
 
 ultima_fecha <- max(datos_actuales$Fecha)
@@ -85,7 +115,7 @@ datos <- datos_EMC %>%
 # datos
 # write_xlsx(datos, "datos.xlsx")
 
-dalbulus <- dalbulus
+#dalbulus <- dalbulus
 
 
 
@@ -145,7 +175,7 @@ ui <- dashboardPage(
                          # ,
                          # menuSubItem("Dalbulus",
                          #             tabName = "Dalbulus")
-                         ),
+                ),
                 menuItem("Pronósticos",
                          tabName = "pronosticos", 
                          icon = icon("bar-chart")),
@@ -159,18 +189,38 @@ ui <- dashboardPage(
                          tabName = "referencias", 
                          icon = icon("book"))),
     br(),
-    br(),
-    br(),
     
+    
+    # tags$head(
+    #   tags$style(HTML("
+    #   .clima-box {
+    #     border: 2px solid #83C5BE; 
+    #     background-color: #83C5BE80; 
+    #     padding: 20px; 
+    #     border-radius: 10px; 
+    #     margin-bottom: 20px; 
+    #   }"))
+    # ),
+    
+    # # Recuadro de clima
+    # div(class = "clima-box",
+    #     uiOutput("icono_clima"),
+    #     textOutput("clima_actual"),
+    #     textOutput("temperatura"),
+    #     textOutput("humedad"),
+    #     textOutput("viento")
+    # ),
+    # 
+    br(),
     
     tags$p(
       strong("Nuestras Redes sociales"),
       br(),
       tags$a(
         icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
-      br(),
-      tags$a(
-        icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
+      # br(),
+      # tags$a(
+      #   icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
       br(),
       tags$p(
         strong("Para comunicarse con el grupo "),
@@ -263,28 +313,40 @@ ui <- dashboardPage(
                   ,status = "gray"
                   ,solidHeader = TRUE 
                   ,collapsible = TRUE
-                  ,plotlyOutput("grafico_lluvia", height = "300px")
+                  ,withSpinner(plotlyOutput("grafico_lluvia", height = "300px"),
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5)
                 ),
                 box(
                   title = "Precipitaciones y ETo acumuladas mensuales (mm)"
                   ,status = "gray"
                   ,solidHeader = TRUE 
                   ,collapsible = TRUE
-                  ,plotlyOutput("grafico_lluvia_etp_acum", height = "300px")
+                  ,withSpinner(plotlyOutput("grafico_lluvia_etp_acum", height = "300px"),
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5)
                 ),
                 box(
                   title = "Temperaturas medias mensuales (ºC)"
                   ,status = "gray"
                   ,solidHeader = TRUE 
                   ,collapsible = TRUE 
-                  ,plotlyOutput("grafico_temperatura", height = "300px")
+                  ,withSpinner(plotlyOutput("grafico_temperatura", height = "300px"),
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5)
                 ),
                 box(
                   title = "Número de días mensuales con heladas"
                   ,status = "gray"
                   ,solidHeader = TRUE 
                   ,collapsible = TRUE 
-                  ,plotlyOutput("grafico_heladas", height = "300px")
+                  ,withSpinner(plotlyOutput("grafico_heladas", height = "300px"),
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5)
                 ) 
               )
       ),
@@ -341,9 +403,12 @@ ui <- dashboardPage(
                          status = "orange",
                          solidHeader = TRUE,
                          collapsible = TRUE,
-                         plotlyOutput("grafico_temp_climatico", 
-                                      height = "300px", 
-                                      width = "100%"),
+                         withSpinner(plotlyOutput("grafico_temp_climatico", 
+                                                  height = "300px", 
+                                                  width = "100%"),
+                                     type = 5, 
+                                     color = "#0dc5c1",  
+                                     size = 0.5),
                          width = 12
                        )
                 ),
@@ -353,25 +418,31 @@ ui <- dashboardPage(
                          status = "orange",
                          solidHeader = TRUE,
                          collapsible = TRUE,
-                         plotlyOutput("grafico_pp_climatico", 
-                                      height = "300px", 
-                                      width = "100%"),
+                         withSpinner(plotlyOutput("grafico_pp_climatico", 
+                                                  height = "300px", 
+                                                  width = "100%"),
+                                     type = 5, 
+                                     color = "#0dc5c1",  
+                                     size = 0.5),
                          width = 12
                        )
                 ),
                 column(4, 
                        box(
-                         title = "Días con temperaturas máximas > a 25ºC y < 3ºC",
+                         title = "Días con temp. máximas > a 25ºC y temp. mínimas < 3ºC",
                          status = "orange",
                          solidHeader = TRUE,
                          collapsible = TRUE,
-                         plotlyOutput("grafico_heladas_climatico", 
-                                      height = "300px", 
-                                      width = "100%"),
+                         withSpinner(plotlyOutput("grafico_heladas_climatico", 
+                                                  height = "300px", 
+                                                  width = "100%"),
+                                     type = 5, 
+                                     color = "#0dc5c1",  
+                                     size = 0.5),
                          width = 12
                        )
                 )
-              ),
+              )
       ),
       
       tabItem(
@@ -381,29 +452,29 @@ ui <- dashboardPage(
         br(),
         br(),
         fluidRow(
-          box(title = "Consumo de agua"
+          box(title = "Variación de agua disponible"
               ,status = "navy"
               ,solidHeader = FALSE
               ,div(
                 style = "text-align: center;",
                 tags$img(
                   src = "agua.jpg",
-                  style = "max-width: 80%; height: auto;",
+                  style = "max-width: 100%; height: auto;",
                   alt = "Mapa-Consumo de agua"
                 )
               ),
-              tags$figcaption("Evapotranspiración real máxima (en el periodo de 10 días) expresada en
-              mm/día estimada mediante el uso de imágenes del sensor VIIRS del satélite
-              Suomi-NPP con una resolución espacial de 500 metros. Elaborado por Instituto de
-              Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."),
+              br(),
+              br(),
+              tags$figcaption("Variación del agua disponible hasta 2 metros, expresada en
+              mm, estimada mediante el uso de imágenes del satélite S-NPP con una resolución espacial de 500 metros. 
+              Acumulado a la fecha con respecto a la fecha anterior.
+                              Elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."),
               div(
                 style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-                "El consumo de agua o evapotranspiración real (ETR) es la
-                cantidad de agua que es transpirada por la cubierta vegetal y aquella que
-                es perdida desde la superficie del suelo por evaporación.
-               El consumo de agua puede ser utilizado para detectar la ocurrencia
-                de deficiencias de agua, cuando su valor no alcanza el requerido por el
-                cultivo.")
+                "Representa el cambio en el agua disponible (expresado en mm) al final de un período de 10 
+                días con respecto al final del período anterior. Permite analizar la magnitud del aumento 
+                (período actual mayor al anterior) o reducción (período actual menor al anterior) del agua 
+                disponible en el perfil en hasta 2 metros de profundidad.")
           ),
           box(title = "% de agua útil"
               ,status = "navy"
@@ -412,13 +483,13 @@ ui <- dashboardPage(
                 style = "text-align: center;",
                 tags$img(
                   src = "agua_util.jpg",
-                  style = "max-width: 80%; height: auto;",
+                  style = "max-width: 100%; height: auto;",
                   alt = "Mapa-agua útil"
                 )
               ),
               br(),
               br(),
-              tags$figcaption("Porcentaje de agua en el suelo.Resolución espacial: 500 m. 
+              tags$figcaption("Agua en el suelo con respecto al máximo posible (% de agua útil).Resolución espacial: 500 m. 
                   Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."),
               div(
                 style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
@@ -444,7 +515,8 @@ ui <- dashboardPage(
                  div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
                      selectInput("cultivo_ambiente",
                                  label = strong("Cultivo:"),
-                                 choices = list("Maíz" = "maiz",
+                                 choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                "Maíz ciclo corto" = "maiz_corto",
                                                 "Soja" = "soja"
                                                 # ,
                                                 # "Girasol" = "girasol",
@@ -481,16 +553,22 @@ ui <- dashboardPage(
             status = "olive",
             solidHeader = TRUE,
             collapsible = TRUE,
-            plotlyOutput("pp_acum_PC", height = "300px")
+            withSpinner(plotlyOutput("pp_acum_PC", height = "300px"),
+                        type = 5, 
+                        color = "#0dc5c1",  
+                        size = 0.5)
           ),
           box(
             title = "Radiación y días con temp. máx. > 35ºC durante el período crítico",
             status = "olive",
             solidHeader = TRUE,
             collapsible = TRUE,
-            plotlyOutput("rad_temp", height = "300px")
+            withSpinner(plotlyOutput("rad_temp_PC", height = "300px"),
+                        type = 5, 
+                        color = "#0dc5c1",  
+                        size = 0.5)
           ),
-          h6(HTML("ET0: Evapotranspiración de referencia (mm) o demanda de agua del cultivo<br />Valores decádicos corresponden a la mediana."))
+          h6(HTML("ET0: Evapotranspiración de referencia (mm) o demanda de agua del ambiente<br />Valores decádicos corresponden a la mediana."))
         ),
         
         br(),
@@ -508,7 +586,8 @@ ui <- dashboardPage(
                  div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
                      selectInput("cultivo_fecha",
                                  label = strong("Cultivo:"),
-                                 choices = list("Maíz" = "maiz",
+                                 choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                "Maíz ciclo corto" = "maiz_corto",
                                                 "Soja" = "soja"
                                                 # ,
                                                 # "Girasol" = "girasol",
@@ -582,6 +661,13 @@ ui <- dashboardPage(
         
         br(),
         
+        fluidRow(column(4,
+        ),
+        column(4,
+               div(style = "background-color: #FB850080; padding: 10px; border-radius: 10px; text-align: center; align-items: center;",
+                   h5(HTML("<strong>Condiciones ambientales en el período crítico</strong>"))))),
+        br(),
+        
         fluidRow(
           column(4, 
                  box(
@@ -589,7 +675,10 @@ ui <- dashboardPage(
                    status = "olive",
                    solidHeader = TRUE,
                    collapsible = TRUE,
-                   plotlyOutput("gg_lluvia", height = "300px", width = "100%"),
+                   withSpinner(plotlyOutput("pc_lluvia", height = "300px", width = "100%"), 
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5),
                    width = 12
                  )
           ),
@@ -599,7 +688,10 @@ ui <- dashboardPage(
                    status = "olive",
                    solidHeader = TRUE,
                    collapsible = TRUE,
-                   plotlyOutput("gg_radiacion", height = "300px", width = "100%"),
+                   withSpinner(plotlyOutput("pc_radiacion", height = "300px", width = "100%"), 
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5),
                    width = 12
                  )
           ),
@@ -609,7 +701,60 @@ ui <- dashboardPage(
                    status = "olive",
                    solidHeader = TRUE,
                    collapsible = TRUE,
-                   plotlyOutput("gg_dias_35", height = "300px", width = "100%"),
+                   withSpinner(plotlyOutput("pc_dias_35", height = "300px", width = "100%"), 
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5),
+                   width = 12
+                 )
+          ),
+        ),
+        br(),
+        
+        fluidRow(column(4,
+        ),
+        column(4,
+               div(style = "background-color: #FB850080; padding: 10px;  border-radius: 10px; text-align: center; align-items: center;",
+                   h5(HTML("<strong>Condiciones ambientales durante el llenado de grano</strong>"))))),
+        br(),
+        
+        fluidRow(
+          column(4, 
+                 box(
+                   title = "Precipitaciones y ET0 acumuladas",
+                   status = "olive",
+                   solidHeader = TRUE,
+                   collapsible = TRUE,
+                   withSpinner(plotlyOutput("lg_lluvia", height = "300px", width = "100%"), 
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5),
+                   width = 12
+                 )
+          ),
+          column(4, 
+                 box(
+                   title = "Radiación global",
+                   status = "olive",
+                   solidHeader = TRUE,
+                   collapsible = TRUE,
+                   withSpinner(plotlyOutput("lg_radiacion", height = "300px", width = "100%"), 
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5),
+                   width = 12
+                 )
+          ),
+          column(4, 
+                 box(
+                   title = "Días con temperaturas mínimas < a 2ºC",
+                   status = "olive",
+                   solidHeader = TRUE,
+                   collapsible = TRUE,
+                   withSpinner(plotlyOutput("lg_dias_2", height = "300px", width = "100%"), 
+                               type = 5, 
+                               color = "#0dc5c1",  
+                               size = 0.5),
                    width = 12
                  )
           ),
@@ -630,13 +775,14 @@ ui <- dashboardPage(
           column(3,
                  selectInput("cultivo",
                              label = strong("Seleccione el cultivo:"),
-                             choices = list("Maíz" = "maiz",
+                             choices = list("Maíz ciclo largo" = "maiz_largo",
+                                            "Maíz ciclo corto" = "maiz_corto",
                                             "Soja" = "soja"
                                             # ,
                                             # "Girasol" = "girasol",
                                             # "Hortalizas" = "hortalizas"
                              ),
-                             selected = "maiz")
+                             selected = "maiz_largo")
           ),
           column(3,
                  dateInput("fecha_siembra",
@@ -709,25 +855,34 @@ ui <- dashboardPage(
             status = "lightblue",
             solidHeader = TRUE,
             collapsible = TRUE,
-            plotlyOutput("agua_util", height = "300px")
+            withSpinner(plotlyOutput("agua_util", height = "300px"),
+                        type = 5, 
+                        color = "#0dc5c1",  
+                        size = 0.5)
           ),
           box(
             title = "Consumo de agua",
             status = "lightblue",
             solidHeader = TRUE,
             collapsible = TRUE,
-            plotlyOutput("consumo_agua", height = "300px")
+            withSpinner(plotlyOutput("consumo_agua", height = "300px"),
+                        type = 5, 
+                        color = "#0dc5c1",  
+                        size = 0.5)
           ),
           box(
             title = "Balance de agua",
             status = "lightblue",
             solidHeader = TRUE,
             collapsible = TRUE,
-            plotlyOutput("deficit_agua", height = "300px")
+            withSpinner(plotlyOutput("deficit_agua", height = "300px"), 
+                        type = 5, 
+                        color = "#0dc5c1",  
+                        size = 0.5)
           ),
           column(6,
                  div(tags$img(
-                   src = "Mapa_Estacion_Met.png",
+                   src = "Estacion_Met_Balc_4.png",
                    style = "max-width: 60%; height: 100%; display: block; margin: 0 auto;",
                    alt = "ubicacion_EMC"
                  )
@@ -745,7 +900,7 @@ ui <- dashboardPage(
           
         )
       ),
-
+      
       # tabItem(
       #   tabName = "Dalbulus",
       #   br(),
@@ -817,7 +972,7 @@ ui <- dashboardPage(
               ),
               tags$br(),
               tags$a(
-                "Descarga el informe completo aquí", href= "https://bit.ly/IMA-SEP24")
+                "Descarga el informe completo aquí", href= "https://bit.ly/IMA-OCT24")
             )),
           column(
             width = 3,
@@ -856,7 +1011,7 @@ ui <- dashboardPage(
       tabItem(
         tabName = "descarga",
         br(),
-        h4(HTML("<strong>Datos disponibles de la EMA Balcarce</strong>")),
+        h4(HTML("<strong>Datos disponibles de la EMC Balcarce</strong>")),
         br(),
         
         dataTableOutput("datos"),
@@ -915,8 +1070,106 @@ ui <- dashboardPage(
 
 
 
+
 # Define server logic ----
 server <- function(input, output, session) {
+  
+  # ### tiempo SMN ###
+  # clima <- reactive({
+  #   get_clima_balcarce()
+  # })
+  # 
+  # output$icono_clima <- renderUI({
+  #   datos <- clima()
+  #   icon_name <- NULL
+  # 
+  #   # Íconos basados en las condiciones
+  #   if (!is.null(datos$weather$description)) {
+  #     description <- datos$weather$description[1]
+  #     if (grepl("despejado", description, ignore.case = TRUE)) {
+  #       icon_name <- "fa-solid fa-sun"  
+  #     } else if (grepl("neblina", description, ignore.case = TRUE)) {
+  #       icon_name <- "fa-solid fa-cloud"  
+  #     } else if (grepl("lluvia", description, ignore.case = TRUE)) {
+  #       icon_name <- "fa-solid fa-cloud-showers-heavy"  
+  #     }
+  #   }
+  # 
+  #   if (!is.null(icon_name)) {
+  #     tags$div(style = "text-align: center;", 
+  #              tags$i(class = icon_name, style = "font-size: 40px; color: #007BFF;")
+  #     )
+  #   }
+  # })
+  # 
+  # # Mostrar la descripción del clima
+  # output$clima_actual <- renderText({
+  #   datos <- clima()
+  #   
+  #   if (is.null(datos) || nrow(datos) == 0) {
+  #     return("No se han encontrado datos para Balcarce.")
+  #   }
+  #   
+  #   if (!is.null(datos$weather$description) && length(datos$weather$description) > 0) {
+  #     condiciones <- paste("Condiciones actuales:", datos$weather$description[1])
+  #   } else {
+  #     condiciones <- "No se encontraron descripciones del clima."
+  #   }
+  #   
+  #   return(condiciones)
+  # })
+  # 
+  # # Mostrar la temperatura actual
+  # output$temperatura <- renderText({
+  #   datos <- clima()
+  #   
+  #   if (is.null(datos) || nrow(datos) == 0) {
+  #     return("")
+  #   }
+  #   if (!is.null(datos$weather$temp) && length(datos$weather$temp) > 0) {
+  #     paste("Temperatura actual:", datos$weather$temp[1], "°C")
+  #   } else {
+  #     return("No se encontró la temperatura.")
+  #   }
+  # })
+  # 
+  # # Mostrar la humedad actual
+  # output$humedad <- renderText({
+  #   datos <- clima()
+  #   
+  #   if (is.null(datos) || nrow(datos) == 0) {
+  #     return("")
+  #   }
+  #   
+  #   # Acceder a la humedad
+  #   if (!is.null(datos$weather$humidity) && length(datos$weather$humidity) > 0) {
+  #     paste("Humedad actual:", datos$weather$humidity[1], "%")
+  #   } else {
+  #     return("No se encontró la humedad.")
+  #   }
+  # })
+  # 
+  # # Mostrar la velocidad del viento actual
+  # output$viento <- renderText({
+  #   datos <- clima()
+  #   
+  #   if (is.null(datos) || nrow(datos) == 0) {
+  #     return("")
+  #   }
+  #   
+  #   # Acceder a la velocidad del viento
+  #   if (!is.null(datos$weather$wind_speed) && length(datos$weather$wind_speed) > 0) {
+  #     paste("Velocidad del viento:", datos$weather$wind_speed[1], "km/h")
+  #   } else {
+  #     return("No se encontró la velocidad del viento.")
+  #   }
+  # })
+  
+  ################## REGISTRO DE USUARIO ##############
+  
+  
+  
+  ######### Info EMC Balcarce ###########
   
   # Cálculo del promedio de precipitaciones acumuladas anuales para el periodo 1991-2020
   promedio_historico <- mean(
@@ -1124,7 +1377,7 @@ server <- function(input, output, session) {
                            x = 0.3,
                            y = 1.2))
   })
-
+  
   ##### lluvia y ETP ####
   output$grafico_lluvia_etp_acum <- renderPlotly({
     
@@ -1284,7 +1537,7 @@ server <- function(input, output, session) {
     return(datos_filtrados_climatico)
   })
   
-
+  
   output$grafico_temp_climatico <- renderPlotly({
     
     datos_filtrados_climatico <- datasetInput_climatico()
@@ -1323,17 +1576,17 @@ server <- function(input, output, session) {
         labs(x = "", y = "ºC", title = "") +
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 60, hjust = 1))   
-        
-        # geom_hline(data = datos_historicos_avg_1991_2020, 
-        #            aes(yintercept = Temperatura_media), 
-        #            linetype = "dashed", color = "green") +
-        # geom_hline(data = datos_historicos_avg_1981_2010, 
-        #            aes(yintercept = Temperatura_media), 
-        #            linetype = "dashed", color = "blue") +
-        # geom_hline(data = datos_historicos_avg_1971_2000, 
-        #            aes(yintercept = Temperatura_media), 
-        #            linetype = "dashed", color = "red") +
-        
+      
+      # geom_hline(data = datos_historicos_avg_1991_2020, 
+      #            aes(yintercept = Temperatura_media), 
+      #            linetype = "dashed", color = "green") +
+      # geom_hline(data = datos_historicos_avg_1981_2010, 
+      #            aes(yintercept = Temperatura_media), 
+      #            linetype = "dashed", color = "blue") +
+      # geom_hline(data = datos_historicos_avg_1971_2000, 
+      #            aes(yintercept = Temperatura_media), 
+      #            linetype = "dashed", color = "red") +
+      
     } else {
       
       tt_media <- datos_filtrados_climatico %>%
@@ -1359,8 +1612,8 @@ server <- function(input, output, session) {
     
     ggplotly(tt_climatico)
   })
-        
-
+  
+  
   
   
   output$grafico_pp_climatico <- renderPlotly({
@@ -1415,7 +1668,7 @@ server <- function(input, output, session) {
                   vjust = -0.5, color = "black", size = 3.5)
       
     } else {
-    
+      
       # Acumulado por mes
       pp_acum <- datos_filtrados_climatico %>%
         group_by(Año) %>%
@@ -1448,21 +1701,21 @@ server <- function(input, output, session) {
     
     ggplotly(pp_climatico) 
   })
-    
+  
   
   output$grafico_heladas_climatico <- renderPlotly({
     
     datos_filtrados_climatico <- datasetInput_climatico()
-
+    
     dias_extremos <- datos_filtrados_climatico %>%
-  mutate(dia_bajo = Temperatura_Abrigo_150cm_Minima < 3,
-         dia_alto = Temperatura_Abrigo_150cm_Maxima > 25) %>%
-    group_by(Año) %>%
-    summarise(
-      dias_bajos = sum(dia_bajo, na.rm = TRUE),
-      dias_altos = sum(dia_alto, na.rm = TRUE)
-    ) %>%
-    arrange(Año)
+      mutate(dia_bajo = Temperatura_Abrigo_150cm_Minima < 3,
+             dia_alto = Temperatura_Abrigo_150cm_Maxima > 25) %>%
+      group_by(Año) %>%
+      summarise(
+        dias_bajos = sum(dia_bajo, na.rm = TRUE),
+        dias_altos = sum(dia_alto, na.rm = TRUE)
+      ) %>%
+      arrange(Año)
     
     
     if (input$mes_climatico == "Anual") {
@@ -1478,7 +1731,7 @@ server <- function(input, output, session) {
                              labels = c("Días Temp. Mín. < 3ºC",
                                         "Días Temp. Máx. > 25ºC")))
       
-     
+      
       
       
       tt_dias_extremos <- ggplot(dias_extremos_long, 
@@ -1542,8 +1795,8 @@ server <- function(input, output, session) {
   
   
   ##### AMBIENTE #####
-
- periodo_critico <- reactive({
+  
+  periodo_critico <- reactive({
     
     req(input$mes_siembra_ambiente, input$dia_siembra_ambiente)
     
@@ -1553,17 +1806,24 @@ server <- function(input, output, session) {
     fecha_siembra_dia_mes <- as.Date(sprintf("%02d-%02d", mes_siembra, dia_siembra), format = "%m-%d")
     
     cultivo <- input$cultivo_ambiente
-
-    if (cultivo == "maiz") {
-      gd_min <- 670
-      gd_max <- 1120
-    } else if (cultivo == "soja") {
-
-      dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
+    
+    dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
+    
+    if (dia_juliano < 40) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    if (cultivo == "maiz_largo") {
       
-      if (dia_juliano < 60) {
-        dia_juliano <- dia_juliano + 365
-      }
+      gd_min <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      gd_max <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      
+    } else if (cultivo == "maiz_corto") {
+      
+      gd_min <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      gd_max <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      
+    } else if (cultivo == "soja") {
       
       gd_min <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * (dia_juliano)) - 4047.4), 0)
       gd_max <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
@@ -1592,14 +1852,16 @@ server <- function(input, output, session) {
         ) %>%
         mutate(
           TTB = case_when(
-            cultivo == "maiz" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 0, Temperatura_Abrigo_150cm - 8),
+            input$cultivo_ambiente %in% c("maiz_largo", "maiz_corto") ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                                                                0, 
+                                                                                Temperatura_Abrigo_150cm - 8),
             cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, 0, Temperatura_Abrigo_150cm - 11)
             # ,
             # TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 0, Temperatura_Abrigo_150cm - 9)
           ),
           GD_acum = cumsum(TTB)
         )
-
+      
       datos_periodo_critico <- datos_ano %>%
         filter(GD_acum >= gd_min & GD_acum <= gd_max)
       
@@ -1629,12 +1891,12 @@ server <- function(input, output, session) {
     }
     
     return(historicos_periodo_critico)
-
+    
   })
-
+  
   output$pp_acum_PC <- renderPlotly({
     historicos_periodo_critico <- periodo_critico()
-
+    
     historicos_periodo_critico$decada <- ifelse(historicos_periodo_critico$ano >= 2010,
                                                 2010, 
                                                 floor(historicos_periodo_critico$ano / 10) * 10)
@@ -1644,8 +1906,8 @@ server <- function(input, output, session) {
     mediana_lluvia_decada <- historicos_periodo_critico %>%
       group_by(decada) %>%
       reframe(mediana_lluvia = median(lluvia_acumulada, na.rm = TRUE),
-                mediana_etp = median(etp_acumulada, na.rm = TRUE),
-                decada_fin = ifelse(decada == 2010, 2024, decada + 10))
+              mediana_etp = median(etp_acumulada, na.rm = TRUE),
+              decada_fin = ifelse(decada == 2010, 2024, decada + 10))
     
     pp_acum <- ggplot(historicos_periodo_critico, 
                       aes(x = ano)) +
@@ -1676,9 +1938,9 @@ server <- function(input, output, session) {
     
   })
   
-  output$rad_temp <- renderPlotly({
+  output$rad_temp_PC <- renderPlotly({
     historicos_periodo_critico <- periodo_critico()
-
+    
     historicos_periodo_critico$decada <- ifelse(historicos_periodo_critico$ano >= 2011,
                                                 2011, 
                                                 floor(historicos_periodo_critico$ano / 11) * 11)
@@ -1688,7 +1950,7 @@ server <- function(input, output, session) {
     mediana_dias_35_decada <- historicos_periodo_critico %>%
       group_by(decada) %>%
       reframe(mediana_dias_mayores_35 = median(dias_mayores_35, na.rm = TRUE),
-                decada_fin = ifelse(decada == 2011, 2024, decada + 10))
+              decada_fin = ifelse(decada == 2011, 2024, decada + 10))
     
     
     historicos_long <- historicos_periodo_critico %>%
@@ -1731,159 +1993,389 @@ server <- function(input, output, session) {
       scale_x_continuous(breaks = seq(min(historicos_periodo_critico$ano), 
                                       max(historicos_periodo_critico$ano), by = 5)) +
       guides(fill = "none")
-
+    
     ggplotly(rad_temp) %>%
       layout(legend = list(orientation = "h", x = 0.05, y = 1.2))
     
   })
   
   ####### Comparación fechas de siembra ############
+  
+  calcular_periodo_critico <- function(mes_siembra, dia_siembra, cultivo, datos, datos_historicos_avg) {
     
-    calcular_periodo_critico <- function(mes_siembra, dia_siembra, cultivo, datos, datos_historicos_avg) {
+    
+    dia_siembra <- as.numeric(dia_siembra)
+    mes_siembra <- as.numeric(mes_siembra)
+    
+    fecha_siembra_dia_mes <- as.Date(sprintf("%02d-%02d", mes_siembra, dia_siembra), format = "%m-%d")
+    
+    dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
+    
+    if (dia_juliano < 40) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    if (cultivo == "maiz_largo") {
       
+      gd_min <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      gd_max <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       
-      dia_siembra <- as.numeric(dia_siembra)
-      mes_siembra <- as.numeric(mes_siembra)
+    } else if (cultivo == "maiz_corto") {
       
-      fecha_siembra_dia_mes <- as.Date(sprintf("%02d-%02d", mes_siembra, dia_siembra), format = "%m-%d")
+      gd_min <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      gd_max <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
       
-      # cultivo <- input$cultivo_ambiente
+    } else if (cultivo == "soja") {
       
-      if (cultivo == "maiz") {
-        
-        gd_min <- 670
-        gd_max <- 1120
-        
-      } else if (cultivo == "soja") {
-        
-        dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
-        
-        if (dia_juliano < 40) {
-          dia_juliano <- dia_juliano + 365
-        }
-        
-        gd_min <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * (dia_juliano)) - 4047.4), 0)
-        gd_max <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
-      }
-      
-      
-      historicos_periodo_critico <- data.frame(
-        ano = integer(),
-        lluvia_acumulada = numeric(),
-        etp_acumulada = numeric(),
-        radiacion_global_media = numeric(),
-        dias_mayores_35 = numeric(),
-        inicio = as.Date(character()),  
-        fin = as.Date(character())
-      )
-      
-      for (ano in 2010:2025) {
-        datos_ano <- datos %>%
-          filter(
-            (format(Fecha, "%Y") == as.character(ano) & format(Fecha, "%m-%d") >= format(fecha_siembra_dia_mes, "%m-%d")) |
-              (format(Fecha, "%Y") == as.character(ano + 1) & format(Fecha, "%m-%d") < "12-31")
-          ) %>%
-          arrange(Fecha) %>%
-          mutate(
-            Dia_Mes = format(Fecha, "%m-%d")
-          ) %>%
-          mutate(
-            TTB = case_when(
-              cultivo == "maiz" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 0, Temperatura_Abrigo_150cm - 8),
-              cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, 0, Temperatura_Abrigo_150cm - 11)
-              # ,
-              # TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 0, Temperatura_Abrigo_150cm - 9)
-            ),
-            GD_acum = cumsum(TTB)
-          )
-        
-        datos_periodo_critico <- datos_ano %>%
-          filter(GD_acum >= gd_min & GD_acum <= gd_max)
-        
-        fecha_inicio <- if (nrow(datos_periodo_critico) > 0) min(datos_periodo_critico$Fecha) else NA
-        fecha_fin <- if (nrow(datos_periodo_critico) > 0) max(datos_periodo_critico$Fecha) else NA
-        
-        
-        
-        lluvia_acumulada <- if (nrow(datos_periodo_critico) > 0) {
-          sum(round(datos_periodo_critico$Precipitacion_Pluviometrica, 0), na.rm = TRUE)
-        } else 0
-        
-        etp_acumulada <- if (nrow(datos_periodo_critico) > 0) {
-          sum(round(datos_periodo_critico$Evapotranspiracion_Potencial, 0), na.rm = TRUE)
-        } else 0
-        
-        radiacion_global_media <- if (nrow(datos_periodo_critico) > 0) {
-          mean(round(datos_periodo_critico$Radiacion_Global, 0), na.rm = TRUE)
-        } else NA
-        
-        dias_mayores_35 <- if (nrow(datos_periodo_critico) > 0) {
-          sum(datos_periodo_critico$Temperatura_Abrigo_150cm_Maxima >= 35, na.rm = TRUE)
-        } else 0
-        
-        historicos_periodo_critico <- rbind(
-          historicos_periodo_critico,
-          data.frame(
-            ano = ano,
-            lluvia_acumulada = lluvia_acumulada,
-            etp_acumulada = etp_acumulada,
-            radiacion_global_media = radiacion_global_media,
-            dias_mayores_35 = dias_mayores_35,
-            inicio = fecha_inicio,  
-            fin = fecha_fin 
-          )
+      gd_min <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * (dia_juliano)) - 4047.4), 0)
+      gd_max <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
+    }
+    
+    
+    historicos_periodo_critico <- data.frame(
+      ano = integer(),
+      lluvia_acumulada = numeric(),
+      etp_acumulada = numeric(),
+      radiacion_global_media = numeric(),
+      dias_mayores_35 = numeric(),
+      inicio = as.Date(character()),  
+      fin = as.Date(character())
+    )
+    
+    for (ano in 2010:2025) {
+      datos_ano <- datos %>%
+        filter(
+          (format(Fecha, "%Y") == as.character(ano) & format(Fecha, "%m-%d") >= format(fecha_siembra_dia_mes, "%m-%d")) |
+            (format(Fecha, "%Y") == as.character(ano + 1) & format(Fecha, "%m-%d") < "12-31")
+        ) %>%
+        arrange(Fecha) %>%
+        mutate(
+          Dia_Mes = format(Fecha, "%m-%d")
+        ) %>%
+        mutate(
+          TTB = case_when(
+            cultivo == "maiz_largo" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                              0, 
+                                              Temperatura_Abrigo_150cm - 8),
+            cultivo == "maiz_corto" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                              0, 
+                                              Temperatura_Abrigo_150cm - 8),
+            
+            cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, 
+                                        0, 
+                                        Temperatura_Abrigo_150cm - 11)
+            # ,
+            # TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 0, Temperatura_Abrigo_150cm - 9)
+          ),
+          GD_acum = cumsum(TTB)
         )
+      
+      datos_periodo_critico <- datos_ano %>%
+        filter(GD_acum >= gd_min & GD_acum <= gd_max)
+      
+      if (nrow(datos_periodo_critico) > 0) {
+        
+        fecha_inicio <- min(datos_periodo_critico$Fecha)
+        fecha_fin <- max(datos_periodo_critico$Fecha)
+        lluvia_acumulada <- sum(round(datos_periodo_critico$Precipitacion_Pluviometrica, 0), na.rm = TRUE)
+        etp_acumulada <- sum(round(datos_periodo_critico$Evapotranspiracion_Potencial, 0), na.rm = TRUE)
+        radiacion_global_media <- mean(round(datos_periodo_critico$Radiacion_Global, 0), na.rm = TRUE)
+        dias_mayores_35 <- sum(datos_periodo_critico$Temperatura_Abrigo_150cm_Maxima >= 35, na.rm = TRUE)
+        
+      } else {
+        fecha_inicio <- fecha_fin <- NA
+        lluvia_acumulada <- etp_acumulada <- radiacion_global_media <- dias_mayores_35 <- NA
       }
       
-     
-      # Convertir las fechas a día juliano
-      historicos_periodo_critico$inicio_juliano <- yday(historicos_periodo_critico$inicio)
-      historicos_periodo_critico$fin_juliano <- yday(historicos_periodo_critico$fin)
-      
-      historicos_periodo_critico$inicio_juliano <- ifelse(historicos_periodo_critico$inicio_juliano < 100, 
-                                                          historicos_periodo_critico$inicio_juliano + 365, 
-                                                          historicos_periodo_critico$inicio_juliano)
-
-      
-      
-      # Calcular el promedio de los días julianos
-      promedio_inicio_juliano <- mean(historicos_periodo_critico$inicio_juliano, na.rm = TRUE)
-      promedio_fin_juliano <- mean(historicos_periodo_critico$fin_juliano, na.rm = TRUE)
-      
-      
-      # Convertir los días julianos promedio de vuelta a fechas
-      fecha_promedio_inicio <- as.Date(promedio_inicio_juliano - 1, origin = "2024-01-01")
-      fecha_promedio_fin <- as.Date(promedio_fin_juliano - 1, origin = "2024-01-01")
-      
-      
-      fecha_inicio <- format(fecha_promedio_inicio, "%d-%m")
-      fecha_fin <- format(fecha_promedio_fin, "%d-%m")
-
-      return(
-        list(
-          historicos = historicos_periodo_critico,
-          fecha_inicio = fecha_inicio,
-          fecha_fin = fecha_fin
+      historicos_periodo_critico <- rbind(
+        historicos_periodo_critico,
+        data.frame(
+          ano = ano,
+          lluvia_acumulada = lluvia_acumulada,
+          etp_acumulada = etp_acumulada,
+          radiacion_global_media = radiacion_global_media,
+          dias_mayores_35 = dias_mayores_35,
+          inicio = fecha_inicio,  
+          fin = fecha_fin 
         )
       )
     }
+    
+    
+    # Convertir las fechas a día juliano
+    historicos_periodo_critico$inicio_juliano <- yday(historicos_periodo_critico$inicio)
+    historicos_periodo_critico$fin_juliano <- yday(historicos_periodo_critico$fin)
+    
+    historicos_periodo_critico$inicio_juliano <- ifelse(historicos_periodo_critico$inicio_juliano < 100, 
+                                                        historicos_periodo_critico$inicio_juliano + 365, 
+                                                        historicos_periodo_critico$inicio_juliano)
+    
+    
+    
+    # Calcular el promedio de los días julianos
+    promedio_inicio_juliano <- mean(historicos_periodo_critico$inicio_juliano, na.rm = TRUE)
+    promedio_fin_juliano <- mean(historicos_periodo_critico$fin_juliano, na.rm = TRUE)
+    
+    
+    # Convertir los días julianos promedio de vuelta a fechas
+    fecha_promedio_inicio <- as.Date(promedio_inicio_juliano - 1, origin = "2024-01-01")
+    fecha_promedio_fin <- as.Date(promedio_fin_juliano - 1, origin = "2024-01-01")
+    
+    
+    fecha_inicio <- format(fecha_promedio_inicio, "%d-%m")
+    fecha_fin <- format(fecha_promedio_fin, "%d-%m")
+    
+    return(
+      list(
+        historicos = historicos_periodo_critico,
+        fecha_inicio = fecha_inicio,
+        fecha_fin = fecha_fin
+      )
+    )
+  }
   
-    periodo_critico1 <- reactive({
-      req(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha)
-      calcular_periodo_critico(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha, datos, datos_historicos_avg)
-    })
-    
-    periodo_critico2 <- reactive({
-      req(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha)
-      calcular_periodo_critico(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha, datos, datos_historicos_avg)
-    })
-    
-    periodo_critico3 <- reactive({
-      req(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha)
-      calcular_periodo_critico(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha, datos, datos_historicos_avg)
-    })
-    
-    
+  periodo_critico1 <- reactive({
+    req(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha)
+    calcular_periodo_critico(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  periodo_critico2 <- reactive({
+    req(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha)
+    calcular_periodo_critico(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  periodo_critico3 <- reactive({
+    req(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha)
+    calcular_periodo_critico(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  ##############
+  
+  # calcular_periodo_critico_auto <- function(cultivo, datos, datos_historicos_avg) {
+  # 
+  #   resultados <- data.frame(
+  #     mes_siembra = integer(),
+  #     dia_siembra = integer(),
+  #     año = integer(),
+  #     lluvia_acumulada = numeric(),
+  #     etp_acumulada = numeric(),
+  #     radiacion_global_media = numeric(),
+  #     dias_mayores_35 = numeric(),
+  #     inicio_periodo = as.Date(character()),
+  #     fin_periodo = as.Date(character())
+  #   )
+  # 
+  #   # Iterar por cada mes y día entre septiembre y diciembre
+  #   for (mes_siembra in 10:12) {
+  #     for (dia_siembra in 1:31) {
+  # 
+  #       # Saltar días no válidos en cada mes
+  #       if (!tryCatch({
+  #         as.Date(sprintf("2024-%02d-%02d", mes_siembra, dia_siembra))
+  #         TRUE
+  #       }, error = function(e) FALSE)) {
+  #         next
+  #       }
+  # 
+  #       # Fecha de siembra (día y mes)
+  #       fecha_siembra_dia_mes <- as.Date(sprintf("2024-%02d-%02d", mes_siembra, dia_siembra))
+  #       dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
+  # 
+  #       if (dia_juliano < 100) {
+  #         dia_juliano <- dia_juliano + 365
+  #       }
+  # 
+  #       # Determinación de GD mínimos y máximos
+  #       if (cultivo == "maiz_largo") {
+  #         gd_min <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+  #         gd_max <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+  # 
+  #         } else if (cultivo == "maiz_corto") {
+  #         gd_min <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+  #         gd_max <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+  # 
+  #         } else if (cultivo == "soja") {
+  #         gd_min <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * (dia_juliano)) - 4047.4), 0)
+  #         gd_max <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
+  #       }
+  # 
+  #       # Loop para cada año entre 2010 y 2025
+  #       for (ano in 2010:2025) {
+  #         datos_ano <- datos %>%
+  #           filter(
+  #             (format(Fecha, "%Y") == as.character(ano) & format(Fecha, "%m-%d") >= format(fecha_siembra_dia_mes, "%m-%d")) |
+  #               (format(Fecha, "%Y") == as.character(ano + 1) & format(Fecha, "%m-%d") < "12-31")
+  #           ) %>%
+  #           arrange(Fecha) %>%
+  #           mutate(
+  #             Dia_Mes = format(Fecha, "%m-%d"),
+  #             TTB = case_when(
+  #               cultivo == "maiz_largo" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0,
+  #                                                 0,
+  #                                                 Temperatura_Abrigo_150cm - 8),
+  #               cultivo == "maiz_corto" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0,
+  #                                                 0,
+  #                                                 Temperatura_Abrigo_150cm - 8),
+  #               cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0,
+  #                                           0,
+  #                                           Temperatura_Abrigo_150cm - 11)
+  #             ),
+  #             GD_acum = cumsum(TTB)
+  #           )
+  # 
+  #         # Filtrar datos dentro del periodo crítico de GD acumulados
+  #         datos_periodo_critico <- datos_ano %>%
+  #           filter(GD_acum >= gd_min & GD_acum <= gd_max)
+  # 
+  #         if (nrow(datos_periodo_critico) > 0) {
+  # 
+  #           fecha_inicio <- min(datos_periodo_critico$Fecha)
+  #           fecha_fin <- max(datos_periodo_critico$Fecha)
+  #           lluvia_acumulada <- sum(round(datos_periodo_critico$Precipitacion_Pluviometrica, 0), na.rm = TRUE)
+  #           etp_acumulada <- sum(round(datos_periodo_critico$Evapotranspiracion_Potencial, 0), na.rm = TRUE)
+  #           radiacion_global_media <- mean(round(datos_periodo_critico$Radiacion_Global, 0), na.rm = TRUE)
+  #           dias_mayores_35 <- sum(datos_periodo_critico$Temperatura_Abrigo_150cm_Maxima >= 35, na.rm = TRUE)
+  # 
+  #           } else {
+  #           fecha_inicio <- fecha_fin <- NA
+  #           lluvia_acumulada <- etp_acumulada <- radiacion_global_media <- dias_mayores_35 <- NA
+  #         }
+  # 
+  #         resultados <- rbind(
+  #           resultados,
+  #           data.frame(
+  #             mes_siembra = mes_siembra,
+  #             dia_siembra = dia_siembra,
+  #             año = ano,
+  #             lluvia_acumulada = lluvia_acumulada,
+  #             etp_acumulada = etp_acumulada,
+  #             radiacion_global_media = radiacion_global_media,
+  #             dias_mayores_35 = dias_mayores_35,
+  #             inicio_periodo = fecha_inicio,
+  #             fin_periodo = fecha_fin
+  #           )
+  #         )
+  #       }
+  #     }
+  #   }
+  # 
+  #   return(resultados)
+  # }
+  # 
+  # # Ejecutar funciones
+  # resultados_maiz_largo <- calcular_periodo_critico_auto("maiz_largo",
+  #                                                        datos,
+  #                                                        datos_historicos_avg)
+  # 
+  # resultados_maiz_corto <- calcular_periodo_critico_auto("maiz_corto",
+  #                                                        datos,
+  #                                                        datos_historicos_avg)
+  
+  # resultados_soja <- calcular_periodo_critico_auto("soja",
+  #                                                  datos,
+  #                                                  datos_historicos_avg)
+  
+  # resumen_maiz_largo <- resultados_maiz_largo %>%
+  #   mutate(
+  #     inicio_juliano = yday(inicio_periodo),
+  #     fin_juliano = yday(fin_periodo),
+  #     inicio_juliano = ifelse(inicio_juliano < 100,
+  #                             inicio_juliano + 365,
+  #                             inicio_juliano),
+  #     fin_juliano = ifelse(fin_juliano < 100,
+  #                          fin_juliano + 365,
+  #                          fin_juliano)) %>%
+  #   group_by(mes_siembra, dia_siembra) %>%
+  #   summarize(
+  #     mediana_lluvia_acumulada = median(lluvia_acumulada, na.rm = TRUE),
+  #     mediana_etp_acumulada = median(etp_acumulada, na.rm = TRUE),
+  #     promedio_radiacion_global = mean(radiacion_global_media, na.rm = TRUE),
+  #     promedio_dias_mayores_35 = mean(dias_mayores_35, na.rm = TRUE),
+  #     promedio_inicio_juliano = mean(inicio_juliano, na.rm = TRUE),
+  #     promedio_fin_juliano = mean(fin_juliano, na.rm = TRUE)
+  #   ) %>%
+  #   mutate(
+  #     fecha_inicio = format(as.Date(promedio_inicio_juliano - 1,
+  #                                   origin = "2024-01-01"),
+  #                           "%d-%m"),
+  #     fecha_fin = format(as.Date(promedio_fin_juliano - 1,
+  #                                origin = "2024-01-01"),
+  #                        "%d-%m")
+  #   ) %>%
+  #   ungroup()
+  # 
+  # resumen_maiz_corto <- resultados_maiz_corto %>%
+  #   mutate(
+  #     inicio_juliano = yday(inicio_periodo),
+  #     fin_juliano = yday(fin_periodo),
+  #     inicio_juliano = ifelse(inicio_juliano < 100,
+  #                             inicio_juliano + 365,
+  #                             inicio_juliano),
+  #     fin_juliano = ifelse(fin_juliano < 100,
+  #                          fin_juliano + 365,
+  #                          fin_juliano)) %>%
+  #   group_by(mes_siembra, dia_siembra) %>%
+  #   summarize(
+  #     mediana_lluvia_acumulada = median(lluvia_acumulada, na.rm = TRUE),
+  #     mediana_etp_acumulada = median(etp_acumulada, na.rm = TRUE),
+  #     promedio_radiacion_global = mean(radiacion_global_media, na.rm = TRUE),
+  #     promedio_dias_mayores_35 = mean(dias_mayores_35, na.rm = TRUE),
+  #     promedio_inicio_juliano = mean(inicio_juliano, na.rm = TRUE),
+  #     promedio_fin_juliano = mean(fin_juliano, na.rm = TRUE)
+  #   ) %>%
+  #   mutate(
+  #     fecha_inicio = format(as.Date(promedio_inicio_juliano - 1,
+  #                                   origin = "2024-01-01"),
+  #                           "%d-%m"),
+  #     fecha_fin = format(as.Date(promedio_fin_juliano - 1,
+  #                                origin = "2024-01-01"),
+  #                        "%d-%m")
+  #   ) %>%
+  #   ungroup()
+  
+  
+  # resumen_soja <- resultados_soja %>%
+  #   mutate(
+  #     inicio_juliano = yday(inicio_periodo),
+  #     fin_juliano = yday(fin_periodo),
+  #     inicio_juliano = ifelse(inicio_juliano < 100,
+  #                             inicio_juliano + 365,
+  #                             inicio_juliano),
+  #     fin_juliano = ifelse(fin_juliano < 100,
+  #                          fin_juliano + 365,
+  #                          fin_juliano)) %>%
+  #   group_by(mes_siembra, dia_siembra) %>%
+  #   summarize(
+  #     mediana_lluvia_acumulada = round(median(lluvia_acumulada, na.rm = TRUE), 0),
+  #     mediana_etp_acumulada = round(median(etp_acumulada, na.rm = TRUE), 0),
+  #     promedio_radiacion_global = round(mean(radiacion_global_media, na.rm = TRUE), 2),
+  #     promedio_dias_mayores_35 = round(mean(dias_mayores_35, na.rm = TRUE), 0),
+  #     promedio_inicio_juliano = round(mean(inicio_juliano, na.rm = TRUE), 0),
+  #     promedio_fin_juliano = round(mean(fin_juliano, na.rm = TRUE), 0)
+  #   ) %>%
+  #   mutate(
+  #     fecha_inicio = format(as.Date(promedio_inicio_juliano - 1,
+  #                                   origin = "2024-01-01"),
+  #                           "%d-%m"),
+  #     fecha_fin = format(as.Date(promedio_fin_juliano - 1,
+  #                                origin = "2024-01-01"),
+  #                        "%d-%m")
+  #   ) %>%
+  #   ungroup()
+  
+  
+  # mejores_dias_por_cultivo <- resumen_maiz_corto %>%
+  #   arrange(desc(mediana_lluvia_acumulada),
+  #           desc(promedio_radiacion_global)) %>%
+  #   slice(1:5) %>%
+  #   ungroup()
+  # write_xlsx(mejores_dias_por_cultivo,
+  #            "mejores_dias_maiz_corto.xlsx")
+  
+  ##############
+  
+  
+  ##############
   
   observeEvent(input$btn_calcular, {
     historicos_periodo_critico1 <- periodo_critico1()
@@ -1914,233 +2406,640 @@ server <- function(input, output, session) {
       paste("Fecha fin periodo crítico:", as.character(periodo_critico3()$fecha_fin))
     })
     
+    
     #Lluvia
-  output$gg_lluvia <- renderPlotly({
-    historicos_periodo_critico1 <- periodo_critico1()$historicos
-    historicos_periodo_critico2 <- periodo_critico2()$historicos
-    historicos_periodo_critico3 <- periodo_critico3()$historicos
-    
-    fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
-                paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
-                paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
-    
-    # Verificar si las fechas son únicas
-    if (length(unique(fechas)) < length(fechas)) {
-      # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
-      plot_blank <- ggplot() + 
-        theme_void() + 
-        annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
-        labs(title = "")
+    output$pc_lluvia <- renderPlotly({
+      historicos_periodo_critico1 <- periodo_critico1()$historicos
+      historicos_periodo_critico2 <- periodo_critico2()$historicos
+      historicos_periodo_critico3 <- periodo_critico3()$historicos
       
-      return(plot_blank)
+      fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
+                  paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
+                  paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
+      
+      # Verificar si las fechas son únicas
+      if (length(unique(fechas)) < length(fechas)) {
+        # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
+        plot_blank <- ggplot() + 
+          theme_void() + 
+          annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
+          labs(title = "")
+        
+        return(plot_blank)
       }
+      
+      # Calcular estadísticas
+      mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
+      
+      mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
+      
+      mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
+      
+      # Crear un nuevo df con las estadísticas
+      estadisticas <- data.frame(
+        fecha = fechas,
+        lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+        etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+        radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+        dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
+      )
+      
+      estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
+      
+      
+      # Graficar
+      pc_lluvia <- ggplot(estadisticas, 
+                          aes(x = fecha, 
+                              y = lluvia_acumulada, 
+                              fill = fecha)) +
+        geom_bar(aes(y = lluvia_acumulada, fill = fecha), 
+                 stat = "identity", 
+                 position = position_dodge(0.9)) +
+        geom_bar(aes(y = etp_acumulada, fill = fecha), 
+                 stat = "identity", 
+                 alpha = 0.4,   
+                 position = position_dodge(0.9)) +
+        geom_text(aes(y = lluvia_acumulada, label = lluvia_acumulada), 
+                  position = position_dodge(0.9),  
+                  vjust = -0.5, size = 3) +
+        geom_text(aes(y = etp_acumulada, label = etp_acumulada), 
+                  position = position_dodge(0.9), 
+                  vjust = -0.5, size = 3, color = "black") +
+        labs(title = "",
+             x = "",
+             y = " mm",
+             fill = NULL) +
+        theme_minimal() +
+        scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
+        theme(axis.text.x = element_text(size = 10),
+              axis.ticks.x = element_blank()) +
+        guides(fill = "none")
+      
+      
+      ggplotly(pc_lluvia) 
+    })
     
-    # Calcular estadísticas
-    mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
     
-    mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
-    
-    mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
-    
-    # Crear un nuevo df con las estadísticas
-    estadisticas <- data.frame(
-      fecha = fechas,
-      lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
-      etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
-      radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
-      dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
-    )
-    
-    estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
-    
-    
-    # Graficar
-    gg_lluvia <- ggplot(estadisticas, 
-                           aes(x = fecha, 
-                               y = lluvia_acumulada, 
-                               fill = fecha)) +
-      geom_bar(aes(y = lluvia_acumulada, fill = fecha), 
-               stat = "identity", 
-               position = position_dodge(0.9)) +
-      geom_bar(aes(y = etp_acumulada, fill = fecha), 
-               stat = "identity", 
-               alpha = 0.4,   
-               position = position_dodge(0.9)) +
-      geom_text(aes(y = lluvia_acumulada, label = lluvia_acumulada), 
-                position = position_dodge(0.9),  
-                vjust = -0.5, size = 3) +
-      geom_text(aes(y = etp_acumulada, label = etp_acumulada), 
-                position = position_dodge(0.9), 
-                vjust = -0.5, size = 3, color = "black") +
-      labs(title = "",
-           x = "",
-           y = " mm",
-           fill = NULL) +
-      theme_minimal() +
-      scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
-      theme(axis.text.x = element_text(size = 10),
-            axis.ticks.x = element_blank()) +
-      guides(fill = "none")
-    
-    
-    ggplotly(gg_lluvia) 
-  })
-  
-  
     #Radiacion
-  output$gg_radiacion <- renderPlotly({
-    historicos_periodo_critico1 <- periodo_critico1()$historicos
-    historicos_periodo_critico2 <- periodo_critico2()$historicos
-    historicos_periodo_critico3 <- periodo_critico3()$historicos
-    
-    fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
-                paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
-                paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
-    
-    # Verificar si las fechas son únicas
-    if (length(unique(fechas)) < length(fechas)) {
-      # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
-      plot_blank <- ggplot() + 
-        theme_void() + 
-        annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
-        labs(title = "")
+    output$pc_radiacion <- renderPlotly({
+      historicos_periodo_critico1 <- periodo_critico1()$historicos
+      historicos_periodo_critico2 <- periodo_critico2()$historicos
+      historicos_periodo_critico3 <- periodo_critico3()$historicos
       
-      return(plot_blank)
-    }
+      fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
+                  paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
+                  paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
+      
+      # Verificar si las fechas son únicas
+      if (length(unique(fechas)) < length(fechas)) {
+        # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
+        plot_blank <- ggplot() + 
+          theme_void() + 
+          annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
+          labs(title = "")
+        
+        return(plot_blank)
+      }
+      
+      # Calcular estadísticas
+      mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
+      
+      mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
+      
+      mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
+      
+      # Crear un nuevo dataframe con las estadísticas
+      estadisticas <- data.frame(
+        fecha = fechas,
+        lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+        etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+        radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+        dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
+      )
+      
+      estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
+      
+      # Graficar
+      pc_radiacion <- ggplot(estadisticas, aes(x = fecha, y = radiacion_media, fill = fecha)) +
+        geom_bar(stat = "identity") +
+        geom_text(aes(label = round(radiacion_media)), 
+                  position = position_stack(vjust = 1.05),  
+                  size = 3) +
+        labs(title = "",
+             x = "",
+             y = " Mj / m2 * día") +
+        theme_minimal() +
+        scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
+        theme(axis.text.x = element_text(size = 10),
+              axis.ticks.x = element_blank()) +
+        guides(fill = "none") 
+      
+      
+      ggplotly(pc_radiacion) 
+    })
     
-    # Calcular estadísticas
-    mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
-    
-    mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
-    
-    mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
-    
-    # Crear un nuevo dataframe con las estadísticas
-    estadisticas <- data.frame(
-      fecha = fechas,
-      lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
-      etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
-      radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
-      dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
-    )
-    
-    estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
-    
-    # Graficar
-    gg_radiacion <- ggplot(estadisticas, aes(x = fecha, y = radiacion_media, fill = fecha)) +
-      geom_bar(stat = "identity") +
-      geom_text(aes(label = round(radiacion_media)), 
-                position = position_stack(vjust = 1.05),  
-                size = 3) +
-      labs(title = "",
-           x = "",
-           y = " Mj / m2 * día") +
-      theme_minimal() +
-      scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
-      theme(axis.text.x = element_text(size = 10),
-            axis.ticks.x = element_blank()) +
-      guides(fill = "none") 
-    
-    
-    ggplotly(gg_radiacion) 
+    #Dias>35ºC
+    output$pc_dias_35 <- renderPlotly({
+      historicos_periodo_critico1 <- periodo_critico1()$historicos
+      historicos_periodo_critico2 <- periodo_critico2()$historicos
+      historicos_periodo_critico3 <- periodo_critico3()$historicos
+      
+      fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
+                  paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
+                  paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
+      
+      # Verificar si las fechas son únicas
+      if (length(unique(fechas)) < length(fechas)) {
+        # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
+        plot_blank <- ggplot() + 
+          theme_void() + 
+          annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
+          labs(title = "")
+        
+        return(plot_blank)
+      }
+      
+      # Calcular estadísticas
+      mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
+      
+      mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
+      
+      mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
+      
+      # Crear un nuevo dataframe con las estadísticas
+      estadisticas <- data.frame(
+        fecha = fechas,
+        lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+        etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+        radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+        dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
+      )
+      
+      estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
+      
+      # Graficar
+      pc_dias_35 <- ggplot(estadisticas, aes(x = fecha, y = dias_mayores_35, fill = fecha)) +
+        geom_bar(stat = "identity") +
+        geom_text(aes(label = dias_mayores_35), 
+                  position = position_stack(vjust = 1.05),  
+                  size = 3) +
+        labs(title = "",
+             x = "",
+             y = "# días") +
+        theme_minimal() +
+        scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
+        theme(axis.text.x = element_text(size = 10),
+              axis.ticks.x = element_blank()) +
+        guides(fill = "none") 
+      
+      
+      ggplotly(pc_dias_35) 
+    })
   })
   
-  #Dias>35ºC
-  output$gg_dias_35 <- renderPlotly({
-    historicos_periodo_critico1 <- periodo_critico1()$historicos
-    historicos_periodo_critico2 <- periodo_critico2()$historicos
-    historicos_periodo_critico3 <- periodo_critico3()$historicos
+  ## llenado de grano ##
+  calcular_llenado_grano <- function(mes_siembra, dia_siembra, cultivo, datos, datos_historicos_avg) {
     
-    fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
-                paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
-                paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
     
-    # Verificar si las fechas son únicas
-    if (length(unique(fechas)) < length(fechas)) {
-      # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
-      plot_blank <- ggplot() + 
-        theme_void() + 
-        annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
-        labs(title = "")
-      
-      return(plot_blank)
+    dia_siembra <- as.numeric(dia_siembra)
+    mes_siembra <- as.numeric(mes_siembra)
+    
+    fecha_siembra_dia_mes <- as.Date(sprintf("%02d-%02d", mes_siembra, dia_siembra), format = "%m-%d")
+    
+    dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
+    
+    if (dia_juliano < 40) {
+      dia_juliano <- dia_juliano + 365
     }
     
-    # Calcular estadísticas
-    mediana_lluvia1 <- median(round(historicos_periodo_critico1$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp1 <- median(round(historicos_periodo_critico1$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion1 <- mean(round(historicos_periodo_critico1$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_1 <- median(round(historicos_periodo_critico1$dias_mayores_35, 0), na.rm = TRUE)
+    if (input$cultivo == "maiz_largo") {
+      
+      
+      gd_min <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      gd_max <- round(((-0.0024 * (dia_juliano^2)) - (1.7585 * dia_juliano) + 2469.3), 0)
+      
+    } else if (input$cultivo == "maiz_corto") {
+      
+      
+      gd_min <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      gd_max <- round(((-0.0212 * (dia_juliano^2)) + (10.045 * dia_juliano) + 420.61), 0) 
+      
+    } else if (cultivo == "soja") {
+      
+      dia_juliano <- as.numeric(format(fecha_siembra_dia_mes, "%j"))
+      
+      gd_min <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
+      gd_max <- round(((-0.0466 * (dia_juliano^2)) + (26.344 * dia_juliano) - 2479.9), 0)
+      
+    }
     
-    mediana_lluvia2 <- median(round(historicos_periodo_critico2$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp2 <- median(round(historicos_periodo_critico2$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion2 <- mean(round(historicos_periodo_critico2$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_2 <- median(round(historicos_periodo_critico2$dias_mayores_35, 0), na.rm = TRUE)
     
-    mediana_lluvia3 <- median(round(historicos_periodo_critico3$lluvia_acumulada, 0), na.rm = TRUE)
-    mediana_etp3 <- median(round(historicos_periodo_critico3$etp_acumulada, 0), na.rm = TRUE)
-    promedio_radiacion3 <- mean(round(historicos_periodo_critico3$radiacion_global_media, 0), na.rm = TRUE)
-    mediana_dias_mayores_35_3 <- median(round(historicos_periodo_critico3$dias_mayores_35, 0), na.rm = TRUE)
-    
-    # Crear un nuevo dataframe con las estadísticas
-    estadisticas <- data.frame(
-      fecha = fechas,
-      lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
-      etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
-      radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
-      dias_mayores_35 = c(mediana_dias_mayores_35_1, mediana_dias_mayores_35_2, mediana_dias_mayores_35_3)
+    historicos_llenado_grano <- data.frame(
+      ano = integer(),
+      lluvia_acumulada = numeric(),
+      etp_acumulada = numeric(),
+      radiacion_global_media = numeric(),
+      dias_minimas_2 = numeric(),
+      inicio = as.Date(character()),  
+      fin = as.Date(character())
     )
     
-    estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
+    for (ano in 2010:2025) {
+      datos_ano <- datos %>%
+        filter(
+          (format(Fecha, "%Y") == as.character(ano) & format(Fecha, "%m-%d") >= format(fecha_siembra_dia_mes, "%m-%d")) |
+            (format(Fecha, "%Y") == as.character(ano + 1) & format(Fecha, "%m-%d") < "12-31")
+        ) %>%
+        arrange(Fecha) %>%
+        mutate(
+          Dia_Mes = format(Fecha, "%m-%d")
+        ) %>%
+        mutate(
+          TTB = case_when(
+            input$cultivo %in% c("maiz_largo", "maiz_corto") ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                                                       0, 
+                                                                       Temperatura_Abrigo_150cm - 8),
+            
+            cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, 
+                                        0, 
+                                        Temperatura_Abrigo_150cm - 11)
+            # ,
+            # TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 0, Temperatura_Abrigo_150cm - 9)
+          ),
+          GD_acum = cumsum(TTB)
+        )
+      
+      datos_llenado_grano <- datos_ano %>%
+        filter(GD_acum >= gd_min & GD_acum <= gd_max)
+      
+      fecha_inicio <- if (nrow(datos_llenado_grano) > 0) min(datos_llenado_grano$Fecha) else NA
+      fecha_fin <- if (nrow(datos_llenado_grano) > 0) max(datos_llenado_grano$Fecha) else NA
+      
+      
+      
+      lluvia_acumulada <- if (nrow(datos_llenado_grano) > 0) {
+        sum(round(datos_llenado_grano$Precipitacion_Pluviometrica, 0), na.rm = TRUE)
+      } else 0
+      
+      etp_acumulada <- if (nrow(datos_llenado_grano) > 0) {
+        sum(round(datos_llenado_grano$Evapotranspiracion_Potencial, 0), na.rm = TRUE)
+      } else 0
+      
+      radiacion_global_media <- if (nrow(datos_llenado_grano) > 0) {
+        mean(round(datos_llenado_grano$Radiacion_Global, 0), na.rm = TRUE)
+      } else NA
+      
+      dias_minimas_2 <- if (nrow(datos_llenado_grano) > 0) {
+        sum(datos_llenado_grano$Temperatura_Abrigo_150cm_Minima <= 2, na.rm = TRUE)
+      } else 0
+      
+      historicos_llenado_grano <- rbind(
+        historicos_llenado_grano,
+        data.frame(
+          ano = ano,
+          lluvia_acumulada = lluvia_acumulada,
+          etp_acumulada = etp_acumulada,
+          radiacion_global_media = radiacion_global_media,
+          dias_minimas_2 = dias_minimas_2,
+          inicio = fecha_inicio,  
+          fin = fecha_fin 
+        )
+      )
+    }
     
-    # Graficar
-    gg_dias_35 <- ggplot(estadisticas, aes(x = fecha, y = dias_mayores_35, fill = fecha)) +
-      geom_bar(stat = "identity") +
-      geom_text(aes(label = dias_mayores_35), 
-                position = position_stack(vjust = 1.05),  
-                size = 3) +
-      labs(title = "",
-           x = "",
-           y = "# días") +
-      theme_minimal() +
-      scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
-      theme(axis.text.x = element_text(size = 10),
-            axis.ticks.x = element_blank()) +
-      guides(fill = "none") 
+    
+    # Convertir las fechas a día juliano
+    historicos_llenado_grano$inicio_juliano <- yday(historicos_llenado_grano$inicio)
+    historicos_llenado_grano$fin_juliano <- yday(historicos_llenado_grano$fin)
+    
+    historicos_llenado_grano$inicio_juliano <- ifelse(historicos_llenado_grano$inicio_juliano < 100, 
+                                                      historicos_llenado_grano$inicio_juliano + 365, 
+                                                      historicos_llenado_grano$inicio_juliano)
     
     
-    ggplotly(gg_dias_35) 
+    
+    # Calcular el promedio de los días julianos
+    promedio_inicio_juliano <- mean(historicos_llenado_grano$inicio_juliano, na.rm = TRUE)
+    promedio_fin_juliano <- mean(historicos_llenado_grano$fin_juliano, na.rm = TRUE)
+    
+    
+    # Convertir los días julianos promedio de vuelta a fechas
+    fecha_promedio_inicio <- as.Date(promedio_inicio_juliano - 1, origin = "2024-01-01")
+    fecha_promedio_fin <- as.Date(promedio_fin_juliano - 1, origin = "2024-01-01")
+    
+    
+    fecha_inicio <- format(fecha_promedio_inicio, "%d-%m")
+    fecha_fin <- format(fecha_promedio_fin, "%d-%m")
+    
+    return(
+      list(
+        historicos = historicos_llenado_grano,
+        fecha_inicio = fecha_inicio,
+        fecha_fin = fecha_fin
+      )
+    )
+  }
+  
+  llenado_grano1 <- reactive({
+    req(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha)
+    calcular_llenado_grano(input$mes_siembra1, input$dia_siembra1, input$cultivo_fecha, datos, datos_historicos_avg)
   })
+  
+  llenado_grano2 <- reactive({
+    req(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha)
+    calcular_llenado_grano(input$mes_siembra2, input$dia_siembra2, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  llenado_grano3 <- reactive({
+    req(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha)
+    calcular_llenado_grano(input$mes_siembra3, input$dia_siembra3, input$cultivo_fecha, datos, datos_historicos_avg)
+  })
+  
+  
+  
+  observeEvent(input$btn_calcular, {
+    historicos_llenado_grano1 <- llenado_grano1()
+    historicos_llenado_grano2 <- llenado_grano2()
+    historicos_llenado_grano3 <- llenado_grano3()
+    
+    output$fecha_inicio_lg1 <- renderText({
+      paste("Fecha inicio llenado grano:", as.character(llenado_grano1()$fecha_inicio))
+    })
+    
+    output$fecha_fin_lg1 <- renderText({
+      paste("Fecha fin llenado grano:", as.character(llenado_grano1()$fecha_fin))
+    })
+    
+    output$fecha_inicio_lg2 <- renderText({
+      paste("Fecha inicio llenado grano:", as.character(llenado_grano2()$fecha_inicio))
+    })
+    
+    output$fecha_fin_lg2 <- renderText({
+      paste("Fecha fin llenado grano:", as.character(llenado_grano2()$fecha_fin))
+    })
+    
+    output$fecha_inicio_lg3 <- renderText({
+      paste("Fecha inicio llenado grano:", as.character(llenado_grano3()$fecha_inicio))
+    })
+    
+    output$fecha_fin_lg3 <- renderText({
+      paste("Fecha fin llenado grano:", as.character(llenado_grano3()$fecha_fin))
+    })
+    
+    #Lluvia
+    output$lg_lluvia <- renderPlotly({
+      historicos_llenado_grano1 <- llenado_grano1()$historicos
+      historicos_llenado_grano2 <- llenado_grano2()$historicos
+      historicos_llenado_grano3 <- llenado_grano3()$historicos
+      
+      fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
+                  paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
+                  paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
+      
+      # Verificar si las fechas son únicas
+      if (length(unique(fechas)) < length(fechas)) {
+        # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
+        plot_blank <- ggplot() + 
+          theme_void() + 
+          annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
+          labs(title = "")
+        
+        return(plot_blank)
+      }
+      
+      # Calcular estadísticas
+      mediana_lluvia1 <- median(round(historicos_llenado_grano1$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp1 <- median(round(historicos_llenado_grano1$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion1 <- mean(round(historicos_llenado_grano1$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_1 <- median(round(historicos_llenado_grano1$dias_minimas_2, 0), na.rm = TRUE)
+      
+      mediana_lluvia2 <- median(round(historicos_llenado_grano2$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp2 <- median(round(historicos_llenado_grano2$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion2 <- mean(round(historicos_llenado_grano2$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_2 <- median(round(historicos_llenado_grano2$dias_minimas_2, 0), na.rm = TRUE)
+      
+      mediana_lluvia3 <- median(round(historicos_llenado_grano3$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp3 <- median(round(historicos_llenado_grano3$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion3 <- mean(round(historicos_llenado_grano3$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_3 <- median(round(historicos_llenado_grano3$dias_minimas_2, 0), na.rm = TRUE)
+      
+      # Crear un nuevo df con las estadísticas
+      estadisticas <- data.frame(
+        fecha = fechas,
+        lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+        etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+        radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+        dias_minimas_2 = c(mediana_dias_minimas_2_1, mediana_dias_minimas_2_2, mediana_dias_minimas_2_3)
+      )
+      
+      estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
+      
+      
+      # Graficar
+      lg_lluvia <- ggplot(estadisticas, 
+                          aes(x = fecha, 
+                              y = lluvia_acumulada, 
+                              fill = fecha)) +
+        geom_bar(aes(y = lluvia_acumulada, fill = fecha), 
+                 stat = "identity", 
+                 position = position_dodge(0.9)) +
+        geom_bar(aes(y = etp_acumulada, fill = fecha), 
+                 stat = "identity", 
+                 alpha = 0.4,   
+                 position = position_dodge(0.9)) +
+        geom_text(aes(y = lluvia_acumulada, label = lluvia_acumulada), 
+                  position = position_dodge(0.9),  
+                  vjust = -0.5, size = 3) +
+        geom_text(aes(y = etp_acumulada, label = etp_acumulada), 
+                  position = position_dodge(0.9), 
+                  vjust = -0.5, size = 3, color = "black") +
+        labs(title = "",
+             x = "",
+             y = " mm",
+             fill = NULL) +
+        theme_minimal() +
+        scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
+        theme(axis.text.x = element_text(size = 10),
+              axis.ticks.x = element_blank()) +
+        guides(fill = "none")
+      
+      
+      ggplotly(lg_lluvia) 
+    })
+    
+    
+    #Radiacion
+    output$lg_radiacion <- renderPlotly({
+      historicos_llenado_grano1 <- llenado_grano1()$historicos
+      historicos_llenado_grano2 <- llenado_grano2()$historicos
+      historicos_llenado_grano3 <- llenado_grano3()$historicos
+      
+      fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
+                  paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
+                  paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
+      
+      # Verificar si las fechas son únicas
+      if (length(unique(fechas)) < length(fechas)) {
+        # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
+        plot_blank <- ggplot() + 
+          theme_void() + 
+          annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
+          labs(title = "")
+        
+        return(plot_blank)
+      }
+      
+      # Calcular estadísticas
+      mediana_lluvia1 <- median(round(historicos_llenado_grano1$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp1 <- median(round(historicos_llenado_grano1$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion1 <- mean(round(historicos_llenado_grano1$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_1 <- median(round(historicos_llenado_grano1$dias_minimas_2, 0), na.rm = TRUE)
+      
+      mediana_lluvia2 <- median(round(historicos_llenado_grano2$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp2 <- median(round(historicos_llenado_grano2$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion2 <- mean(round(historicos_llenado_grano2$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_2 <- median(round(historicos_llenado_grano2$dias_minimas_2, 0), na.rm = TRUE)
+      
+      mediana_lluvia3 <- median(round(historicos_llenado_grano3$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp3 <- median(round(historicos_llenado_grano3$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion3 <- mean(round(historicos_llenado_grano3$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_3 <- median(round(historicos_llenado_grano3$dias_minimas_2, 0), na.rm = TRUE)
+      
+      # Crear un nuevo dataframe con las estadísticas
+      estadisticas <- data.frame(
+        fecha = fechas,
+        lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+        etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+        radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+        dias_minimas_2 = c(mediana_dias_minimas_2_1, mediana_dias_minimas_2_2, mediana_dias_minimas_2_3)
+      )
+      
+      estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
+      
+      # Graficar
+      lg_radiacion <- ggplot(estadisticas, aes(x = fecha, y = radiacion_media, fill = fecha)) +
+        geom_bar(stat = "identity") +
+        geom_text(aes(label = round(radiacion_media)), 
+                  position = position_stack(vjust = 1.05),  
+                  size = 3) +
+        labs(title = "",
+             x = "",
+             y = " Mj / m2 * día") +
+        theme_minimal() +
+        scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
+        theme(axis.text.x = element_text(size = 10),
+              axis.ticks.x = element_blank()) +
+        guides(fill = "none") 
+      
+      
+      ggplotly(lg_radiacion) 
+    })
+    
+    #Dias<2ºC
+    output$lg_dias_2 <- renderPlotly({
+      historicos_llenado_grano1 <- llenado_grano1()$historicos
+      historicos_llenado_grano2 <- llenado_grano2()$historicos
+      historicos_llenado_grano3 <- llenado_grano3()$historicos
+      
+      fechas <- c(paste(input$dia_siembra1, input$mes_siembra1, sep = "-"),
+                  paste(input$dia_siembra2, input$mes_siembra2, sep = "-"),
+                  paste(input$dia_siembra3, input$mes_siembra3,  sep = "-"))
+      
+      # Verificar si las fechas son únicas
+      if (length(unique(fechas)) < length(fechas)) {
+        # Si hay duplicados, mostrar un gráfico en blanco con un mensaje
+        plot_blank <- ggplot() + 
+          theme_void() + 
+          annotate("text", x = 1, y = 1, label = "Por favor, elija 3 fechas diferentes.", size = 5, color = "red") +
+          labs(title = "")
+        
+        return(plot_blank)
+      }
+      
+      # Calcular estadísticas
+      mediana_lluvia1 <- median(round(historicos_llenado_grano1$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp1 <- median(round(historicos_llenado_grano1$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion1 <- mean(round(historicos_llenado_grano1$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_1 <- median(round(historicos_llenado_grano1$dias_minimas_2, 0), na.rm = TRUE)
+      
+      mediana_lluvia2 <- median(round(historicos_llenado_grano2$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp2 <- median(round(historicos_llenado_grano2$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion2 <- mean(round(historicos_llenado_grano2$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_2 <- median(round(historicos_llenado_grano2$dias_minimas_2, 0), na.rm = TRUE)
+      
+      mediana_lluvia3 <- median(round(historicos_llenado_grano3$lluvia_acumulada, 0), na.rm = TRUE)
+      mediana_etp3 <- median(round(historicos_llenado_grano3$etp_acumulada, 0), na.rm = TRUE)
+      promedio_radiacion3 <- mean(round(historicos_llenado_grano3$radiacion_global_media, 0), na.rm = TRUE)
+      mediana_dias_minimas_2_3 <- median(round(historicos_llenado_grano3$dias_minimas_2, 0), na.rm = TRUE)
+      
+      # Crear un nuevo dataframe con las estadísticas
+      estadisticas <- data.frame(
+        fecha = fechas,
+        lluvia_acumulada = c(mediana_lluvia1, mediana_lluvia2, mediana_lluvia3),
+        etp_acumulada = c(mediana_etp1, mediana_etp2, mediana_etp3),
+        radiacion_media = c(promedio_radiacion1, promedio_radiacion2, promedio_radiacion3),
+        dias_minimas_2 = c(mediana_dias_minimas_2_1, mediana_dias_minimas_2_2, mediana_dias_minimas_2_3)
+      )
+      
+      estadisticas$fecha <- factor(estadisticas$fecha, levels = fechas)
+      
+      # Graficar
+      lg_dias_2 <- ggplot(estadisticas, aes(x = fecha, y = dias_minimas_2, fill = fecha)) +
+        geom_bar(stat = "identity") +
+        geom_text(aes(label = dias_minimas_2), 
+                  position = position_stack(vjust = 1.05),  
+                  size = 3) +
+        labs(title = "",
+             x = "",
+             y = "# días") +
+        theme_minimal() +
+        scale_fill_manual(name = "", values = c("#E07A5F", "#3D405B", "#AEC3B0")) +
+        theme(axis.text.x = element_text(size = 10),
+              axis.ticks.x = element_blank()) +
+        guides(fill = "none") 
+      
+      
+      ggplotly(lg_dias_2) 
+    })
   })
   
   
   ##### Balance de agua ########
-
+  
   data_usuario <- reactive({
     if (is.null(input$balance_precip_riego)) {
       return(NULL)  # Si no hay archivo subido, devuelve NULL
     }
-
+    
     ext <- tools::file_ext(input$balance_precip_riego$name)
-
+    
     if (ext == "csv") {
       data <- read.csv(input$balance_precip_riego$datapath)
     } else if (ext == "xlsx") {
@@ -2149,7 +3048,7 @@ server <- function(input, output, session) {
       showNotification("Formato de archivo no soportado.", type = "error")
       return(NULL)
     }
-
+    
     # Verificar si el archivo tiene las columnas requeridas
     required_columns <- c("Fecha", "Lluvia", "Riego")
     if (all(required_columns %in% colnames(data))) {
@@ -2158,11 +3057,11 @@ server <- function(input, output, session) {
       showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego.", type = "error")
       return(NULL)  # Si no tiene las columnas requeridas, devolver NULL
     }
-
+    
     return(data)
     
   })
- 
+  
   datos_actualizados <- reactive({
     # Si no hay archivo subido, se usan los datos originales "datos"
     if (is.null(data_usuario())) {
@@ -2199,32 +3098,46 @@ server <- function(input, output, session) {
     return(datos_actualizados)
     
   })
-
+  
   
   observeEvent(input$cultivo, {
     
-    if (input$cultivo == "maiz") {
+    if (input$cultivo == "maiz_largo" || input$cultivo == "maiz_corto") {
       updateNumericInput(session, "umbral_et", value = 0.8)
-
+      
     } else if (input$cultivo == "soja") {
       updateNumericInput(session, "umbral_et", value = 0.5)
     }
     
   })
-
+  
   output$mensaje_cultivo <- renderUI({
-    if (input$cultivo == "maiz") {
+    if (input$cultivo == "maiz_largo") {
       tagList(
-        p("Híbrido de maíz de 1890 GD (grados-días) a madurez fisiológica 
-            (aprox. 160-170 días de siembra a madurez fisiológica, para siembras de mediados de octubre en Balcarce)."),
-        p("Los recuadros en los gráficos indican el período crítico, correspondiente a 670 - 1120 GD (grados-días) desde la siembra."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo Argiudol típico.")
+        p(HTML("Características del híbrido de maíz de ciclo largo simulado:<br>
+          Requerimiento de tiempo térmico desde siembra a floración: 950 grados día (Tb 8°C).<br>
+          Duración del ciclo: aprox. 160 a 120 días de ciclo de siembra a madurez fisiológica (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
+          Número total de hojas: 21 a 22 hojas.")),
+        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas."),
+        p("Los recuadros en los gráficos indican el período crítico."),
+        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+      )
+    } else if (input$cultivo == "maiz_corto") {
+      tagList(
+        p(HTML("Características del híbrido de maíz de ciclo corto simulado:<br>
+        Requerimiento de tiempo térmico desde siembra a floración: 750 grados día (Tb 8°C).<br>
+        Duración del ciclo: aprox. 130 a 100 días de ciclo de siembra a madurez fisiológica (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
+        Número total de hojas: 17 hojas.")),
+        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas."),
+        p("Los recuadros en los gráficos indican el período crítico."),
+        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
       )
     } else if (input$cultivo == "soja") {
       tagList(
         p("Variedad de soja de grupo 3."),
+        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que la soja alcanza los 70 GD."),
         p("Los recuadros en los gráficos indican el período crítico."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo Argiudol típico.")
+        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
       )
     }
   })
@@ -2255,24 +3168,28 @@ server <- function(input, output, session) {
   # GD por cultivo
   GD <- reactive({
     
-   if (input$cultivo == "maiz") {
-      return(1890)
+    dia_juliano <- yday(input$fecha_siembra)
+    
+    # Si el día juliano es menor a 60, ajusta sumando 365
+    if (dia_juliano < 60) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    if (input$cultivo == "maiz_largo") {
+      GD_maiz_largo <- round(((-0.0024 * (dia_juliano^2)) - (1.7585 * dia_juliano) + 2469.3), 0)
+      return(GD_maiz_largo)
+      
+    } else if (input$cultivo == "maiz_corto") {
+      GD_maiz_corto <- round(((-0.0212 * (dia_juliano^2)) + (10.045 * dia_juliano) + 420.61), 0)
+      return(GD_maiz_corto)
       
     } else if (input$cultivo == "soja") {
       
-      dia_juliano <- yday(input$fecha_siembra)
-      
-      if (dia_juliano < 60) {
-        dia_juliano <- dia_juliano + 365
-      }
-
-      GD_soja <- round(((-0.0466 * (dia_juliano^2)) + (26.344 * (dia_juliano)) - 2479.9), 0)
-
-
-      return(round(GD_soja))
+      GD_soja <- round(((-0.0466 * (dia_juliano^2)) + (26.344 * dia_juliano) - 2479.9), 0)
+      return(GD_soja)
     } 
   })
-
+  
   
   
   output$almacenamiento_maximo <- renderText({
@@ -2300,7 +3217,7 @@ server <- function(input, output, session) {
     
     datos_filtrados <- datos_actualizados() %>%
       filter(Fecha >= fecha_siembra) %>%
-      select(Fecha, Temperatura_Abrigo_150cm, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
+      select(Fecha, Temperatura_Abrigo_150cm, Temperatura_Abrigo_150cm_Minima, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
     
     datos_filtrados <- datos_filtrados %>%
       mutate(Dia_Mes = format(Fecha, "%m-%d"))
@@ -2315,9 +3232,9 @@ server <- function(input, output, session) {
       arrange(Fecha) %>%
       mutate(
         TTB = case_when(
-          input$cultivo == "maiz" ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, # Umbral para maíz
-                                            0, 
-                                            Temperatura_Abrigo_150cm - 8),  
+          input$cultivo %in% c("maiz_largo", "maiz_corto") ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                                                     0, 
+                                                                     Temperatura_Abrigo_150cm - 8),  
           input$cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, # Umbral para soja
                                             0, 
                                             Temperatura_Abrigo_150cm - 11)
@@ -2345,9 +3262,11 @@ server <- function(input, output, session) {
     
     for (i in 2:nrow(datos_filtrados)) {
       
+      
       if (datos_filtrados$GD_acum[i - 1] > GD) {
         break
       }
+      
       
       datos_filtrados$ETR[i] <- if_else(
         is.na(datos_filtrados$Fr_agua_util[i - 1]) | is.na(datos_filtrados$ETM[i]), 
@@ -2381,9 +3300,20 @@ server <- function(input, output, session) {
         datos_filtrados$ETR[i] - datos_filtrados$ETM[i]
       )
     }
+    
+    # if (input$cultivo %in% c("maiz_largo", "maiz_corto")) {
+    #   fecha_filtro <- min(datos_filtrados$Fecha[datos_filtrados$Temperatura_Abrigo_150cm_Minima <= 2], na.rm = TRUE)
+    #   
+    #   if (!is.na(fecha_filtro)) {
+    #     datos_filtrados <- datos_filtrados %>%
+    #       filter(Fecha <= fecha_filtro)
+    #   }
+    # }
+    
     return(datos_filtrados)
     
   })
+  
   
   ## Gráficos balance de agua ##
   output$agua_util <- renderPlotly({
@@ -2391,34 +3321,73 @@ server <- function(input, output, session) {
     df_siembra <- balance_agua()
     df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
-    fecha_actual <- Sys.Date()
+    dia_juliano <- yday(input$fecha_siembra)
     
-    if (input$cultivo == "maiz") {
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], na.rm = TRUE)
+    # Ajustar el día juliano si es menor de 60
+    if (dia_juliano < 90) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    if (input$cultivo == "maiz_largo") {
+      
+      GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo == "maiz_corto") {
+      
+      GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
       color_rect <- "cornsilk3"
       
     } else if (input$cultivo == "soja") {
-
-      dia_juliano <- yday(input$fecha_siembra)
       
-      if (dia_juliano < 60) {
-        dia_juliano <- dia_juliano + 365
-      }
-
-      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * (dia_juliano)) - 4047.4), 0)
-      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
-
+      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
+      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
       fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
       fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
-
+      
+      GD_umbral <- 70
+      
       color_rect <- "darkgreen"
       
     } else {
       fecha_min <- NA
       fecha_max <- NA
     }
+    
+    # Calcular la fecha de inicio de abril
+    if (month(fecha_siembra) >= 5) {
+      
+      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra) + 1, "-04-01"))
+    } else {
+      
+      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra), "-04-01"))
+    }
+    
+    fecha_vertical_roja <- df_siembra %>%
+      filter(GD_acum >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    fecha_vertical_azul <- df_siembra %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
     
     agua_util <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_rect(aes(xmin = fecha_min, 
@@ -2432,8 +3401,17 @@ server <- function(input, output, session) {
            y = "Fracción de Agua Útil (0 - 1)") +
       theme_minimal() +
       scale_color_manual(values = c("#E9C46A")) +
-      guides(color = "none") +
-      coord_cartesian(ylim = c(0, NA))
+      guides(color = "none") 
+    
+    if (is.finite(fecha_vertical_roja)) {
+      agua_util <- agua_util + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    }
+    
+    if (is.finite(fecha_vertical_azul)) {
+      agua_util <- agua_util + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
+    }
     
     ggplotly(agua_util)  %>% 
       plotly::style(name = "Fracción de Agua Útil", traces = 1) 
@@ -2444,37 +3422,78 @@ server <- function(input, output, session) {
     df_siembra <- balance_agua()
     df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
+    dia_juliano <- yday(input$fecha_siembra)
+    
+    # Ajustar el día juliano si es menor de 60
+    if (dia_juliano < 90) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
     fecha_actual <- Sys.Date()
     
-    if (input$cultivo == "maiz") {
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], na.rm = TRUE)
+    if (input$cultivo == "maiz_largo") {
+      
+      GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo == "maiz_corto") {
+      
+      GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
       color_rect <- "cornsilk3"
       
     } else if (input$cultivo == "soja") {
-
-      dia_juliano <- yday(input$fecha_siembra)
       
-      if (dia_juliano < 60) {
-        dia_juliano <- dia_juliano + 365
-      }
-
-      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * (dia_juliano)) - 4047.4), 0)
-      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
+      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
+      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
       fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
       fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
+      
+      GD_umbral <- 70
+      
       color_rect <- "darkgreen"
       
     } else {
-      
-      # Valores por defecto o para otros cultivos
       fecha_min <- NA
       fecha_max <- NA
     }
     
     ymax_ETM <- max(df_siembra$ETM,
                     na.rm = TRUE)
+    
+    # Calcular la fecha de inicio de abril
+    if (month(fecha_siembra) >= 5) {
+      # Si la siembra es en octubre o más tarde, ajustar al próximo abril
+      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra) + 1, "-04-01"))
+    } else {
+      # Si es antes de octubre, simplemente avanzar al mismo año en abril
+      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra), "-04-01"))
+    }
+    
+    fecha_vertical_roja <- df_siembra %>%
+      filter(GD_acum >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    fecha_vertical_azul <- df_siembra %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
     
     cons_agua <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_line(aes(y = ETM, color = "ETM")) +
@@ -2488,7 +3507,17 @@ server <- function(input, output, session) {
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
       scale_color_manual(values = c("#E76F51", "#2A9D8F")) +
-      guides(color = guide_legend(title = NULL))
+      guides(color = guide_legend(title = NULL)) 
+    
+    if (is.finite(fecha_vertical_roja)) {
+      cons_agua <- cons_agua + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    }
+    
+    if (is.finite(fecha_vertical_azul)) {
+      cons_agua <- cons_agua + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
+    }
     
     ggplotly(cons_agua) %>% 
       layout(legend = list(orientation = "v", x = 0.1, y = 1.3)) %>% 
@@ -2502,33 +3531,75 @@ server <- function(input, output, session) {
     df_siembra <- balance_agua()
     df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
-    if (input$cultivo == "maiz") {
+    dia_juliano <- yday(input$fecha_siembra)
+    fecha_siembra = "2024-03-15"
+    dia_juliano <- yday(fecha_siembra)
+    # Ajustar el día juliano si es menor de 60
+    if (dia_juliano < 60) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    fecha_actual <- Sys.Date()
+    
+    if (input$cultivo == "maiz_largo") {
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= 670], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= 1120], na.rm = TRUE)
+      GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo == "maiz_corto") {
+      
+      GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
       color_rect <- "cornsilk3"
       
     } else if (input$cultivo == "soja") {
-
-      dia_juliano <- yday(input$fecha_siembra)
       
-      if (dia_juliano < 60) {
-        dia_juliano <- dia_juliano + 365
-      }
-      
-      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * (dia_juliano)) - 4047.4), 0)
-      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * (dia_juliano)) - 2764.9), 0)
+      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
+      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
       fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
       fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
+      
+      GD_umbral <- 70
+      
       color_rect <- "darkgreen"
       
     } else {
-      
-      # Valores por defecto o para otros cultivos
       fecha_min <- NA
       fecha_max <- NA
     }
+    
+    # Calcular la fecha de inicio de abril
+    if (month(fecha_siembra) >= 5) {
+      # Si la siembra es en octubre o más tarde, ajustar al próximo abril
+      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra) + 1, "-04-01"))
+    } else {
+      # Si es antes de octubre, simplemente avanzar al mismo año en abril
+      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra), "-04-01"))
+    }
+    
+    fecha_vertical_roja <- df_siembra %>%
+      filter(GD_acum >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    fecha_vertical_azul <- df_siembra %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
     
     ymax_pp <- max(df_siembra$Precipitacion_Pluviometrica,
                    na.rm = TRUE)
@@ -2540,7 +3611,6 @@ server <- function(input, output, session) {
                stat = "identity", position = "dodge") +
       geom_bar(aes(y = Riego, fill = "Riego"),
                stat = "identity", position = "dodge") +
-      
       geom_rect(aes(xmin = fecha_min,
                     xmax = fecha_max,
                     ymin = 0, ymax = ymax_pp),
@@ -2550,18 +3620,28 @@ server <- function(input, output, session) {
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
       scale_fill_manual(values = c("#BC4749", "#007EA7", "#BDE0FE")) +
-      guides(fill = guide_legend(title = NULL))
+      guides(fill = guide_legend(title = NULL)) 
+    
+    if (is.finite(fecha_vertical_roja)) {
+      def_agua <- def_agua + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    }
+    
+    if (is.finite(fecha_vertical_azul)) {
+      def_agua <- def_agua + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
+    }
     
     ggplotly(def_agua) %>% 
       layout(legend = list(orientation = "h", x = 0.3, y = 1.2)) %>% 
       plotly::style(name = "Precipitación", traces = 1) %>% 
       plotly::style(name = "Déficit hídrico", traces = 2)%>% 
-      plotly::style(name = "Riego", traces = 2)
+      plotly::style(name = "Riego", traces = 3)
   })
   
   
   ## Dalbulus ##
- 
+  
   dalbulus_filtrados <- reactive({
     filtered_data <- dalbulus %>% filter(Fecha == as.Date(input$fecha_dalbulus, format = "%d/%m/%Y"))
   })
@@ -2584,14 +3664,14 @@ server <- function(input, output, session) {
         color = "#BC4B51", fillColor = "#BC4B51", weight = 2, fillOpacity = 0.4,
         label = "Zona Alta Carga"
       ) %>%
-
+      
       addPolygons(
         lng = c(-66.9, -66.9, -58.40, -57.50),
         lat = c(-29.8, -32.4, -32.4, -29.8),
         color = "#F4A259", fillColor = "#F4A259", weight = 2, fillOpacity = 0.4,
         label = "Zona Transición"
       ) %>%
-
+      
       addPolygons(
         lng = c(-66.9, -66.9, -57.90, -56.77, -58.44, -58.40),
         lat = c(-32.4, -38.5, -38.5, -36.34, -34.57, -32.4),
@@ -2657,7 +3737,7 @@ server <- function(input, output, session) {
       webshot(tempFile, file = file)
     }
   )
-
+  
   
   
   
