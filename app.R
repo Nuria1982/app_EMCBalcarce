@@ -765,7 +765,7 @@ ui <- dashboardPage(
         tabName = "balance",
         br(),
         h4(HTML("<strong>Cálculo de balance de agua</strong>")),
-        h5(HTML("A partir de los datos del suelo y del cultivo seleccionado, podemos calcular el balance de agua diario de tu campo. <br> 
+        h5(HTML("A partir de los datos del suelo y del cultivo seleccionado, podes calcular el balance de agua diario de tu campo. <br> 
                 Podes ingresar los datos en los recuadros o usar los valores predeterminados.")),
         
         br(),
@@ -838,14 +838,23 @@ ui <- dashboardPage(
                      textOutput("GD"),
                  )
           ),
-          column(3,
+          
+        ),
+        br(),
+        h5(HTML("Para aquellas zonas fuera del radio de influencia de la EEA Balcarce, podes ingresar tus propios datos.")),
+        h6(HTML("Desde la web <a href='https://siga.inta.gob.ar/#/' target='_blank'>siga.inta.gob.ar</a>, podes seleccionar la estación meteorológica más cercana a tu campo y descargar los datos de lluvia, temperaturas y evapotranspiración.")),
+        h6(HTML("Si no encontras valores de evapotranspiración para tu campo, podes consultarnos y te ayudamos con el cálculo: <strong>echarte.laura@inta.gob.ar</strong>")),
+        br(),
+        
+        fluidRow(
+          column(6,
                  div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
                      fileInput("balance_precip_riego", "Ingresar datos propios (opcional)",
                                accept = c(".csv", ".xlsx"))
                      ,
-                     helpText("El archivo debe contener datos diarios y las columnas: Fecha, Lluvia, Riego (primera letra mayúscula)")
+                     helpText("El archivo debe contener datos diarios y las columnas (sin datos faltantes): Fecha, Lluvia, Riego, Temperatura, ET0 (primera letra mayúscula)")
                  )
-          ),
+          )
         ),
         br(),
         
@@ -881,11 +890,14 @@ ui <- dashboardPage(
                         size = 0.5)
           ),
           column(6,
-                 div(tags$img(
-                   src = "Estacion_Met_Balc_4.png",
-                   style = "max-width: 60%; height: 100%; display: block; margin: 0 auto;",
-                   alt = "ubicacion_EMC"
-                 )
+                 conditionalPanel(
+                   condition = "!output.fileUploaded",
+                          div(tags$img(
+                            src = "Mapa_Estacion_Met.png",
+                            style = "max-width: 60%; height: 100%; display: block; margin: 0 auto;",
+                            alt = "ubicacion_EMC"
+                          )
+                          )
                  )
           )
         ),
@@ -3050,17 +3062,26 @@ server <- function(input, output, session) {
     }
     
     # Verificar si el archivo tiene las columnas requeridas
-    required_columns <- c("Fecha", "Lluvia", "Riego")
+    required_columns <- c("Fecha", "Lluvia", "Riego", "Temperatura", "ET0")
     if (all(required_columns %in% colnames(data))) {
       showNotification("Archivo subido correctamente.", type = "message")
     } else {
-      showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego.", type = "error")
+      showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego, Temperatura, ET0.", type = "error")
       return(NULL)  # Si no tiene las columnas requeridas, devolver NULL
     }
     
     return(data)
     
   })
+  
+  # Determinar si se ha cargado un archivo
+  output$fileUploaded <- reactive({
+    !is.null(input$balance_precip_riego)
+  })
+  
+  # Necesario para que output$fileUploaded sea accesible en conditionalPanel
+  outputOptions(output, "fileUploaded", suspendWhenHidden = FALSE)
+
   
   datos_actualizados <- reactive({
     # Si no hay archivo subido, se usan los datos originales "datos"
@@ -3069,7 +3090,9 @@ server <- function(input, output, session) {
       # si la columna Riego no existe en el df original se la agrego con valores 0
       if (!"Riego" %in% colnames(datos)) {
         datos <- datos %>%
-          mutate(Riego = 0)  
+          mutate(Riego = 0,
+                 Temperatura = 0,
+                 ET0 = 0)
       }
       return(datos)  
     }
@@ -3084,7 +3107,6 @@ server <- function(input, output, session) {
     
     # Reemplazo los valores de Precipitacion_Pluviometica por los de Lluvia del usuario
     if ("Lluvia" %in% colnames(datos_actualizados)) {
-      
       datos_actualizados <- datos_actualizados %>%
         mutate(Precipitacion_Pluviometrica = coalesce(Lluvia, Precipitacion_Pluviometrica))
     }
@@ -3093,6 +3115,18 @@ server <- function(input, output, session) {
     if ("Riego" %in% colnames(datos_actualizados)) {
       datos_actualizados <- datos_actualizados %>%
         mutate(Riego = coalesce(Riego, Riego, 0))  
+    }
+    
+    # Reemplazo los valores de Riego por los de Riego del usuario (sino hay riego el valor = 0)
+    if ("Temperatura" %in% colnames(datos_actualizados)) {
+      datos_actualizados <- datos_actualizados %>%
+        mutate(Temperatura_Abrigo_150cm = coalesce(Temperatura, Temperatura_Abrigo_150cm))  
+    }
+    
+    # Reemplazo los valores de Riego por los de Riego del usuario (sino hay riego el valor = 0)
+    if ("ET0" %in% colnames(datos_actualizados)) {
+      datos_actualizados <- datos_actualizados %>%
+        mutate(Evapotranspiracion_Potencial = coalesce(ET0, Evapotranspiracion_Potencial))  
     }
     
     return(datos_actualizados)
@@ -3213,10 +3247,22 @@ server <- function(input, output, session) {
   })
   
   balance_agua <- reactive({
+    
+    if (is.null(input$fecha_siembra)) {
+      showNotification("Debe ingresar una fecha de siembra válida.", type = "error")
+      return(NULL)
+    }
+    
     fecha_siembra <- as.Date(input$fecha_siembra)
     
+    # Verificar si datos_actualizados() no es NULL
+    if (is.null(datos_actualizados())) {
+      showNotification("Los datos no están disponibles.", type = "error")
+      return(NULL)
+    }
+    
     datos_filtrados <- datos_actualizados() %>%
-      filter(Fecha >= fecha_siembra) %>%
+      filter(Fecha >= input$fecha_siembra) %>%
       select(Fecha, Temperatura_Abrigo_150cm, Temperatura_Abrigo_150cm_Minima, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
     
     datos_filtrados <- datos_filtrados %>%
@@ -3321,6 +3367,8 @@ server <- function(input, output, session) {
     df_siembra <- balance_agua()
     df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
+    req(input$fecha_siembra)
+    
     dia_juliano <- yday(input$fecha_siembra)
     
     # Ajustar el día juliano si es menor de 60
@@ -3370,12 +3418,12 @@ server <- function(input, output, session) {
     }
     
     # Calcular la fecha de inicio de abril
-    if (month(fecha_siembra) >= 5) {
+    if (month(input$fecha_siembra) >= 5) {
       
-      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra) + 1, "-04-01"))
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra) + 1, "-04-01"))
     } else {
       
-      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra), "-04-01"))
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra), "-04-01"))
     }
     
     fecha_vertical_roja <- df_siembra %>%
@@ -3476,12 +3524,12 @@ server <- function(input, output, session) {
                     na.rm = TRUE)
     
     # Calcular la fecha de inicio de abril
-    if (month(fecha_siembra) >= 5) {
+    if (month(input$fecha_siembra) >= 5) {
       # Si la siembra es en octubre o más tarde, ajustar al próximo abril
-      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra) + 1, "-04-01"))
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra) + 1, "-04-01"))
     } else {
       # Si es antes de octubre, simplemente avanzar al mismo año en abril
-      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra), "-04-01"))
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra), "-04-01"))
     }
     
     fecha_vertical_roja <- df_siembra %>%
@@ -3532,8 +3580,7 @@ server <- function(input, output, session) {
     df_siembra <- df_siembra %>% filter(GD_acum <= GD)
     
     dia_juliano <- yday(input$fecha_siembra)
-    fecha_siembra = "2024-03-15"
-    dia_juliano <- yday(fecha_siembra)
+    
     # Ajustar el día juliano si es menor de 60
     if (dia_juliano < 60) {
       dia_juliano <- dia_juliano + 365
@@ -3583,12 +3630,12 @@ server <- function(input, output, session) {
     }
     
     # Calcular la fecha de inicio de abril
-    if (month(fecha_siembra) >= 5) {
+    if (month(input$fecha_siembra) >= 5) {
       # Si la siembra es en octubre o más tarde, ajustar al próximo abril
-      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra) + 1, "-04-01"))
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra) + 1, "-04-01"))
     } else {
       # Si es antes de octubre, simplemente avanzar al mismo año en abril
-      fecha_inicio_abril <- as.Date(paste0(year(fecha_siembra), "-04-01"))
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra), "-04-01"))
     }
     
     fecha_vertical_roja <- df_siembra %>%
