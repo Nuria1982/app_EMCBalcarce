@@ -123,29 +123,55 @@ datos <- datos_EMC %>%
 
 # Define UI ----
 ui <- dashboardPage(
-  
-  
   title = "Agrometeorología Balcarce",
   skin = "#2596be",
   
-  header = dashboardHeader(
+  
+  dashboardHeader(
     title = div(
-      style = "font-size: 24px; font-weight: bold; text-align: center;",
-      "EMC Balcarce",
-      tags$style(HTML('.navbar { background-color: #2596be; }'))
-    )
+      style = "font-size: 24px; font-weight: bold; text-align: center; color: black;",
+      "Agrometeorología Balcarce"
+    #   # titleWidth = 350,
+    #   #  tags$style(HTML('.navbar { background-color: #2596be; }'))
+    ),
+    
+    # Agregar los íconos de Instagram y GitHub en la parte derecha
+    tags$li(class = "dropdown",
+            style = "float: right; padding-right: 10px; list-style: none;",
+            tags$a(href = "https://www.instagram.com/agromet_inta.balcarce/#", 
+                   target = "instagram", 
+                   icon("instagram"), 
+                   title = "Instagram", 
+                   style = "font-size: 20px; color: black;")),
+    
+    tags$li(class = "dropdown",
+            style = "float: right; padding-right: 10px; list-style: none;",
+            tags$a(href = "https://github.com/Nuria1982", 
+                   target = "gitHub", 
+                   icon("github"), 
+                   title = "GitHub", 
+                   style = "font-size: 20px; color: black;"))
   ),
   
-  sidebar = dashboardSidebar(
-    
-    
+  dashboardSidebar(
+    width = 350,
+    tags$style(HTML("
+      .main-sidebar {
+        background-color: white; /* Azul con opacidad */
+      }
+      .main-sidebar .sidebar-menu > li > a {
+        color: black; /* Cambiar el color de los textos del menú a blanco */
+      }
+    ")),
     
     fluid = FALSE,
     position = "left",
-    # collapsible = TRUE,
-    # collapsed = FALSE,
+    disable = FALSE,
+    collapsed = FALSE,
+    
     br(),
     br(),
+    
     div(
       style = "text-align: center;",
       tags$img(src = "EstacionBalcarce.jpg",
@@ -163,15 +189,17 @@ ui <- dashboardPage(
                 menuItem("Cambio climático", 
                          tabName = "cambio_climatico",
                          icon = icon("earth-americas")),
-                menuItem("Mapas",
-                         tabName = "mapas", 
-                         icon = icon("map")),
+                # menuItem("Mapas",
+                #          tabName = "mapas", 
+                #          icon = icon("map")),
                 menuItem("Manejo de los cultivos", 
-                         icon = icon("cogs"),
+                         icon = icon("seedling"),
                          menuSubItem("Ambiente",
                                      tabName = "ambiente"),
                          menuSubItem("Balance de agua",
                                      tabName = "balance")
+                         # menuSubItem("Huella hídrica",
+                         #             tabName = "huella_hidrica")
                          # ,
                          # menuSubItem("Dalbulus",
                          #             tabName = "Dalbulus")
@@ -214,14 +242,14 @@ ui <- dashboardPage(
     br(),
     
     tags$p(
-      strong("Nuestras Redes sociales"),
-      br(),
-      tags$a(
-        icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
+      # strong("Nuestras Redes sociales"),
       # br(),
       # tags$a(
-      #   icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
-      br(),
+      #   icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
+      # # br(),
+      # # tags$a(
+      # #   icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
+      # br(),
       tags$p(
         strong("Para comunicarse con el grupo "),
         tags$h6(
@@ -244,7 +272,7 @@ ui <- dashboardPage(
   ),
   
   
-  body = dashboardBody(
+  dashboardBody(
     tags$head(
       tags$style(HTML("
         .small-box {height: 80px; 
@@ -260,7 +288,20 @@ ui <- dashboardPage(
                       width: 100%;
                       padding: 10px 0;
         }
-        
+        .small-box .icon {
+          font-size: 50px; /* Tamaño del icono */
+          opacity: 0.6; /* Transparencia del icono */
+        }
+        .small-box h3 {
+          font-size: 20px; /* Tamaño del valor */
+          font-weight: bold;
+          text-align: center;
+        }
+        .small-box p {
+          font-size: 16px; /* Tamaño del subtítulo */
+          font-weight: bold;
+          text-align: center;
+        }
         "))
     ),
     
@@ -445,61 +486,61 @@ ui <- dashboardPage(
               )
       ),
       
-      tabItem(
-        tabName = "mapas",
-        h4(HTML("<strong>Mapas de suelo</strong>")),
-        h5(HTML("Recortes de la zona de influencia de EEA Balcarce, realizados por el Inst. de Clima y agua - INTA Castelar")),
-        br(),
-        br(),
-        fluidRow(
-          box(title = "Variación de agua disponible"
-              ,status = "navy"
-              ,solidHeader = FALSE
-              ,div(
-                style = "text-align: center;",
-                tags$img(
-                  src = "agua.jpg",
-                  style = "max-width: 100%; height: auto;",
-                  alt = "Mapa-Consumo de agua"
-                )
-              ),
-              br(),
-              br(),
-              tags$figcaption("Variación del agua disponible hasta 2 metros, expresada en
-              mm, estimada mediante el uso de imágenes del satélite S-NPP con una resolución espacial de 500 metros. 
-              Acumulado a la fecha con respecto a la fecha anterior.
-                              Elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."),
-              div(
-                style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-                "Representa el cambio en el agua disponible (expresado en mm) al final de un período de 10 
-                días con respecto al final del período anterior. Permite analizar la magnitud del aumento 
-                (período actual mayor al anterior) o reducción (período actual menor al anterior) del agua 
-                disponible en el perfil en hasta 2 metros de profundidad.")
-          ),
-          box(title = "% de agua útil"
-              ,status = "navy"
-              ,solidHeader = FALSE
-              ,div(
-                style = "text-align: center;",
-                tags$img(
-                  src = "agua_util.jpg",
-                  style = "max-width: 100%; height: auto;",
-                  alt = "Mapa-agua útil"
-                )
-              ),
-              br(),
-              br(),
-              tags$figcaption("Agua en el suelo con respecto al máximo posible (% de agua útil).Resolución espacial: 500 m. 
-                  Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."),
-              div(
-                style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-                "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
-                    que puede ser extraída por las plantas) puede ser estimado a través
-                    de un balance de agua; donde se considera información del suelo, el
-                    aporte de agua por lluvias y el consumo de agua de la cubierta
-                    vegetal.")
-          ))
-      ),
+      # tabItem(
+      #   tabName = "mapas",
+      #   h4(HTML("<strong>Mapas de suelo</strong>")),
+      #   h5(HTML("Recortes de la zona de influencia de EEA Balcarce, realizados por el Inst. de Clima y agua - INTA Castelar")),
+      #   br(),
+      #   br(),
+      #   fluidRow(
+      #     box(title = "Variación de agua disponible"
+      #         ,status = "navy"
+      #         ,solidHeader = FALSE
+      #         ,div(
+      #           style = "text-align: center;",
+      #           tags$img(
+      #             src = "agua.jpg",
+      #             style = "max-width: 100%; height: auto;",
+      #             alt = "Mapa-Consumo de agua"
+      #           )
+      #         ),
+      #         br(),
+      #         br(),
+      #         tags$figcaption("Variación del agua disponible hasta 2 metros, expresada en
+      #         mm, estimada mediante el uso de imágenes del satélite S-NPP con una resolución espacial de 500 metros. 
+      #         Acumulado a la fecha con respecto a la fecha anterior.
+      #                         Elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."),
+      #         div(
+      #           style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+      #           "Representa el cambio en el agua disponible (expresado en mm) al final de un período de 10 
+      #           días con respecto al final del período anterior. Permite analizar la magnitud del aumento 
+      #           (período actual mayor al anterior) o reducción (período actual menor al anterior) del agua 
+      #           disponible en el perfil en hasta 2 metros de profundidad.")
+      #     ),
+      #     box(title = "% de agua útil"
+      #         ,status = "navy"
+      #         ,solidHeader = FALSE
+      #         ,div(
+      #           style = "text-align: center;",
+      #           tags$img(
+      #             src = "agua_util.jpg",
+      #             style = "max-width: 100%; height: auto;",
+      #             alt = "Mapa-agua útil"
+      #           )
+      #         ),
+      #         br(),
+      #         br(),
+      #         tags$figcaption("Agua en el suelo con respecto al máximo posible (% de agua útil).Resolución espacial: 500 m. 
+      #             Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."),
+      #         div(
+      #           style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+      #           "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
+      #               que puede ser extraída por las plantas) puede ser estimado a través
+      #               de un balance de agua; donde se considera información del suelo, el
+      #               aporte de agua por lluvias y el consumo de agua de la cubierta
+      #               vegetal.")
+      #     ))
+      # ),
       
       tabItem(
         tabName = "ambiente",
@@ -763,155 +804,334 @@ ui <- dashboardPage(
       
       tabItem(
         tabName = "balance",
-        br(),
-        h4(HTML("<strong>Cálculo de balance de agua</strong>")),
-        h5(HTML("A partir de los datos del suelo y del cultivo seleccionado, podes calcular el balance de agua diario de tu campo. <br> 
+        tabsetPanel(
+          id = "balance_agua",
+          tabPanel(
+            title = "Balcarce",
+            br(),
+            h4(HTML("<strong>Cálculo de balance de agua<sup>1</sup></strong>")),
+            h5(HTML("A partir de los datos del suelo y del cultivo seleccionado, podes calcular el balance de agua diario de tu campo. <br> 
                 Podes ingresar los datos en los recuadros o usar los valores predeterminados.")),
-        
-        br(),
-        
-        fluidRow(
-          # elección cultivo 
-          column(3,
-                 selectInput("cultivo",
-                             label = strong("Seleccione el cultivo:"),
-                             choices = list("Maíz ciclo largo" = "maiz_largo",
-                                            "Maíz ciclo corto" = "maiz_corto",
-                                            "Soja" = "soja"
-                                            # ,
-                                            # "Girasol" = "girasol",
-                                            # "Hortalizas" = "hortalizas"
-                             ),
-                             selected = "maiz_largo")
-          ),
-          column(3,
-                 dateInput("fecha_siembra",
-                           label = strong("Ingrese la fecha de siembra:"),
-                           value = "2024-01-01")
-          )
-        ),
-        fluidRow(
-          column(6,
-                 div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
-                     h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>"))),
-                     fluidRow(
-                       column(6,
-                              numericInput("profundidad",  
-                                           label = strong("Profundidad (cm)"),
-                                           value = 100),
-                              br(),
-                              numericInput("capacidad_campo",  
-                                           label = strong(HTML("Capacidad de Campo (mm/cm)
+            
+            br(),
+            
+            fluidRow(
+              # elección cultivo 
+              column(3,
+                     selectInput("cultivo_balcarce",
+                                 label = strong("Seleccione el cultivo:"),
+                                 choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                "Maíz ciclo corto" = "maiz_corto",
+                                                "Soja" = "soja"
+                                                # ,
+                                                # "Girasol" = "girasol",
+                                                # "Hortalizas" = "hortalizas"
+                                 ),
+                                 selected = "maiz_largo")
+              ),
+              column(3,
+                     dateInput("fecha_siembra_balcarce",
+                               label = strong("Ingrese la fecha de siembra:"),
+                               value = "2024-01-01")
+              )
+            ),
+            fluidRow(  
+              column(12,
+                     div(uiOutput("mensaje_cultivo_balcarce1"),
+                     )
+              ),
+            ),
+            br(),
+            fluidRow(
+              column(6,
+                     div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
+                         h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>"))),
+                         fluidRow(
+                           column(6,
+                                  numericInput("profundidad_balcarce",  
+                                               label = strong("Profundidad (cm)"),
+                                               value = 100),
+                                  br(),
+                                  numericInput("capacidad_campo_balcarce",  
+                                               label = strong(HTML("Capacidad de Campo (mm/cm)
                                                         <br><small>
                                                         (Límite máximo de almacenamiento de agua)</small>")), 
-                                           value = 3.70),
-                              textOutput("almacenamiento_maximo")
-                       ),
-                       column(6,
-                              numericInput("fraccion_min",  
-                                           label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
-                                           value = 0.55,
-                                           min = 0,
-                                           max = 1),
-                              textOutput("almacenamiento_minimo"),
-                              textOutput("agua_util_total"),
-                              br(),
-                              numericInput("fraccion_inicial",  
-                                           label = strong("Fracción inicial de agua útil (0 - 1)"), 
-                                           value = 0.50,
-                                           min = 0,
-                                           max = 1)
-                       )
+                                               value = 3.70),
+                                  textOutput("almacenamiento_maximo_balcarce")
+                           ),
+                           column(6,
+                                  numericInput("fraccion_min_balcarce",  
+                                               label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
+                                               value = 0.55,
+                                               min = 0,
+                                               max = 1),
+                                  textOutput("almacenamiento_minimo_balcarce"),
+                                  textOutput("agua_util_total_balcarce"),
+                                  br(),
+                                  numericInput("fraccion_inicial_balcarce",  
+                                               label = strong("Fracción inicial de agua útil (0 - 1)"), 
+                                               value = 0.50,
+                                               min = 0,
+                                               max = 1)
+                           )
+                         )
                      )
-                 )
-          ),
-          column(3,
-                 div(style = "background-color: #21838040; padding: 15px; border-radius: 10px;",
-                     h4(strong("Datos de cultivo")),
-                     numericInput("umbral_et",  
-                                  label = strong(HTML("Umbral de fracción de agua útil 
+              ),
+              column(3,
+                     div(style = "background-color: #21838040; padding: 15px; border-radius: 10px;",
+                         h4(strong("Datos de cultivo")),
+                         numericInput("umbral_et_balcarce",  
+                                      label = strong(HTML("Umbral de fracción de agua útil 
                                                         <br><small>
                                                         (Debajo del cual se reduce la evapotranspiración)</small>")), 
-                                  value = NULL),
-                     textOutput("disminucion_et"),
+                                      value = NULL),
+                         textOutput("disminucion_et_balcarce"),
+                         br(),
+                         textOutput("GD_balcarce"),
+                     )
+              ),
+              
+              column(3,
+                     div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                         downloadButton("descarga_modelo_balcarce", "Descargar modelo de archivo para completar"),
+                         br(),
+                         br(),
+                         fileInput("clima_balcarce", "Ingresar datos propios (opcional)",
+                                   accept = c(".csv", ".xlsx"))
+                         ,
+                         helpText("El archivo debe contener datos diarios (sin datos faltantes) y las columnas: Fecha, Lluvia, Riego (primera letra mayúscula)")
+                     )
+              )
+            ),
+            fluidRow(  
+              column(12,
                      br(),
-                     textOutput("GD"),
-                 )
+                     div(uiOutput("mensaje_cultivo_balcarce3"),
+                     )
+              ),
+            ),
+            br(),
+            
+            fluidRow( 
+              box(
+                title = "Fracción de agua útil",
+                status = "lightblue",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                withSpinner(plotlyOutput("agua_util_balcarce", height = "300px"),
+                            type = 5, 
+                            color = "#0dc5c1",  
+                            size = 0.5)
+              ),
+              box(
+                title = "Consumo de agua",
+                status = "lightblue",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                withSpinner(plotlyOutput("consumo_agua_balcarce", height = "300px"),
+                            type = 5, 
+                            color = "#0dc5c1",  
+                            size = 0.5)
+              ),
+              box(
+                title = "Balance de agua",
+                status = "lightblue",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                withSpinner(plotlyOutput("deficit_agua_balcarce", height = "300px"), 
+                            type = 5, 
+                            color = "#0dc5c1",  
+                            size = 0.5)
+              ),
+              column(3, 
+                     br(),
+                     br(),
+                     infoBoxOutput("ETMacum_balcarce", width = 9),
+                     infoBoxOutput("ETRacum_balcarce", width = 9)
+                     ),
+              column(3,
+                     br(),
+                     br(),
+                     h5(strong("Cálculo de la huella hídrica de su cultivo")),
+                     numericInput("rendimiento_balcarce",
+                                  label = "Ingrese el rendimiento obtenido (kg / ha):",
+                                  value = 0
+                                  ),
+                     infoBoxOutput("huella_hidrica_balcarce", width = 9)
+                     
+              ),
+            ),
+            
+            fluidRow(  
+              column(12,
+                     div(uiOutput("mensaje_cultivo_balcarce2"),
+                     )
+              ),
+            )
           ),
-          
-        ),
-        br(),
-        h5(HTML("Para aquellas zonas fuera del radio de influencia de la EEA Balcarce, podes ingresar tus propios datos.")),
-        h6(HTML("Desde la web <a href='https://siga.inta.gob.ar/#/' target='_blank'>siga.inta.gob.ar</a>, podes seleccionar la estación meteorológica más cercana a tu campo y descargar los datos de lluvia, temperaturas y evapotranspiración.")),
-        h6(HTML("Si no encontras valores de evapotranspiración para tu campo, podes consultarnos y te ayudamos con el cálculo: <strong>echarte.laura@inta.gob.ar</strong>")),
-        br(),
-        
-        fluidRow(
-          column(6,
-                 div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
-                     fileInput("balance_precip_riego", "Ingresar datos propios (opcional)",
-                               accept = c(".csv", ".xlsx"))
-                     ,
-                     helpText("El archivo debe contener datos diarios y las columnas (sin datos faltantes): Fecha, Lluvia, Riego, Temperatura, ET0 (primera letra mayúscula)")
-                 )
+          tabPanel(
+            title = "Otros sitios",
+            br(),
+            h4(HTML("Para aquellas zonas fuera del radio de influencia de la EEA Balcarce, podes ingresar tus propios datos.")),
+            br(),
+            h6(HTML("Desde la web <a href='https://siga.inta.gob.ar/#/' target='_blank'>siga.inta.gob.ar</a>, podes seleccionar la estación meteorológica más cercana a tu campo y descargar los datos de lluvia, temperaturas y evapotranspiración.")),
+            h6(HTML("Si no encontras valores de evapotranspiración para tu campo, podes consultarnos y te ayudamos con el cálculo: <strong>echarte.laura@inta.gob.ar</strong>")),
+            br(),
+            fluidRow(
+              # elección cultivo 
+              column(3,
+                     selectInput("cultivo",
+                                 label = strong("Seleccione el cultivo:"),
+                                 choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                "Maíz ciclo corto" = "maiz_corto",
+                                                "Soja" = "soja"
+                                                # ,
+                                                # "Girasol" = "girasol",
+                                                # "Hortalizas" = "hortalizas"
+                                 ),
+                                 selected = "maiz_largo")
+              ),
+              column(3,
+                     dateInput("fecha_siembra",
+                               label = strong("Ingrese la fecha de siembra:"),
+                               value = "2024-01-01")
+              )
+            ),
+            fluidRow(  
+              column(12,
+                     div(uiOutput("mensaje_cultivo1"),
+                     )
+              ),
+            ),
+            br(),
+            fluidRow(
+              column(6,
+                     div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
+                         h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>"))),
+                         fluidRow(
+                           column(6,
+                                  numericInput("profundidad",  
+                                               label = strong("Profundidad (cm)"),
+                                               value = 100),
+                                  br(),
+                                  numericInput("capacidad_campo",  
+                                               label = strong(HTML("Capacidad de Campo (mm/cm)
+                                                        <br><small>
+                                                        (Límite máximo de almacenamiento de agua)</small>")), 
+                                               value = 3.70),
+                                  textOutput("almacenamiento_maximo")
+                           ),
+                           column(6,
+                                  numericInput("fraccion_min",  
+                                               label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
+                                               value = 0.55,
+                                               min = 0,
+                                               max = 1),
+                                  textOutput("almacenamiento_minimo"),
+                                  textOutput("agua_util_total"),
+                                  br(),
+                                  numericInput("fraccion_inicial",  
+                                               label = strong("Fracción inicial de agua útil (0 - 1)"), 
+                                               value = 0.50,
+                                               min = 0,
+                                               max = 1)
+                           )
+                         )
+                     )
+              ),
+              column(3,
+                     div(style = "background-color: #21838040; padding: 15px; border-radius: 10px;",
+                         h4(strong("Datos de cultivo")),
+                         numericInput("umbral_et",  
+                                      label = strong(HTML("Umbral de fracción de agua útil 
+                                                        <br><small>
+                                                        (Debajo del cual se reduce la evapotranspiración)</small>")), 
+                                      value = NULL),
+                         textOutput("disminucion_et"),
+                         br(),
+                         textOutput("GD"),
+                     )
+              ),
+              column(3,
+                     div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                         downloadButton("descarga_modelo", "Descargar modelo de archivo para completar"),
+                         br(),
+                         br(),
+                         fileInput("otros_clima", "Ingresar datos ambientales propios",
+                                   accept = c(".csv", ".xlsx"))
+                         ,
+                         helpText("El archivo debe contener datos diarios y las columnas (sin datos faltantes): Fecha, Lluvia, Riego, Temperatura_Media, Temperatura_Minima y ET0 (primera letra mayúscula)")
+                     )
+              )
+            ),
+            fluidRow(  
+              column(12,
+                     div(uiOutput("mensaje_cultivo3"),
+                     )
+              ),
+            ),
+            br(),
+            
+            fluidRow(
+              box(
+                title = "Fracción de agua útil",
+                status = "lightblue",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                withSpinner(plotlyOutput("agua_util", height = "300px"),
+                            type = 5,
+                            color = "#0dc5c1",
+                            size = 0.5)
+              ),
+              box(
+                title = "Consumo de agua",
+                status = "lightblue",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                withSpinner(plotlyOutput("consumo_agua", height = "300px"),
+                            type = 5,
+                            color = "#0dc5c1",
+                            size = 0.5)
+              ),
+              box(
+                title = "Balance de agua",
+                status = "lightblue",
+                solidHeader = TRUE,
+                collapsible = TRUE,
+                withSpinner(plotlyOutput("deficit_agua", height = "300px"),
+                            type = 5,
+                            color = "#0dc5c1",
+                            size = 0.5)
+              ),
+              column(3, 
+                     br(),
+                     br(),
+                     infoBoxOutput("ETMacum", width = 9),
+                     infoBoxOutput("ETRacum", width = 9)
+              ),
+              column(3,
+                     br(),
+                     br(),
+                     h5(strong("Cálculo de la huella hídrica de su cultivo")),
+                     numericInput("rendimiento",
+                                  label = "Ingrese el rendimiento obtenido (kg / ha):",
+                                  value = 0
+                     ),
+                     infoBoxOutput("huella_hidrica", width = 9)
+                     
+              ),
+            ),
+            
+            fluidRow(  
+              column(12,
+                     div(uiOutput("mensaje_cultivo2"),
+                     )
+              ),
+            )
           )
-        ),
-        br(),
-        
-        fluidRow( 
-          box(
-            title = "Fracción de agua útil",
-            status = "lightblue",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            withSpinner(plotlyOutput("agua_util", height = "300px"),
-                        type = 5, 
-                        color = "#0dc5c1",  
-                        size = 0.5)
-          ),
-          box(
-            title = "Consumo de agua",
-            status = "lightblue",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            withSpinner(plotlyOutput("consumo_agua", height = "300px"),
-                        type = 5, 
-                        color = "#0dc5c1",  
-                        size = 0.5)
-          ),
-          box(
-            title = "Balance de agua",
-            status = "lightblue",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            withSpinner(plotlyOutput("deficit_agua", height = "300px"), 
-                        type = 5, 
-                        color = "#0dc5c1",  
-                        size = 0.5)
-          ),
-          column(6,
-                 conditionalPanel(
-                   condition = "!output.fileUploaded",
-                          div(tags$img(
-                            src = "Mapa_Estacion_Met.png",
-                            style = "max-width: 60%; height: 100%; display: block; margin: 0 auto;",
-                            alt = "ubicacion_EMC"
-                          )
-                          )
-                 )
-          )
-        ),
-        
-        fluidRow(  
-          column(12,
-                 br(),
-                 br(),
-                 div(uiOutput("mensaje_cultivo"),
-                 )
-          ),
-          
         )
       ),
+      
       
       # tabItem(
       #   tabName = "Dalbulus",
@@ -1083,6 +1303,7 @@ ui <- dashboardPage(
 
 
 
+
 # Define server logic ----
 server <- function(input, output, session) {
   
@@ -1239,10 +1460,10 @@ server <- function(input, output, session) {
   output$value1 <- renderInfoBox({
     infoBox(
       title = div(p("Ultima fecha", 
-                    style = "text-align: center; font-size: 14px;"), 
+                    style = "text-align: center; font-size: 18px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(format(ultima_fecha, "%d/%m/%Y"), 
-                  style = "text-align: center; font-size: 18px;"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
       icon = icon("calendar"),
       color = "orange",
       fill = TRUE
@@ -1252,10 +1473,10 @@ server <- function(input, output, session) {
   output$value2 <- renderInfoBox({
     infoBox(
       title = div(p("Lluvia", 
-                    style = "text-align: center;font-size: 14px;"), 
+                    style = "text-align: center;font-size: 18px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
-      value = div(round(lluvia_ultimo_dia, 1), 
-                  style = "text-align: center; font-size: 18px;"),
+      value = div(paste(round(lluvia_ultimo_dia, 1), "mm"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
       icon = icon("tint"),
       color = "info",
       fill = TRUE
@@ -1265,10 +1486,10 @@ server <- function(input, output, session) {
   output$value3 <- renderInfoBox({
     infoBox(
       title = div(p("Temperatura Máxima", 
-                    style = "text-align: center;font-size: 14px;"), 
+                    style = "text-align: center;font-size: 18px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
-      value = div(round(Tmax_ultimo_dia, 1), 
-                  style = "text-align: center; font-size: 18px;"),  
+      value = div(paste(round(Tmax_ultimo_dia, 1), "ºC"), 
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),  
       icon = icon("sun"),
       color = "danger",
       fill = TRUE
@@ -1278,10 +1499,10 @@ server <- function(input, output, session) {
   output$value4 <- renderInfoBox({
     infoBox(
       title = div(p("Temperatura Mínima", 
-                    style = "text-align: center;font-size: 14px;"), 
+                    style = "text-align: center;font-size: 18px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
-      value = div(round(Tmin_ultimo_dia, 1), 
-                  style = "text-align: center; font-size: 18px;"),
+      value = div(paste(round(Tmin_ultimo_dia, 1), "ºC"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
       icon = icon("snowflake"),
       color = "warning",
       fill = TRUE
@@ -3045,28 +3266,798 @@ server <- function(input, output, session) {
   
   ##### Balance de agua ########
   
-  data_usuario <- reactive({
-    if (is.null(input$balance_precip_riego)) {
+  #Para Balcarce
+  
+  # Otros sitios fuera de Balcarce
+  
+  output$descarga_modelo_balcarce <- downloadHandler(
+    filename = function() {
+      "data_usuario.xlsx"
+    },
+    content = function(file) {
+      # Crear un dataframe modelo
+      modelo <- data.frame(
+        Fecha = as.Date(c("2024-01-01", "2024-02-01")),
+        Lluvia = c(0, 2),
+        Riego = c(10, 0)
+      )
+      
+      # Escribir el archivo Excel usando writexl
+      writexl::write_xlsx(modelo, file)
+    }
+  )
+  data_usuario_balcarce <- reactive({
+    if (is.null(input$clima_balcarce)) {
       return(NULL)  # Si no hay archivo subido, devuelve NULL
     }
     
-    ext <- tools::file_ext(input$balance_precip_riego$name)
+    ext <- tools::file_ext(input$clima_balcarce$name)
     
     if (ext == "csv") {
-      data <- read.csv(input$balance_precip_riego$datapath)
+      data <- read.csv(input$clima_balcarce$datapath)
     } else if (ext == "xlsx") {
-      data <- readxl::read_xlsx(input$balance_precip_riego$datapath)
+      data <- readxl::read_xlsx(input$clima_balcarce$datapath)
     } else {
       showNotification("Formato de archivo no soportado.", type = "error")
       return(NULL)
     }
     
     # Verificar si el archivo tiene las columnas requeridas
-    required_columns <- c("Fecha", "Lluvia", "Riego", "Temperatura", "ET0")
+    required_columns <- c("Fecha", "Lluvia", "Riego")
+    
+    if (all(required_columns %in% colnames(data))) {
+      showNotification("Archivo subido correctamente.", type = "message")
+      
+    } else {
+      showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego.", type = "error")
+      return(NULL)  # Si no tiene las columnas requeridas, devolver NULL
+    }
+    
+    return(data)
+    
+  })
+  
+  
+  datos_actualizados <- reactive({
+    # Si no hay archivo subido, se usan los datos originales "datos"
+    if (is.null(data_usuario_balcarce())) {
+      
+      # si la columna Riego no existe en el df original se la agrego con valores 0
+      if (!"Riego" %in% colnames(datos)) {
+        datos <- datos %>%
+          mutate(Riego = 0)
+      }
+      return(datos)
+    }
+    
+    data_user <- data_usuario_balcarce() %>%
+      mutate(Fecha = as.Date(Fecha, format = "%Y-%m-%d"))
+    
+    # Se combinan los datos del archivo subido por el usuario con los datos originales
+    datos_actualizados <- datos %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      left_join(data_user, by = "Fecha", suffix = c("", "_usuario"))
+    
+    datos_actualizados <- datos_actualizados %>%
+      mutate(
+        Precipitacion_Pluviometrica = coalesce(Lluvia, Precipitacion_Pluviometrica),
+        Riego = coalesce(Riego, 0)
+      ) %>%
+      # Seleccionar las columnas que queremos en el resultado final
+      select(Fecha, Precipitacion_Pluviometrica, Riego, Temperatura_Abrigo_150cm, Temperatura_Abrigo_150cm_Minima, Evapotranspiracion_Potencial)
+    
+    return(datos_actualizados)
+    
+  })
+  
+  
+  observeEvent(input$cultivo_balcarce, {
+    
+    if (input$cultivo_balcarce == "maiz_largo" || input$cultivo_balcarce == "maiz_corto") {
+      updateNumericInput(session, "umbral_et_balcarce", value = 0.8)
+      
+    } else if (input$cultivo_balcarce == "soja") {
+      updateNumericInput(session, "umbral_et_balcarce", value = 0.5)
+    }
+    
+  })
+  
+  output$mensaje_cultivo_balcarce1 <- renderUI({
+    if (input$cultivo_balcarce == "maiz_largo") {
+      tagList(
+        p(HTML("<b>Características del híbrido de maíz de ciclo largo simulado</b>:<br>
+    Requerimiento de tiempo térmico desde siembra a floración: 950 grados día (Tb 8°C).<br>
+    Duración del ciclo: aprox. 160 a 120 días de ciclo de siembra a madurez fisiológica
+    (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
+    Número total de hojas: 21 a 22 hojas."))
+      )
+    } else if (input$cultivo_balcarce == "maiz_corto") {
+      tagList(
+        p(HTML("<b>Características del híbrido de maíz de ciclo corto simulado:</b><br>
+        Requerimiento de tiempo térmico desde siembra a floración: 750 grados día (Tb 8°C).<br>
+        Duración del ciclo: aprox. 130 a 100 días de ciclo de siembra a madurez fisiológica
+        (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
+        Número total de hojas: 17 hojas."))
+      )
+    } else if (input$cultivo_balcarce == "soja") {
+      tagList(
+        p(HTML("<b>Variedad de soja de grupo 3</b>.")),
+      )
+    }
+  })
+  
+  output$mensaje_cultivo_balcarce2 <- renderUI({
+    if (input$cultivo_balcarce == "maiz_largo") {
+      tagList(
+        p(HTML("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo
+    por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas.")),
+        p("Los recuadros en los gráficos indican el período crítico."),
+      )
+    } else if (input$cultivo_balcarce == "maiz_corto") {
+      tagList(
+        p(HTML("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo
+        por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas.")),
+        p("Los recuadros en los gráficos indican el período crítico."),
+      )
+    } else if (input$cultivo_balcarce == "soja") {
+      tagList(
+        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que la soja alcanza los 70 GD."),
+        p("Los recuadros en los gráficos indican el período crítico."),
+      )
+    }
+  })
+  
+  output$mensaje_cultivo_balcarce3 <- renderUI({
+    if (input$cultivo_balcarce == "maiz_largo") {
+      tagList(
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
+    y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
+        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+      )
+    } else if (input$cultivo_balcarce == "maiz_corto") {
+      tagList(
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
+          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
+        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+      )
+    } else if (input$cultivo_balcarce == "soja") {
+      tagList(
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),<br>
+          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
+        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+      )
+    }
+  })
+  
+  
+  # Calcular Almacenamiento máximo de agua
+  almacenamiento_maximo_balcarce <- reactive({
+    input$capacidad_campo_balcarce * input$profundidad_balcarce
+  })
+  
+  # Calcular Almacenamiento mínimo de agua
+  almacenamiento_minimo_balcarce <- reactive({
+    almacenamiento_maximo_balcarce() * input$fraccion_min_balcarce
+  })
+  
+  # Calcular Agua útil total
+  agua_util_total_balcarce <- reactive({
+    almacenamiento_maximo_balcarce() - almacenamiento_minimo_balcarce()
+  })
+  
+  # Calcular Disminución de ET
+  disminucion_et_balcarce <- reactive({
+    1 / input$umbral_et_balcarce
+  })
+  
+  # GD por cultivo
+  GD_balcarce <- reactive({
+    
+    dia_juliano <- yday(input$fecha_siembra_balcarce)
+    
+    # Si el día juliano es menor a 60, ajusta sumando 365
+    if (dia_juliano < 60) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    if (input$cultivo_balcarce == "maiz_largo") {
+      GD_maiz_largo <- round(((-0.0024 * (dia_juliano^2)) - (1.7585 * dia_juliano) + 2469.3), 0)
+      return(GD_maiz_largo)
+      
+    } else if (input$cultivo_balcarce == "maiz_corto") {
+      GD_maiz_corto <- round(((-0.0212 * (dia_juliano^2)) + (10.045 * dia_juliano) + 420.61), 0)
+      return(GD_maiz_corto)
+      
+    } else if (input$cultivo_balcarce == "soja") {
+      
+      GD_soja <- round(((-0.0466 * (dia_juliano^2)) + (26.344 * dia_juliano) - 2479.9), 0)
+      return(GD_soja)
+    } 
+  })
+  
+  
+  
+  output$almacenamiento_maximo_balcarce <- renderText({
+    paste("Almacenamiento máximo de agua (mm):", round(almacenamiento_maximo_balcarce(), 2))
+  })
+  
+  output$almacenamiento_minimo_balcarce <- renderText({
+    paste("Almacenamiento mínimo de agua (mm):", round(almacenamiento_minimo_balcarce(), 2))
+  })
+  
+  output$agua_util_total_balcarce <- renderText({
+    paste("Agua útil total (mm):", round(agua_util_total_balcarce(), 2))
+  })
+  
+  output$disminucion_et_balcarce <- renderText({
+    paste("Disminución de evapotranspiración:", round(disminucion_et_balcarce(), 2))
+  })
+  
+  output$GD_balcarce <- renderText({
+    paste("Grados-Días:", GD_balcarce())
+  })
+  
+  balance_agua_balcarce <- reactive({
+    
+    if (is.null(input$fecha_siembra_balcarce)) {
+      showNotification("Debe ingresar una fecha de siembra válida.", type = "error")
+      return(NULL)
+    }
+    
+    fecha_siembra <- as.Date(input$fecha_siembra_balcarce)
+    
+    # Verificar si datos_actualizados() no es NULL
+    if (is.null(datos_actualizados())) {
+      showNotification("Los datos no están disponibles.", type = "error")
+      return(NULL)
+    }
+    
+    datos_filtrados <- datos_actualizados() %>%
+      filter(Fecha >= input$fecha_siembra_balcarce) %>%
+      select(Fecha, Temperatura_Abrigo_150cm, Temperatura_Abrigo_150cm_Minima, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
+    
+    datos_filtrados <- datos_filtrados %>%
+      mutate(Dia_Mes = format(Fecha, "%m-%d"))
+    
+    fraccion_inicial_balcarce <- input$fraccion_inicial_balcarce
+    agua_util_total_val_balcarce <- agua_util_total_balcarce()
+    disminucion_et_val_balcarce <- disminucion_et_balcarce()
+    GD_balcarce <- GD_balcarce()
+    
+    
+    datos_filtrados <- datos_filtrados %>%
+      arrange(Fecha) %>%
+      mutate(
+        TTB_balcarce = case_when(
+          input$cultivo_balcarce %in% c("maiz_largo", "maiz_corto") ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+                                                                              0, 
+                                                                              Temperatura_Abrigo_150cm - 8),  
+          input$cultivo_balcarce == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, # Umbral para soja
+                                                     0, 
+                                                     Temperatura_Abrigo_150cm - 11)
+          # ,  
+          # TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 
+          #                0, 
+          #                Temperatura_Abrigo_150cm - 9)  
+        ),
+        GD_acum_balcarce = cumsum(TTB_balcarce),
+        Ttrelativo_balcarce = GD_acum_balcarce / GD_balcarce,
+        
+        Kc_balcarce = if_else(Ttrelativo_balcarce > 0.16, 
+                              2.988041 * Ttrelativo_balcarce^4 - 4.052411 * Ttrelativo_balcarce^3 - 3.999317 * Ttrelativo_balcarce^2 + 6.015032 * Ttrelativo_balcarce - 0.390632, 
+                              0.4),
+        ETM_balcarce = Kc_balcarce * Evapotranspiracion_Potencial,
+        ETM_acum_balcarce = cumsum(ETM_balcarce),
+        
+        Fr_agua_util_balcarce = NA_real_,
+        agua_util_balcarce = NA_real_,
+        ETR_balcarce = NA_real_,
+        deficiencia_balcarce = NA_real_
+      ) 
+    
+    datos_filtrados$Fr_agua_util_balcarce[1] <- fraccion_inicial_balcarce
+    datos_filtrados$agua_util_balcarce[1] <- fraccion_inicial_balcarce * agua_util_total_val_balcarce
+    
+    for (i in 2:nrow(datos_filtrados)) {
+      
+      
+      if (datos_filtrados$GD_acum_balcarce[i - 1] > GD_balcarce) {
+        break
+      }
+      
+      
+      datos_filtrados$ETR_balcarce[i] <- if_else(
+        is.na(datos_filtrados$Fr_agua_util_balcarce[i - 1]) | is.na(datos_filtrados$ETM_balcarce[i]), 
+        NA_real_, 
+        if_else(
+          datos_filtrados$Fr_agua_util_balcarce[i - 1] >= input$umbral_et_balcarce, 
+          datos_filtrados$ETM_balcarce[i], 
+          disminucion_et_val_balcarce * datos_filtrados$Fr_agua_util_balcarce[i - 1] * datos_filtrados$ETM_balcarce[i]
+        )
+      )
+      
+      datos_filtrados$agua_util_balcarce[i] <- if_else(
+        is.na(datos_filtrados$agua_util_balcarce[i - 1]) | is.na(datos_filtrados$Precipitacion_Pluviometrica[i]) | is.na(datos_filtrados$Riego[i]) | is.na(datos_filtrados$ETR_balcarce[i]),
+        NA_real_,
+        if_else(
+          datos_filtrados$agua_util_balcarce[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] + datos_filtrados$Riego[i] - datos_filtrados$ETR_balcarce[i] > agua_util_total_val_balcarce,
+          agua_util_total_val_balcarce,
+          datos_filtrados$agua_util_balcarce[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] + datos_filtrados$Riego[i] - datos_filtrados$ETR_balcarce[i]
+        )
+      )
+      
+      datos_filtrados$Fr_agua_util_balcarce[i] <- if_else(
+        is.na(datos_filtrados$agua_util_balcarce[i]) | is.na(agua_util_total_val_balcarce),
+        NA_real_,
+        datos_filtrados$agua_util_balcarce[i] / agua_util_total_val_balcarce
+      )
+      
+      datos_filtrados$deficiencia_balcarce[i] <- if_else(
+        is.na(datos_filtrados$ETR_balcarce[i]) | is.na(datos_filtrados$ETM_balcarce[i]),
+        NA_real_,
+        datos_filtrados$ETR_balcarce[i] - datos_filtrados$ETM_balcarce[i]
+      )
+    }
+    
+    # if (input$cultivo %in% c("maiz_largo", "maiz_corto")) {
+    #   fecha_filtro <- min(datos_filtrados$Fecha[datos_filtrados$Temperatura_Abrigo_150cm_Minima <= 2], na.rm = TRUE)
+    #   
+    #   if (!is.na(fecha_filtro)) {
+    #     datos_filtrados <- datos_filtrados %>%
+    #       filter(Fecha <= fecha_filtro)
+    #   }
+    # }
+    
+    return(datos_filtrados)
+    
+  })
+
+  #Calculos de ETM y ETR acumulados
+  
+  etm_etr_acum_balcarce <- reactive({
+    GD_balcarce <- GD_balcarce()
+    df_siembra_balcarce <- balance_agua_balcarce()
+    df_siembra_balcarce <- df_siembra_balcarce %>% filter(GD_acum_balcarce <= GD_balcarce)
+    
+    # Calcular ETM acumulado
+    ultimo_etm_acum_balcarce <- tail(df_siembra_balcarce$ETM_acum_balcarce, 1)
+    
+    # Calcular ETR acumulado
+    ETR_acum_balcarce <- cumsum(ifelse(is.na(df_siembra_balcarce$ETR_balcarce), 0, df_siembra_balcarce$ETR_balcarce))
+    ultimo_etr_acum_balcarce <- tail(ETR_acum_balcarce, 1)
+    
+    huella_hidrica_balcarce <- ultimo_etr_acum_balcarce * 10000 / input$rendimiento_balcarce
+    
+    # Retornar los valores calculados
+    list(
+      df_siembra_balcarce = df_siembra_balcarce, 
+      ultimo_etm_acum_balcarce = ultimo_etm_acum_balcarce,
+      ultimo_etr_acum_balcarce = ultimo_etr_acum_balcarce,
+      huella_hidrica_balcarce = huella_hidrica_balcarce
+    )
+  })
+  
+  # ETM acumulado
+  output$ETMacum_balcarce <- renderInfoBox({
+    acumulados <- etm_etr_acum_balcarce()
+    infoBox(
+      title = "",
+      subtitle = div(p("ETM Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),  
+      value = div(paste(round(acumulados$ultimo_etm_acum_balcarce, 1), "mm"),
+                        style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  icon = tags$i(class = "fa fa-circle-up", style = "font-size: 60px; opacity: 0.6;"),
+      color = "danger",
+      fill = TRUE
+    )
+  })
+  
+  # ETR acumulado
+  output$ETRacum_balcarce <- renderInfoBox({
+    acumulados <- etm_etr_acum_balcarce()
+    infoBox(
+      title = "",
+      subtitle = div(p("ETR Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),
+      value = div(paste(round(acumulados$ultimo_etr_acum_balcarce, 1), "mm"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+      icon = tags$i(class = "fa fa-retweet", style = "font-size: 60px; opacity: 0.6;"),
+      color = "olive",
+      fill = TRUE
+    )
+  })
+  
+  #Balance hidrico
+  output$huella_hidrica_balcarce <- renderInfoBox({
+    acumulados <- etm_etr_acum_balcarce()
+    infoBox(
+      title = "",
+      subtitle = div(
+        HTML("<div style='text-align: center; font-size: 24px; font-weight: bold;'>Huella hídrica </div>
+            <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>"),
+        style = "margin-bottom: 0px;"
+      ),
+      value = div(paste(round(acumulados$huella_hidrica_balcarce, 1), "(l / kg)"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+      icon = tags$i(class = "fa fa-water", style = "font-size: 60px; opacity: 0.6;"),
+      color = "lightblue",
+      fill = TRUE
+    )
+  })
+  
+  ## Gráficos balance de agua ##
+  output$agua_util_balcarce <- renderPlotly({
+    GD_balcarce <- GD_balcarce()
+    df_siembra <- balance_agua_balcarce()
+    df_siembra <- df_siembra %>% filter(GD_acum_balcarce <= GD_balcarce)
+    
+    req(input$fecha_siembra_balcarce)
+    
+    dia_juliano <- yday(input$fecha_siembra_balcarce)
+    
+    # Ajustar el día juliano si es menor de 60
+    if (dia_juliano < 90) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    if (input$cultivo_balcarce == "maiz_largo") {
+      
+      GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo_balcarce == "maiz_corto") {
+      
+      GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo_balcarce == "soja") {
+      
+      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
+      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
+      
+      GD_umbral <- 70
+      
+      color_rect <- "darkgreen"
+      
+    } else {
+      fecha_min <- NA
+      fecha_max <- NA
+    }
+    
+    # Calcular la fecha de inicio de abril
+    if (month(input$fecha_siembra_balcarce) >= 5) {
+      
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce) + 1, "-04-01"))
+    } else {
+      
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce), "-04-01"))
+    }
+    
+    fecha_vertical_roja <- df_siembra %>%
+      filter(GD_acum_balcarce >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    fecha_vertical_azul <- df_siembra %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    
+    agua_util_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
+      geom_rect(aes(xmin = fecha_min, 
+                    xmax = fecha_max, 
+                    ymin = 0, ymax = 1),
+                fill = color_rect, 
+                alpha = 0.2, 
+                color = NA) +
+      geom_line(aes(y = Fr_agua_util_balcarce , color = "Fr_agua_util_balcarce")) +
+      labs(title = "", x = "", 
+           y = "Fracción de Agua Útil (0 - 1)") +
+      theme_minimal() +
+      scale_color_manual(values = c("#E9C46A")) +
+      guides(color = "none") 
+    
+    if (is.finite(fecha_vertical_roja)) {
+      agua_util_balcarce <- agua_util_balcarce + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    }
+    
+    if (is.finite(fecha_vertical_azul)) {
+      agua_util_balcarce <- agua_util_balcarce + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
+    }
+    
+    ggplotly(agua_util_balcarce)  %>% 
+      plotly::style(name = "Fracción de Agua Útil", traces = 1) 
+  })
+  
+  output$consumo_agua_balcarce <- renderPlotly({
+    GD_balcarce <- GD_balcarce()
+    df_siembra <- balance_agua_balcarce()
+    df_siembra <- df_siembra %>% filter(GD_acum_balcarce <= GD_balcarce)
+    
+    dia_juliano <- yday(input$fecha_siembra_balcarce)
+    
+    # Ajustar el día juliano si es menor de 60
+    if (dia_juliano < 90) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    fecha_actual <- Sys.Date()
+    
+    if (input$cultivo_balcarce == "maiz_largo") {
+      
+      GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo_balcarce == "maiz_corto") {
+      
+      GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo_balcarce == "soja") {
+      
+      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
+      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
+      
+      GD_umbral <- 70
+      
+      color_rect <- "darkgreen"
+      
+    } else {
+      fecha_min <- NA
+      fecha_max <- NA
+    }
+    
+    ymax_ETM_balcarce <- max(df_siembra$ETM_balcarce,
+                             na.rm = TRUE)
+    
+    # Calcular la fecha de inicio de abril
+    if (month(input$fecha_siembra_balcarce) >= 5) {
+      # Si la siembra es en octubre o más tarde, ajustar al próximo abril
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce) + 1, "-04-01"))
+    } else {
+      # Si es antes de octubre, simplemente avanzar al mismo año en abril
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce), "-04-01"))
+    }
+    
+    fecha_vertical_roja <- df_siembra %>%
+      filter(GD_acum_balcarce >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    fecha_vertical_azul <- df_siembra %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    
+    cons_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
+      geom_line(aes(y = ETM_balcarce, color = "ETM")) +
+      geom_line(aes(y = ETR_balcarce, color = "ETR")) +
+      geom_rect(aes(xmin = fecha_min,
+                    xmax = fecha_max,
+                    ymin = 0, ymax = ymax_ETM_balcarce),
+                fill = color_rect,
+                alpha = 0.2,
+                color = NA) +
+      labs(title = "", x = "", y = "mm") +
+      theme_minimal() +
+      scale_color_manual(values = c("#E76F51", "#2A9D8F")) +
+      guides(color = guide_legend(title = NULL)) 
+    
+    if (is.finite(fecha_vertical_roja)) {
+      cons_agua_balcarce <- cons_agua_balcarce + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    }
+    
+    if (is.finite(fecha_vertical_azul)) {
+      cons_agua_balcarce <- cons_agua_balcarce + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
+    }
+    
+    ggplotly(cons_agua_balcarce) %>% 
+      layout(legend = list(orientation = "v", x = 0.1, y = 1.3)) %>% 
+      plotly::style(name = "ETM: Máximo consumo de agua si no hubiera deficiencias de agua", traces = 1)  %>% 
+      plotly::style(name = "ETR: Consumo de agua REAL", traces = 2) 
+  })
+  
+  
+  output$deficit_agua_balcarce <- renderPlotly({
+    GD_balcarce <- GD_balcarce()
+    df_siembra <- balance_agua_balcarce()
+    df_siembra <- df_siembra %>% filter(GD_acum_balcarce <= GD_balcarce)
+    
+    dia_juliano <- yday(input$fecha_siembra_balcarce)
+    
+    # Ajustar el día juliano si es menor de 60
+    if (dia_juliano < 60) {
+      dia_juliano <- dia_juliano + 365
+    }
+    
+    fecha_actual <- Sys.Date()
+    
+    if (input$cultivo_balcarce == "maiz_largo") {
+      
+      GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
+      GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo_balcarce == "maiz_corto") {
+      
+      GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
+      GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      
+      GD_umbral <- 340
+      
+      color_rect <- "cornsilk3"
+      
+    } else if (input$cultivo_balcarce == "soja") {
+      
+      GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
+      GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
+      
+      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
+      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
+      
+      GD_umbral <- 70
+      
+      color_rect <- "darkgreen"
+      
+    } else {
+      fecha_min <- NA
+      fecha_max <- NA
+    }
+    
+    # Calcular la fecha de inicio de abril
+    if (month(input$fecha_siembra_balcarce) >= 5) {
+      # Si la siembra es en octubre o más tarde, ajustar al próximo abril
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce) + 1, "-04-01"))
+    } else {
+      # Si es antes de octubre, simplemente avanzar al mismo año en abril
+      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce), "-04-01"))
+    }
+    
+    fecha_vertical_roja <- df_siembra %>%
+      filter(GD_acum_balcarce >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    fecha_vertical_azul <- df_siembra %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
+      pull(fecha_vertical)
+    
+    ymax_pp <- max(df_siembra$Precipitacion_Pluviometrica,
+                   na.rm = TRUE)
+    
+    def_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
+      geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
+               stat = "identity", position = "dodge") +
+      geom_bar(aes(y = deficiencia_balcarce, fill = "deficiencia"),
+               stat = "identity", position = "dodge") +
+      geom_bar(aes(y = Riego, fill = "Riego"),
+               stat = "identity", position = "dodge") +
+      geom_rect(aes(xmin = fecha_min,
+                    xmax = fecha_max,
+                    ymin = 0, ymax = ymax_pp),
+                fill = color_rect,
+                alpha = 0.2,
+                color = NA) +
+      labs(title = "", x = "", y = "mm") +
+      theme_minimal() +
+      scale_fill_manual(values = c("#BC4749", "#007EA7", "#BDE0FE")) +
+      guides(fill = guide_legend(title = NULL)) 
+    
+    if (is.finite(fecha_vertical_roja)) {
+      def_agua_balcarce <- def_agua_balcarce + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    }
+    
+    if (is.finite(fecha_vertical_azul)) {
+      def_agua_balcarce <- def_agua_balcarce + 
+        geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
+    }
+    
+    ggplotly(def_agua_balcarce) %>% 
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.2)) %>% 
+      plotly::style(name = "Precipitación", traces = 1) %>% 
+      plotly::style(name = "Déficit hídrico", traces = 2)%>% 
+      plotly::style(name = "Riego", traces = 3)
+    
+    
+  })
+  
+  
+  
+  
+  # Otros sitios fuera de Balcarce
+  
+  output$descarga_modelo <- downloadHandler(
+    filename = function() {
+      "data_usuario.xlsx"
+    },
+    content = function(file) {
+      # Crear un dataframe modelo
+      modelo <- data.frame(
+        Fecha = as.Date(c("2024-01-01", "2024-02-01")),
+        Lluvia = c(0, 2),
+        Riego = c(10, 0),
+        Temperatura_Media = c(15, 25.6),
+        Temperatura_Minima = c(3.2, 5.6),
+        ET0 = c(2.1, 3.5) 
+      )
+      
+      # Escribir el archivo Excel usando writexl
+      writexl::write_xlsx(modelo, file)
+    }
+  )
+  
+  data_usuario <- reactive({
+    if (is.null(input$otros_clima)) {
+      return(NULL)  # Si no hay archivo subido, devuelve NULL
+    }
+    
+    ext <- tools::file_ext(input$otros_clima$name)
+    
+    if (ext == "csv") {
+      data <- read.csv(input$otros_clima$datapath)
+    } else if (ext == "xlsx") {
+      data <- readxl::read_xlsx(input$otros_clima$datapath)
+    } else {
+      showNotification("Formato de archivo no soportado.", type = "error")
+      return(NULL)
+    }
+    
+    # Verificar si el archivo tiene las columnas requeridas
+    required_columns <- c("Fecha", "Temperatura_Media", "Temperatura_Minima", 
+                          "Riego", "Lluvia", "ET0")
     if (all(required_columns %in% colnames(data))) {
       showNotification("Archivo subido correctamente.", type = "message")
     } else {
-      showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego, Temperatura, ET0.", type = "error")
+      showNotification("El archivo no tiene las columnas requeridas: Fecha, Lluvia, Riego, Temperatura_Media, Temperatura_Minima, ET0.", type = "error")
       return(NULL)  # Si no tiene las columnas requeridas, devolver NULL
     }
     
@@ -3076,61 +4067,25 @@ server <- function(input, output, session) {
   
   # Determinar si se ha cargado un archivo
   output$fileUploaded <- reactive({
-    !is.null(input$balance_precip_riego)
+    !is.null(input$otros_clima)
   })
   
   # Necesario para que output$fileUploaded sea accesible en conditionalPanel
   outputOptions(output, "fileUploaded", suspendWhenHidden = FALSE)
-
   
-  datos_actualizados <- reactive({
-    # Si no hay archivo subido, se usan los datos originales "datos"
-    if (is.null(data_usuario())) {
+  
+  datos_validos <- reactive({
+    datos <- data_usuario()
+    
+    columnas_requeridas <- c("Fecha", "Temperatura_Media", "Temperatura_Minima", 
+                             "Riego", "Lluvia", "ET0")
+    
+    if (!all(columnas_requeridas %in% colnames(datos))) {
+      showNotification("El archivo no contiene todas las columnas requeridas.", type = "error")
       
-      # si la columna Riego no existe en el df original se la agrego con valores 0
-      if (!"Riego" %in% colnames(datos)) {
-        datos <- datos %>%
-          mutate(Riego = 0,
-                 Temperatura = 0,
-                 ET0 = 0)
-      }
-      return(datos)  
+      return(NULL)
     }
-    
-    data_user <- data_usuario() %>%
-      mutate(Fecha = as.Date(Fecha, format = "%Y-%m-%d"))
-    
-    # Se combinan los datos del archivo subido por el usuario con los datos originales
-    datos_actualizados <- datos %>%
-      mutate(Fecha = as.Date(Fecha)) %>%
-      left_join(data_user, by = "Fecha", suffix = c("", "_usuario"))
-    
-    # Reemplazo los valores de Precipitacion_Pluviometica por los de Lluvia del usuario
-    if ("Lluvia" %in% colnames(datos_actualizados)) {
-      datos_actualizados <- datos_actualizados %>%
-        mutate(Precipitacion_Pluviometrica = coalesce(Lluvia, Precipitacion_Pluviometrica))
-    }
-    
-    # Reemplazo los valores de Riego por los de Riego del usuario (sino hay riego el valor = 0)
-    if ("Riego" %in% colnames(datos_actualizados)) {
-      datos_actualizados <- datos_actualizados %>%
-        mutate(Riego = coalesce(Riego, Riego, 0))  
-    }
-    
-    # Reemplazo los valores de Riego por los de Riego del usuario (sino hay riego el valor = 0)
-    if ("Temperatura" %in% colnames(datos_actualizados)) {
-      datos_actualizados <- datos_actualizados %>%
-        mutate(Temperatura_Abrigo_150cm = coalesce(Temperatura, Temperatura_Abrigo_150cm))  
-    }
-    
-    # Reemplazo los valores de Riego por los de Riego del usuario (sino hay riego el valor = 0)
-    if ("ET0" %in% colnames(datos_actualizados)) {
-      datos_actualizados <- datos_actualizados %>%
-        mutate(Evapotranspiracion_Potencial = coalesce(ET0, Evapotranspiracion_Potencial))  
-    }
-    
-    return(datos_actualizados)
-    
+    datos
   })
   
   
@@ -3145,32 +4100,68 @@ server <- function(input, output, session) {
     
   })
   
-  output$mensaje_cultivo <- renderUI({
+  output$mensaje_cultivo1 <- renderUI({
     if (input$cultivo == "maiz_largo") {
       tagList(
-        p(HTML("Características del híbrido de maíz de ciclo largo simulado:<br>
-          Requerimiento de tiempo térmico desde siembra a floración: 950 grados día (Tb 8°C).<br>
-          Duración del ciclo: aprox. 160 a 120 días de ciclo de siembra a madurez fisiológica (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
-          Número total de hojas: 21 a 22 hojas.")),
-        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas."),
+        p(HTML("<b>Características del híbrido de maíz de ciclo largo simulado</b>:<br>
+    Requerimiento de tiempo térmico desde siembra a floración: 950 grados día (Tb 8°C).<br>
+    Duración del ciclo: aprox. 160 a 120 días de ciclo de siembra a madurez fisiológica
+    (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
+    Número total de hojas: 21 a 22 hojas."))
+      )
+    } else if (input$cultivo == "maiz_corto") {
+      tagList(
+        p(HTML("<b>Características del híbrido de maíz de ciclo corto simulado:</b><br>
+        Requerimiento de tiempo térmico desde siembra a floración: 750 grados día (Tb 8°C).<br>
+        Duración del ciclo: aprox. 130 a 100 días de ciclo de siembra a madurez fisiológica
+        (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
+        Número total de hojas: 17 hojas."))
+      )
+    } else if (input$cultivo == "soja") {
+      tagList(
+        p(HTML("<b>Variedad de soja de grupo 3</b>.")),
+      )
+    }
+  })
+  
+  output$mensaje_cultivo2 <- renderUI({
+    if (input$cultivo == "maiz_largo") {
+      tagList(
+        p(HTML("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo
+    por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas.")),
         p("Los recuadros en los gráficos indican el período crítico."),
+      )
+    } else if (input$cultivo == "maiz_corto") {
+      tagList(
+        p(HTML("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo
+        por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas.")),
+        p("Los recuadros en los gráficos indican el período crítico."),
+      )
+    } else if (input$cultivo == "soja") {
+      tagList(
+        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que la soja alcanza los 70 GD."),
+        p("Los recuadros en los gráficos indican el período crítico."),
+      )
+    }
+  })
+  
+  output$mensaje_cultivo3 <- renderUI({
+    if (input$cultivo == "maiz_largo") {
+      tagList(
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
+    y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
         p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
       )
     } else if (input$cultivo == "maiz_corto") {
       tagList(
-        p(HTML("Características del híbrido de maíz de ciclo corto simulado:<br>
-        Requerimiento de tiempo térmico desde siembra a floración: 750 grados día (Tb 8°C).<br>
-        Duración del ciclo: aprox. 130 a 100 días de ciclo de siembra a madurez fisiológica (se acorta la duración del ciclo a medida que se retrasa la fecha de siembra).<br>
-        Número total de hojas: 17 hojas.")),
-        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas."),
-        p("Los recuadros en los gráficos indican el período crítico."),
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
+          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
         p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
       )
     } else if (input$cultivo == "soja") {
       tagList(
-        p("Variedad de soja de grupo 3."),
-        p("La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que la soja alcanza los 70 GD."),
-        p("Los recuadros en los gráficos indican el período crítico."),
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),<br>
+          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
         p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
       )
     }
@@ -3248,25 +4239,9 @@ server <- function(input, output, session) {
   
   balance_agua <- reactive({
     
-    if (is.null(input$fecha_siembra)) {
-      showNotification("Debe ingresar una fecha de siembra válida.", type = "error")
-      return(NULL)
-    }
+    datos_sitios <- datos_validos()
     
-    fecha_siembra <- as.Date(input$fecha_siembra)
-    
-    # Verificar si datos_actualizados() no es NULL
-    if (is.null(datos_actualizados())) {
-      showNotification("Los datos no están disponibles.", type = "error")
-      return(NULL)
-    }
-    
-    datos_filtrados <- datos_actualizados() %>%
-      filter(Fecha >= input$fecha_siembra) %>%
-      select(Fecha, Temperatura_Abrigo_150cm, Temperatura_Abrigo_150cm_Minima, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
-    
-    datos_filtrados <- datos_filtrados %>%
-      mutate(Dia_Mes = format(Fecha, "%m-%d"))
+    req(datos_sitios, input$fecha_siembra)
     
     fraccion_inicial <- input$fraccion_inicial
     agua_util_total_val <- agua_util_total()
@@ -3274,92 +4249,142 @@ server <- function(input, output, session) {
     GD <- GD()
     
     
-    datos_filtrados <- datos_filtrados %>%
+    datos_sitios <- datos_sitios %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      filter(Fecha >= input$fecha_siembra) %>%
       arrange(Fecha) %>%
       mutate(
-        TTB = case_when(
-          input$cultivo %in% c("maiz_largo", "maiz_corto") ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
-                                                                     0, 
-                                                                     Temperatura_Abrigo_150cm - 8),  
-          input$cultivo == "soja" ~ if_else(Temperatura_Abrigo_150cm - 11 < 0, # Umbral para soja
-                                            0, 
-                                            Temperatura_Abrigo_150cm - 11)
-          # ,  
-          # TRUE ~ if_else(Temperatura_Abrigo_150cm - 9 < 0, 
-          #                0, 
-          #                Temperatura_Abrigo_150cm - 9)  
-        ),
+        TTB = pmax(Temperatura_Media - ifelse(input$cultivo == "soja", 11, 8), 0),
         GD_acum = cumsum(TTB),
-        Ttrelativo = GD_acum / GD,
-        
+        Ttrelativo = GD_acum / GD(),
         Kc = if_else(Ttrelativo > 0.16, 
                      2.988041 * Ttrelativo^4 - 4.052411 * Ttrelativo^3 - 3.999317 * Ttrelativo^2 + 6.015032 * Ttrelativo - 0.390632, 
                      0.4),
-        ETM = Kc * Evapotranspiracion_Potencial,
-        
+        ETM = Kc * ET0,
+        ETM_acum = cumsum(ETM),
         Fr_agua_util = NA_real_,
         agua_util = NA_real_,
         ETR = NA_real_,
         deficiencia = NA_real_
-      ) 
+      )
     
-    datos_filtrados$Fr_agua_util[1] <- fraccion_inicial
-    datos_filtrados$agua_util[1] <- fraccion_inicial * agua_util_total_val
+    datos_sitios$Fr_agua_util[1] <- fraccion_inicial
+    datos_sitios$agua_util[1] <- fraccion_inicial * agua_util_total_val
     
-    for (i in 2:nrow(datos_filtrados)) {
+    for (i in 2:nrow(datos_sitios)) {
       
-      
-      if (datos_filtrados$GD_acum[i - 1] > GD) {
+      if (datos_sitios$GD_acum[i - 1] > GD) {
         break
       }
       
       
-      datos_filtrados$ETR[i] <- if_else(
-        is.na(datos_filtrados$Fr_agua_util[i - 1]) | is.na(datos_filtrados$ETM[i]), 
+      datos_sitios$ETR[i] <- if_else(
+        is.na(datos_sitios$Fr_agua_util[i - 1]) | is.na(datos_sitios$ETM[i]), 
         NA_real_, 
         if_else(
-          datos_filtrados$Fr_agua_util[i - 1] >= input$umbral_et, 
-          datos_filtrados$ETM[i], 
-          disminucion_et_val * datos_filtrados$Fr_agua_util[i - 1] * datos_filtrados$ETM[i]
+          datos_sitios$Fr_agua_util[i - 1] >= input$umbral_et, 
+          datos_sitios$ETM[i], 
+          disminucion_et_val * datos_sitios$Fr_agua_util[i - 1] * datos_sitios$ETM[i]
         )
       )
       
-      datos_filtrados$agua_util[i] <- if_else(
-        is.na(datos_filtrados$agua_util[i - 1]) | is.na(datos_filtrados$Precipitacion_Pluviometrica[i]) | is.na(datos_filtrados$Riego[i]) | is.na(datos_filtrados$ETR[i]),
+      datos_sitios$agua_util[i] <- if_else(
+        is.na(datos_sitios$agua_util[i - 1]) | is.na(datos_sitios$Lluvia[i]) | is.na(datos_sitios$Riego[i]) | is.na(datos_sitios$ETR[i]),
         NA_real_,
         if_else(
-          datos_filtrados$agua_util[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] + datos_filtrados$Riego[i] - datos_filtrados$ETR[i] > agua_util_total_val,
+          datos_sitios$agua_util[i - 1] + datos_sitios$Lluvia[i] + datos_sitios$Riego[i] - datos_sitios$ETR[i] > agua_util_total_val,
           agua_util_total_val,
-          datos_filtrados$agua_util[i - 1] + datos_filtrados$Precipitacion_Pluviometrica[i] + datos_filtrados$Riego[i] - datos_filtrados$ETR[i]
+          datos_sitios$agua_util[i - 1] + datos_sitios$Lluvia[i] + datos_sitios$Riego[i] - datos_sitios$ETR[i]
         )
       )
       
-      datos_filtrados$Fr_agua_util[i] <- if_else(
-        is.na(datos_filtrados$agua_util[i]) | is.na(agua_util_total_val),
+      datos_sitios$Fr_agua_util[i] <- if_else(
+        is.na(datos_sitios$agua_util[i]) | is.na(agua_util_total_val),
         NA_real_,
-        datos_filtrados$agua_util[i] / agua_util_total_val
+        datos_sitios$agua_util[i] / agua_util_total_val
       )
       
-      datos_filtrados$deficiencia[i] <- if_else(
-        is.na(datos_filtrados$ETR[i]) | is.na(datos_filtrados$ETM[i]),
+      datos_sitios$deficiencia[i] <- if_else(
+        is.na(datos_sitios$ETR[i]) | is.na(datos_sitios$ETM[i]),
         NA_real_,
-        datos_filtrados$ETR[i] - datos_filtrados$ETM[i]
+        datos_sitios$ETR[i] - datos_sitios$ETM[i]
       )
     }
     
-    # if (input$cultivo %in% c("maiz_largo", "maiz_corto")) {
-    #   fecha_filtro <- min(datos_filtrados$Fecha[datos_filtrados$Temperatura_Abrigo_150cm_Minima <= 2], na.rm = TRUE)
-    #   
-    #   if (!is.na(fecha_filtro)) {
-    #     datos_filtrados <- datos_filtrados %>%
-    #       filter(Fecha <= fecha_filtro)
-    #   }
-    # }
-    
-    return(datos_filtrados)
+    return(datos_sitios)
     
   })
   
+  #Calculos de ETM y ETR acumulados
+  
+  etm_etr_acum <- reactive({
+    GD <- GD()
+    df_siembra <- balance_agua()
+    df_siembra <- df_siembra %>% filter(GD_acum <= GD)
+    
+    # Calcular ETM acumulado
+    ultimo_etm_acum <- tail(df_siembra$ETM_acum, 1)
+    
+    # Calcular ETR acumulado
+    ETR_acum <- cumsum(ifelse(is.na(df_siembra$ETR), 0, df_siembra$ETR))
+    ultimo_etr_acum <- tail(ETR_acum, 1)
+    
+    huella_hidrica <- ultimo_etr_acum * 10000 / input$rendimiento
+    
+    # Retornar los valores calculados
+    list(
+      df_siembra = df_siembra, 
+      ultimo_etm_acum = ultimo_etm_acum,
+      ultimo_etr_acum = ultimo_etr_acum,
+      huella_hidrica = huella_hidrica
+    )
+  })
+  
+
+  # ETM acumulado
+  output$ETMacum <- renderInfoBox({
+    acumulados <- etm_etr_acum()
+    infoBox(
+      title = "",
+      subtitle = div(p("ETM Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),  
+      value = div(paste(round(acumulados$ultimo_etm_acum, 1), "mm"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+      icon = tags$i(class = "fa fa-circle-up", style = "font-size: 60px; opacity: 0.6;"),
+      color = "danger",
+      fill = TRUE)
+  })
+  
+  # ETR acumulado
+  output$ETRacum <- renderInfoBox({
+    acumulados <- etm_etr_acum()
+    infoBox(
+      title = "",
+      subtitle = div(p("ETR Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),
+      value = div(paste(round(acumulados$ultimo_etr_acum, 1), "mm"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+      icon = tags$i(class = "fa fa-retweet", style = "font-size: 50px; opacity: 0.6;"),
+      color = "olive",
+      fill = TRUE
+    )
+  })
+  
+  #Balance hidrico
+  output$huella_hidrica <- renderInfoBox({
+    acumulados <- etm_etr_acum()
+    infoBox(
+      title = "",
+      subtitle = div(
+        HTML("<div style='text-align: center; font-size: 24px; font-weight: bold;'>Huella hídrica</div>
+            <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>"),
+        style = "margin-bottom: 0px;"
+      ),
+      value = div(paste(round(acumulados$huella_hidrica, 1), "l / kg"),
+                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+      icon = tags$i(class = "fa fa-water", style = "font-size: 50px; opacity: 0.6;"),
+      color = "lightblue",
+      fill = TRUE
+    )
+  })
   
   ## Gráficos balance de agua ##
   output$agua_util <- renderPlotly({
@@ -3427,12 +4452,12 @@ server <- function(input, output, session) {
     }
     
     fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      filter(GD_acum >= GD_umbral, Temperatura_Minima <= 2) %>%
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
     fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Minima <= 2) %>%
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
@@ -3533,12 +4558,12 @@ server <- function(input, output, session) {
     }
     
     fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      filter(GD_acum >= GD_umbral, Temperatura_Minima <= 2) %>%
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
     fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Minima <= 2) %>%
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
@@ -3639,12 +4664,12 @@ server <- function(input, output, session) {
     }
     
     fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      filter(GD_acum >= GD_umbral, Temperatura_Minima <= 2) %>%
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
     fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
+      filter(Fecha >= fecha_inicio_abril, Temperatura_Minima <= 2) %>%
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
@@ -3652,7 +4677,7 @@ server <- function(input, output, session) {
                    na.rm = TRUE)
     
     def_agua <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
+      geom_bar(aes(y = Lluvia, fill = "Precipitacion_Pluviometrica"),
                stat = "identity", position = "dodge") +
       geom_bar(aes(y = deficiencia, fill = "deficiencia"),
                stat = "identity", position = "dodge") +
