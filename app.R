@@ -19,38 +19,125 @@ library(leaflet)
 library(webshot)
 library(httr)
 library(jsonlite)
-library(digest)
-# library(shinyjs)
-# library(shinyauthr)
-# library(sodium)
+# library(DBI)
+# library(RSQLite)
+# library(digest)
 
 
-# get_clima_balcarce <- function() {
-#   url <- "https://ws.smn.gob.ar/map_items/weather"
-#   
-#   # Hacemos la petición GET a la API
-#   response <- GET(url)
-#   
-#   # Verificamos si la consulta fue exitosa
-#   if (status_code(response) == 200) {
-#     # Parseamos el contenido a JSON
-#     content <- content(response, "text", encoding = "UTF-8")
-#     data <- fromJSON(content)
-#     
-#     # Filtramos la estación de Balcarce
-#     balcarce_weather <- data[data$name == "Mar del Plata", ]
-#     
-#     # print(balcarce_weather)
-#     
-#     return(balcarce_weather)
+# con <- dbConnect(SQLite(), "datos_diarios.sqlite")
+# #
+# # # Función para obtener los datos desde la API
+# obtener_datos_api <- function() {
+# 
+#    api_url <- "https://siga.inta.gob.ar/CdnaUV0iiERRpFQE.php?param_type=diario&param_value=32/23-01-2025/23-01-2025"
+# 
+# #   # fecha_inicio <- format(Sys.Date() - 2, "%d-%m-%Y")
+# #   # fecha_fin <- format(Sys.Date() - 2, "%d-%m-%Y")
+# 
+# #   # Construir la URL con las fechas dinámicas
+# #   # api_url <- paste0("https://siga.inta.gob.ar/CdnaUV0iiERRpFQE.php?param_type=diario&param_value=32/",
+# #   # fecha_inicio, "/", fecha_fin)
+# #
+# #   # Realizar la consulta HTTP a la API
+#   response <- GET(api_url)
+#   contenido <- content(response, as = "text")
+# 
+#   # Validar si el contenido es JSON
+#   if (jsonlite::validate(contenido)) {
+#     datos_siga <- tryCatch({
+#       fromJSON(contenido, flatten = TRUE)
+#     }, error = function(e) {
+#       cat("Error al parsear el JSON:", e$message, "\n")
+#       NULL
+#     })
+#     return(datos_siga)
 #   } else {
-#     return(NULL)  # En caso de error
+#     cat("La API no devolvió un JSON válido\n")
+#     return(NULL)
 #   }
 # }
+# 
+# # # Función para almacenar los datos en la base de datos
+# guardar_datos_db <- function(datos_siga, con) {
+#   if (!is.null(datos_siga)) {
+#     # Renombrar las columnas para que coincidan con la base de datos
+#     expected_cols <- c(
+#       "HMedia", "HMedia81420", "dirViento1000", "evapotransPotencial", "fechaHora",
+#       "granizo", "heliofaniaEfectiva", "heliofaniaRelativa", "id", "idEstacion",
+#       "nieve", "precDiaPlub", "radiacionGlobal", "radiacionNeta", "rocioMedio",
+#       "tempAbrigo150", "tempAbrigo150Max", "tempAbrigo150Min", "tesionVaporMedia",
+#       "velViento1000Media"
+#     )
+# 
+#     if (all(expected_cols %in% colnames(datos_siga))) {
+#       # Seleccionar solo las columnas esperadas
+#       datos_siga <- datos_siga[, expected_cols, drop = FALSE]
+# 
+#       # Verificar si la tabla ya existe
+#       if (dbExistsTable(con, "datos_siga")) {
+#         # Verificar si los datos ya están en la base de datos (evitar duplicados)
+#         existing_dates <- dbGetQuery(con, "SELECT DISTINCT fechaHora FROM datos_siga")
+#         new_dates <- datos_siga$fechaHora
+# 
+#         # Filtrar los datos nuevos que no estén en la base de datos
+#         datos_nuevos <- datos_siga[!new_dates %in% existing_dates$fechaHora, ]
+# 
+#         if (nrow(datos_nuevos) > 0) {
+#           # Si hay nuevos datos, agregarlos
+#           tryCatch({
+#             dbWriteTable(con, "datos_siga", datos_nuevos, append = TRUE, row.names = FALSE)
+#             cat("Datos almacenados correctamente\n")
+#           }, error = function(e) {
+#             cat("Error al guardar los datos en la base de datos:", e$message, "\n")
+#           })
+#         } else {
+#           cat("No hay nuevos datos para agregar\n")
+#         }
+#       } else {
+#         # Si la tabla no existe, crearla y luego añadir los datos
+#         tryCatch({
+#           dbWriteTable(con, "datos_siga", datos_siga, append = FALSE, row.names = FALSE)
+#           cat("Tabla creada y datos almacenados correctamente\n")
+#         }, error = function(e) {
+#           cat("Error al crear la tabla o guardar los datos:", e$message, "\n")
+#         })
+#       }
+#     } else {
+#       cat("Las columnas de los datos no coinciden con las esperadas\n")
+#     }
+#   }
+# }
+# 
+# # Ejecutar la actualización de los datos
+# datos_siga <- obtener_datos_api()
+# # # guardar_datos_db(datos_siga, con)
+# # #
+# # # datos <- dbReadTable(con, "datos_siga")
+# #
+# # write.csv(datos_siga, "datos_siga.csv", row.names = FALSE)
+# #
+# # # Cerrar la conexión a la base de datos
+# dbDisconnect(con)
 
-
-
-
+# datos_siga <- datos_siga %>%
+#   mutate(Fecha = as.Date(substr(fechaHora, 1, 10)))
+# 
+# datos_siga_clean <- datos_siga %>%
+#   select(
+#     Fecha,
+#     Temperatura_Abrigo_150cm = tempAbrigo150,
+#     Temperatura_Abrigo_150cm_Maxima = tempAbrigo150Max,
+#     Temperatura_Abrigo_150cm_Minima = tempAbrigo150Min,
+#     Evapotranspiracion_Potencial = evapotransPotencial,
+#     Precipitacion_Pluviometrica = precDiaPlub,
+#     Humedad_Media_8_14_20 = HMedia81420,
+#     Rocio_Medio = rocioMedio,
+#     Velocidad_Viento_1000cm_Media = velViento1000Media,
+#     Radiacion_Global = radiacionGlobal,
+#     Radiacion_Neta = radiacionNeta,
+#     
+#   )
+# 
 
 balcarce_EMC <- read_excel("balcarce_EMC.xlsx", 
                            col_types = c("date", "text", "numeric", 
@@ -65,6 +152,7 @@ balcarce_EMC <- read_excel("balcarce_EMC.xlsx",
                                          "numeric", "numeric", "numeric", 
                                          "numeric", "numeric", "numeric", 
                                          "numeric", "numeric"))
+
 dalbulus <- read_excel("dalbulus.xlsx")
 
 datos_EMC <- balcarce_EMC 
@@ -73,7 +161,11 @@ datos_EMC <- datos_EMC %>%
 # datos_EMC <- subset(datos, select = -c(Direccion_Viento_200cm, Direccion_Viento_1000cm))
 datos_EMC$Fecha <- as.Date(datos_EMC$Fecha, format = "%Y-%m-%d")
 datos_EMC <- datos_EMC[order(datos_EMC$Fecha, decreasing = TRUE), ]
-head(datos_EMC)
+
+
+# datos_EMC <- datos_EMC %>%
+#   rows_insert(datos_siga_clean, by = "Fecha", conflict = "ignore")
+
 
 
 datos_actuales <- datos_EMC[!is.na(datos_EMC$Precipitacion_Pluviometrica) & 
@@ -119,43 +211,46 @@ datos <- datos_EMC %>%
 
 
 
+
 #################
 
 # Define UI ----
-ui <- dashboardPage(
-  title = "Agrometeorología Balcarce",
-  skin = "#2596be",
-  
-  
-  dashboardHeader(
-    title = div(
-      style = "font-size: 24px; font-weight: bold; text-align: center; color: black;",
-      "Agrometeorología Balcarce"
-    #   # titleWidth = 350,
-    #   #  tags$style(HTML('.navbar { background-color: #2596be; }'))
+ui <- 
+  dashboardPage(
+    
+    title = "Agrometeorología Balcarce",
+    skin = "#2596be",
+    
+    
+    dashboardHeader(
+      title = div(
+        style = "font-size: 24px; font-weight: bold; text-align: center; color: black;",
+        "Agrometeorología Balcarce"
+        #   # titleWidth = 350,
+        #   #  tags$style(HTML('.navbar { background-color: #2596be; }'))
+      ),
+      
+      # Agregar los íconos de Instagram y GitHub en la parte derecha
+      tags$li(class = "dropdown",
+              style = "float: right; padding-right: 10px; list-style: none;",
+              tags$a(href = "https://www.instagram.com/agromet_inta.balcarce/#", 
+                     target = "instagram", 
+                     icon("instagram"), 
+                     title = "Instagram", 
+                     style = "font-size: 20px; color: black;")),
+      
+      tags$li(class = "dropdown",
+              style = "float: right; padding-right: 10px; list-style: none;",
+              tags$a(href = "https://github.com/Nuria1982", 
+                     target = "gitHub", 
+                     icon("github"), 
+                     title = "GitHub", 
+                     style = "font-size: 20px; color: black;"))
     ),
     
-    # Agregar los íconos de Instagram y GitHub en la parte derecha
-    tags$li(class = "dropdown",
-            style = "float: right; padding-right: 10px; list-style: none;",
-            tags$a(href = "https://www.instagram.com/agromet_inta.balcarce/#", 
-                   target = "instagram", 
-                   icon("instagram"), 
-                   title = "Instagram", 
-                   style = "font-size: 20px; color: black;")),
-    
-    tags$li(class = "dropdown",
-            style = "float: right; padding-right: 10px; list-style: none;",
-            tags$a(href = "https://github.com/Nuria1982", 
-                   target = "gitHub", 
-                   icon("github"), 
-                   title = "GitHub", 
-                   style = "font-size: 20px; color: black;"))
-  ),
-  
-  dashboardSidebar(
-    width = 350,
-    tags$style(HTML("
+    dashboardSidebar(
+      width = 350,
+      tags$style(HTML("
       .main-sidebar {
         background-color: white; /* Azul con opacidad */
       }
@@ -163,118 +258,119 @@ ui <- dashboardPage(
         color: black; /* Cambiar el color de los textos del menú a blanco */
       }
     ")),
-    
-    fluid = FALSE,
-    position = "left",
-    disable = FALSE,
-    collapsed = FALSE,
-    
-    br(),
-    br(),
-    
-    div(
-      style = "text-align: center;",
-      tags$img(src = "EstacionBalcarce.jpg",
-               height = "80px",
-               width = "220px")
-    ),
-    
-    br(),
-    br(),
-    
-    sidebarMenu(id = "siderbarID",
-                menuItem("Condiciones actuales", 
-                         tabName = "condiciones",
-                         icon = icon("calendar")),
-                menuItem("Cambio climático", 
-                         tabName = "cambio_climatico",
-                         icon = icon("earth-americas")),
-                # menuItem("Mapas",
-                #          tabName = "mapas", 
-                #          icon = icon("map")),
-                menuItem("Manejo de los cultivos", 
-                         icon = icon("seedling"),
-                         menuSubItem("Ambiente",
-                                     tabName = "ambiente"),
-                         menuSubItem("Balance de agua",
-                                     tabName = "balance")
-                         # menuSubItem("Huella hídrica",
-                         #             tabName = "huella_hidrica")
-                         # ,
-                         # menuSubItem("Dalbulus",
-                         #             tabName = "Dalbulus")
-                ),
-                menuItem("Pronósticos",
-                         tabName = "pronosticos", 
-                         icon = icon("bar-chart")),
-                menuItem("informes",
-                         tabName = "informes", 
-                         icon = icon("file")),
-                menuItem("Descarga de datos",
-                         tabName = "descarga", 
-                         icon = icon("download")),
-                menuItem("Referencias bibliográficas",
-                         tabName = "referencias", 
-                         icon = icon("book"))),
-    br(),
-    
-    
-    # tags$head(
-    #   tags$style(HTML("
-    #   .clima-box {
-    #     border: 2px solid #83C5BE; 
-    #     background-color: #83C5BE80; 
-    #     padding: 20px; 
-    #     border-radius: 10px; 
-    #     margin-bottom: 20px; 
-    #   }"))
-    # ),
-    
-    # # Recuadro de clima
-    # div(class = "clima-box",
-    #     uiOutput("icono_clima"),
-    #     textOutput("clima_actual"),
-    #     textOutput("temperatura"),
-    #     textOutput("humedad"),
-    #     textOutput("viento")
-    # ),
-    # 
-    br(),
-    
-    tags$p(
-      # strong("Nuestras Redes sociales"),
-      # br(),
-      # tags$a(
-      #   icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
-      # # br(),
-      # # tags$a(
-      # #   icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
-      # br(),
-      tags$p(
-        strong("Para comunicarse con el grupo "),
-        tags$h6(
-          "Dra. Nuria Lewczuk : lewczuk.nuria@inta.gob.ar"),
-        tags$h6(
-          "Dra. Laura Echarte : echarte.laura@inta.gob.ar")
-      ),
+      
+      fluid = FALSE,
+      position = "left",
+      disable = FALSE,
+      collapsed = FALSE,
+      
+      br(),
+      br(),
       
       div(
         style = "text-align: center;",
-        tags$img(src = "IPADS.png",
+        tags$img(src = "EstacionBalcarce.jpg",
                  height = "80px",
-                 width = "150px"
+                 width = "220px")
+      ),
+      
+      br(),
+      br(),
+      
+      sidebarMenu(id = "siderbarID",
+                  menuItem("Condiciones actuales", 
+                           tabName = "condiciones",
+                           icon = icon("calendar")),
+                  menuItem("Cambio climático", 
+                           tabName = "cambio_climatico",
+                           icon = icon("earth-americas")),
+                  # menuItem("Mapas",
+                  #          tabName = "mapas", 
+                  #          icon = icon("map")),
+                  menuItem("Manejo de los cultivos", 
+                           icon = icon("seedling"),
+                           menuSubItem("Ambiente",
+                                       tabName = "ambiente"),
+                           menuSubItem("Balance de agua",
+                                       tabName = "balance")
+                           # ,
+                           # menuSubItem("Huella hídrica",
+                           #             tabName = "huella_hidrica")
+                           
+                           # menuSubItem("Dalbulus",
+                           #             tabName = "Dalbulus")
+                  ),
+                  menuItem("Pronósticos",
+                           tabName = "pronosticos", 
+                           icon = icon("bar-chart")),
+                  menuItem("informes",
+                           tabName = "informes", 
+                           icon = icon("file")),
+                  menuItem("Descarga de datos",
+                           tabName = "descarga", 
+                           icon = icon("download")),
+                  menuItem("Referencias bibliográficas",
+                           tabName = "referencias", 
+                           icon = icon("book"))),
+      br(),
+      
+      
+      # tags$head(
+      #   tags$style(HTML("
+      #   .clima-box {
+      #     border: 2px solid #83C5BE; 
+      #     background-color: #83C5BE80; 
+      #     padding: 20px; 
+      #     border-radius: 10px; 
+      #     margin-bottom: 20px; 
+      #   }"))
+      # ),
+      
+      # # Recuadro de clima
+      # div(class = "clima-box",
+      #     uiOutput("icono_clima"),
+      #     textOutput("clima_actual"),
+      #     textOutput("temperatura"),
+      #     textOutput("humedad"),
+      #     textOutput("viento")
+      # ),
+      # 
+      br(),
+      
+      tags$p(
+        # strong("Nuestras Redes sociales"),
+        # br(),
+        # tags$a(
+        #   icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
+        # # br(),
+        # # tags$a(
+        # #   icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
+        # br(),
+        tags$p(
+          strong("Para comunicarse con el grupo "),
+          tags$h6(
+            "Dra. Nuria Lewczuk : lewczuk.nuria@inta.gob.ar"),
+          tags$h6(
+            "Dra. Laura Echarte : echarte.laura@inta.gob.ar")
         ),
-        tags$img(src = "Logo_Red_Agromet.jpg",
-                 height = "80px",
-                 width = "200px")
+        
+        div(
+          style = "text-align: center;",
+          tags$img(src = "IPADS.png",
+                   height = "80px",
+                   width = "150px"
+          ),
+          tags$img(src = "Logo_Red_Agromet.jpg",
+                   height = "80px",
+                   width = "200px")
+        )
       )
-    )
-  ),
-  
-  
-  dashboardBody(
-    tags$head(
-      tags$style(HTML("
+    ),
+    
+    
+    dashboardBody(
+      tags$head(
+        tags$style(HTML("
         .small-box {height: 80px; 
                     text-align:center;
                     display: flex; 
@@ -303,1002 +399,1064 @@ ui <- dashboardPage(
           text-align: center;
         }
         "))
-    ),
-    
-    tabItems(
-      tabItem(tabName = "condiciones",
-              fluidRow(
-                infoBoxOutput(width = 2, "value5"),
-                infoBoxOutput(width = 2, "value1"),
-                infoBoxOutput(width = 2, "value2"),
-                infoBoxOutput(width = 2, "value3"),
-                infoBoxOutput(width = 2, "value4")
-              ),
+      ),
+      tabItems(
+        tabItem(tabName = "condiciones",
+                fluidRow(
+                  #infoBoxOutput(width = 2, "value5"),
+                  infoBoxOutput(width = 3, "value1"),
+                  infoBoxOutput(width = 3, "value2"),
+                  infoBoxOutput(width = 3, "value3"),
+                  infoBoxOutput(width = 3, "value4")
+                ),
+                br(),
+                fluidRow(
+                  infoBoxOutput(width = 4, "precipitation_info_box"),
+                  infoBoxOutput(width = 4, "tempMax_info_box"),
+                  infoBoxOutput(width = 4, "tempMin_info_box")
+                ),
+                br(),
+                fluidRow(
+                  column(6,
+                         fluidRow(
+                           column(6,
+                                  selectInput(
+                                    inputId = "ano_selector", 
+                                    label = "Selecciona el Año:",
+                                    choices = unique(datos$Año),
+                                    selected = "2025"
+                                  )
+                           ),
+                           column(6,
+                                  selectInput(
+                                    inputId = "mes_selector", 
+                                    label = "Selecciona los meses:",
+                                    choices = c("Mostrar todos los meses", 
+                                                "enero", "febrero", "marzo", "abril",
+                                                "mayo", "junio", "julio", "agosto", 
+                                                "septiembre", "octubre", "noviembre", "diciembre"),
+                                    selected = "Mostrar todos los meses",
+                                    multiple = TRUE
+                                  )
+                           )
+                         )
+                  )
+                ),
+                br(),
+                fluidRow( 
+                  box(
+                    title = "Precipitaciones acumuladas mensuales (mm)"
+                    ,status = "gray"
+                    ,solidHeader = TRUE 
+                    ,collapsible = TRUE
+                    ,withSpinner(plotlyOutput("grafico_lluvia", height = "300px"),
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5)
+                  ),
+                  box(
+                    title = "Precipitaciones y ETo acumuladas mensuales (mm)"
+                    ,status = "gray"
+                    ,solidHeader = TRUE 
+                    ,collapsible = TRUE
+                    ,withSpinner(plotlyOutput("grafico_lluvia_etp_acum", height = "300px"),
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5)
+                  ),
+                  box(
+                    title = "Temperaturas medias mensuales (ºC)"
+                    ,status = "gray"
+                    ,solidHeader = TRUE 
+                    ,collapsible = TRUE 
+                    ,withSpinner(plotlyOutput("grafico_temperatura", height = "300px"),
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5)
+                  ),
+                  box(
+                    title = "Número de días mensuales con heladas"
+                    ,status = "gray"
+                    ,solidHeader = TRUE 
+                    ,collapsible = TRUE 
+                    ,withSpinner(plotlyOutput("grafico_heladas", height = "300px"),
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5)
+                  ) 
+                )
+        ),
+        
+        tabItem(tabName = "cambio_climatico",
+                fluidRow(
+                  
+                  column(12,
+                         div(style = "background-color: #2A9D8F60; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
+                             h5(HTML("<strong>Variabilidad Climática</strong>")),
+                             p("Es el resultado de ciclos naturales relacionados con la órbita terrestre, la radiación solar, la composición atmosférica, y la circulación oceánica y biosférica. Esta variabilidad puede manifestarse a corto plazo, como se observa en los episodios recurrentes de El Niño y La Niña, que están asociados con patrones de presión atmosférica y circulación oceánica.")
+                         )
+                  )
+                ),
+                fluidRow(
+                  
+                  column(12,
+                         div(style = "background-color: #F4A26160; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
+                             h5(HTML("<strong>Cambio Climático</strong>")),
+                             p("Se refiere a las variaciones en el estado del clima, identificables por cambios en el valor medio o la variabilidad de sus componentes, como la temperatura, que deben ser persistentes durante décadas o más. Estos cambios pueden ser resultado de procesos naturales internos o de forzamientos externos, como las fluctuaciones de los ciclos solares, erupciones volcánicas o alteraciones antropogénicas en la composición atmosférica y el uso del suelo.")
+                         )
+                  )
+                ),
+                br(),
+                fluidRow(
+                  column(3),
+                  column(12,
+                         div(style = "text-align: center;",
+                             p("Esta aplicación presenta datos climáticos relevantes, incluyendo temperaturas medias, máximas y mínimas y precipitaciones acumuladas, para ayudar a comprender los impactos del cambio climático en nuestra región."),
+                             p("Utiliza el filtro para ver los datos anuales desde 1970, para un mes en particular o para el promedio anual:"),
+                             br(),
+                             div(style = "width: 200px; margin: 0 auto;",
+                                 selectInput(
+                                   inputId = "mes_climatico", 
+                                   label = "Selecciona el mes:",
+                                   choices = c("Anual", 
+                                               "enero", "febrero", "marzo", "abril",
+                                               "mayo", "junio", "julio", "agosto", 
+                                               "septiembre", "octubre", "noviembre", "diciembre"),
+                                   selected = "Anual"
+                                 )
+                             )
+                         )
+                         
+                  )
+                ),
+                
+                br(),
+                
+                fluidRow(
+                  column(4, 
+                         box(
+                           title = "Temperaturas medias (ºC)",
+                           status = "orange",
+                           solidHeader = TRUE,
+                           collapsible = TRUE,
+                           withSpinner(plotlyOutput("grafico_temp_climatico", 
+                                                    height = "300px", 
+                                                    width = "100%"),
+                                       type = 5, 
+                                       color = "#0dc5c1",  
+                                       size = 0.5),
+                           width = 12
+                         )
+                  ),
+                  column(4, 
+                         box(
+                           title = "Precipitaciones acumuladas (mm)",
+                           status = "orange",
+                           solidHeader = TRUE,
+                           collapsible = TRUE,
+                           withSpinner(plotlyOutput("grafico_pp_climatico", 
+                                                    height = "300px", 
+                                                    width = "100%"),
+                                       type = 5, 
+                                       color = "#0dc5c1",  
+                                       size = 0.5),
+                           width = 12
+                         )
+                  ),
+                  column(4, 
+                         box(
+                           title = "Días con temp. máximas > a 25ºC y temp. mínimas < 3ºC",
+                           status = "orange",
+                           solidHeader = TRUE,
+                           collapsible = TRUE,
+                           withSpinner(plotlyOutput("grafico_heladas_climatico", 
+                                                    height = "300px", 
+                                                    width = "100%"),
+                                       type = 5, 
+                                       color = "#0dc5c1",  
+                                       size = 0.5),
+                           width = 12
+                         )
+                  )
+                )
+        ),
+        
+        # tabItem(
+        #   tabName = "mapas",
+        #   h4(HTML("<strong>Mapas de suelo</strong>")),
+        #   h5(HTML("Recortes de la zona de influencia de EEA Balcarce, realizados por el Inst. de Clima y agua - INTA Castelar")),
+        #   br(),
+        #   br(),
+        #   fluidRow(
+        #     box(title = "Variación de agua disponible"
+        #         ,status = "navy"
+        #         ,solidHeader = FALSE
+        #         ,div(
+        #           style = "text-align: center;",
+        #           tags$img(
+        #             src = "agua.jpg",
+        #             style = "max-width: 100%; height: auto;",
+        #             alt = "Mapa-Consumo de agua"
+        #           )
+        #         ),
+        #         br(),
+        #         br(),
+        #         tags$figcaption("Variación del agua disponible hasta 2 metros, expresada en
+        #         mm, estimada mediante el uso de imágenes del satélite S-NPP con una resolución espacial de 500 metros. 
+        #         Acumulado a la fecha con respecto a la fecha anterior.
+        #                         Elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."),
+        #         div(
+        #           style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+        #           "Representa el cambio en el agua disponible (expresado en mm) al final de un período de 10 
+        #           días con respecto al final del período anterior. Permite analizar la magnitud del aumento 
+        #           (período actual mayor al anterior) o reducción (período actual menor al anterior) del agua 
+        #           disponible en el perfil en hasta 2 metros de profundidad.")
+        #     ),
+        #     box(title = "% de agua útil"
+        #         ,status = "navy"
+        #         ,solidHeader = FALSE
+        #         ,div(
+        #           style = "text-align: center;",
+        #           tags$img(
+        #             src = "agua_util.jpg",
+        #             style = "max-width: 100%; height: auto;",
+        #             alt = "Mapa-agua útil"
+        #           )
+        #         ),
+        #         br(),
+        #         br(),
+        #         tags$figcaption("Agua en el suelo con respecto al máximo posible (% de agua útil).Resolución espacial: 500 m. 
+        #             Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."),
+        #         div(
+        #           style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
+        #           "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
+        #               que puede ser extraída por las plantas) puede ser estimado a través
+        #               de un balance de agua; donde se considera información del suelo, el
+        #               aporte de agua por lluvias y el consumo de agua de la cubierta
+        #               vegetal.")
+        #     ))
+        # ),
+        
+        tabItem(
+          tabName = "ambiente",
+          br(),
+          h4(HTML("<strong>Ambiente de los cultivos</strong>")),
+          h5(HTML("Te mostramos como fue cambiando el ambiente del cultivo durante el perdíodo crítico (PC), según la fecha de siembra desde el año 1991.")),
+          
+          br(),
+          
+          fluidRow(
+            # elección cultivo 
+            column(4,
+                   div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
+                       selectInput("cultivo_ambiente",
+                                   label = strong("Cultivo:"),
+                                   choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                  "Maíz ciclo corto" = "maiz_corto",
+                                                  "Soja" = "soja"
+                                                  # ,
+                                                  # "Girasol" = "girasol",
+                                                  # "Hortalizas" = "hortalizas"
+                                   ),
+                                   selected = "maiz")
+                   )
+            ),
+            column(4,
+                   div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
+                       numericInput("dia_siembra_ambiente",
+                                    label = strong("Día de siembra:"),
+                                    value = 1, 
+                                    min = 1, max = 31)
+                   )
+            ),
+            column(4,
+                   div(style = "background-color: #81B29A80; padding: 10px; border-radius: 10px;",
+                       selectInput("mes_siembra_ambiente",
+                                   label = strong("Mes de siembra:"),
+                                   choices = list("Octubre" = 10, "Noviembre" = 11, 
+                                                  "Diciembre" = 12, "Enero" = 1),
+                                   selected = 10)
+                   )
+            ),
+            
+          ),
+          br(),
+          br(),
+          
+          fluidRow( 
+            box(
+              title = "Precipitaciones y ET0 acumuladas durante el período crítico",
+              status = "olive",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              withSpinner(plotlyOutput("pp_acum_PC", height = "300px"),
+                          type = 5, 
+                          color = "#0dc5c1",  
+                          size = 0.5)
+            ),
+            box(
+              title = "Radiación y días con temp. máx. > 35ºC durante el período crítico",
+              status = "olive",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              withSpinner(plotlyOutput("rad_temp_PC", height = "300px"),
+                          type = 5, 
+                          color = "#0dc5c1",  
+                          size = 0.5)
+            ),
+            h6(HTML("ET0: Evapotranspiración de referencia (mm) o demanda de agua del ambiente<br />Valores decádicos corresponden a la mediana."))
+          ),
+          
+          br(),
+          br(),
+          
+          h5(HTML("Podes comparar el ambiente de tu cultivo en 3 fechas de siembra 
+                diferentes")),
+          h6(HTML("(consideramos desde el año 2010, 
+                donde se observa un cambio en las temperaturas a nivel país).")),
+          
+          br(),
+          
+          fluidRow(
+            column(3,
+                   div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
+                       selectInput("cultivo_fecha",
+                                   label = strong("Cultivo:"),
+                                   choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                  "Maíz ciclo corto" = "maiz_corto",
+                                                  "Soja" = "soja"
+                                                  # ,
+                                                  # "Girasol" = "girasol",
+                                                  # "Hortalizas" = "hortalizas"
+                                   ),
+                                   selected = "maiz")
+                   ),
+                   br(),
+                   br(),
+                   column(12, align = "center",
+                          actionButton("btn_calcular", label = "Calcular", icon = icon("calculator"),
+                                       style = "color: white; background-color: #81B29A; border-color: #81B29A; border-radius: 10px; padding: 10px;")
+                   )
+                   
+            ),
+            column(3,
+                   div(style = "background-color: #E07A5F80; padding: 10px;  border-radius: 10px;",
+                       h6(HTML("<strong>Fecha 1:</strong>")),
+                       
+                       selectInput("mes_siembra1",
+                                   label = strong("Mes de siembra:"),
+                                   choices = list("Octubre" = 10, "Noviembre" = 11, 
+                                                  "Diciembre" = 12, "Enero" = 1),
+                                   selected = 10),
+                       numericInput("dia_siembra1",
+                                    label = strong("Día de siembra:"),
+                                    value = 1, 
+                                    min = 1, max = 31),
+                       br(),
+                       textOutput("fecha_inicio_pc1"),
+                       textOutput("fecha_fin_pc1")
+                   )
+            ),
+            column(3,
+                   div(style = "background-color: #3D405B80; padding: 10px;  border-radius: 10px;",
+                       h6(HTML("<strong>Fecha 2:</strong>")),
+                       
+                       selectInput("mes_siembra2",
+                                   label = strong("Mes de siembra:"),
+                                   choices = list("Octubre" = 10, "Noviembre" = 11, 
+                                                  "Diciembre" = 12, "Enero" = 1),
+                                   selected = 10),
+                       numericInput("dia_siembra2",
+                                    label = strong("Día de siembra:"),
+                                    value = 1, 
+                                    min = 1, max = 31),
+                       br(),
+                       textOutput("fecha_inicio_pc2"),
+                       textOutput("fecha_fin_pc2")
+                   )
+            ),
+            column(3,
+                   div(style = "background-color: #AEC3B080; padding: 10px;  border-radius: 10px;",
+                       h6(HTML("<strong>Fecha 3:</strong>")),
+                       
+                       selectInput("mes_siembra3",
+                                   label = strong("Mes de siembra:"),
+                                   choices = list("Octubre" = 10, "Noviembre" = 11, 
+                                                  "Diciembre" = 12, "Enero" = 1),
+                                   selected = 10),
+                       numericInput("dia_siembra3",
+                                    label = strong("Día de siembra:"),
+                                    value = 1, 
+                                    min = 1, max = 31),
+                       br(),
+                       textOutput("fecha_inicio_pc3"),
+                       textOutput("fecha_fin_pc3")
+                   )
+            )
+          ),
+          
+          br(),
+          
+          fluidRow(column(4,
+          ),
+          column(4,
+                 div(style = "background-color: #FB850080; padding: 10px; border-radius: 10px; text-align: center; align-items: center;",
+                     h5(HTML("<strong>Condiciones ambientales en el período crítico</strong>"))))),
+          br(),
+          
+          fluidRow(
+            column(4, 
+                   box(
+                     title = "Precipitaciones y ET0 acumuladas",
+                     status = "olive",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("pc_lluvia", height = "300px", width = "100%"), 
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
+                   )
+            ),
+            column(4, 
+                   box(
+                     title = "Radiación global",
+                     status = "olive",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("pc_radiacion", height = "300px", width = "100%"), 
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
+                   )
+            ),
+            column(4, 
+                   box(
+                     title = "Días con temperaturas máximas > a 35ºC",
+                     status = "olive",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("pc_dias_35", height = "300px", width = "100%"), 
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
+                   )
+            ),
+          ),
+          br(),
+          
+          fluidRow(column(4,
+          ),
+          column(4,
+                 div(style = "background-color: #FB850080; padding: 10px;  border-radius: 10px; text-align: center; align-items: center;",
+                     h5(HTML("<strong>Condiciones ambientales durante el llenado de grano</strong>"))))),
+          br(),
+          
+          fluidRow(
+            column(4, 
+                   box(
+                     title = "Precipitaciones y ET0 acumuladas",
+                     status = "olive",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("lg_lluvia", height = "300px", width = "100%"), 
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
+                   )
+            ),
+            column(4, 
+                   box(
+                     title = "Radiación global",
+                     status = "olive",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("lg_radiacion", height = "300px", width = "100%"), 
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
+                   )
+            ),
+            column(4, 
+                   box(
+                     title = "Días con temperaturas mínimas < a 2ºC",
+                     status = "olive",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("lg_dias_2", height = "300px", width = "100%"), 
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
+                   )
+            ),
+          )
+        ),
+        
+        tabItem(
+          tabName = "balance",
+          tabsetPanel(
+            id = "balance_agua",
+            tabPanel(
+              title = "Balcarce",
               br(),
+              h4(HTML("<strong>Cálculo de balance de agua<sup>1</sup></strong>")),
+              h5(HTML("A partir de los datos del suelo y del cultivo seleccionado, podes calcular el balance de agua diario de tu campo. <br> 
+                Podes ingresar los datos en los recuadros o usar los valores predeterminados.")),
+              
+              br(),
+              
               fluidRow(
-                infoBoxOutput(width = 4, "precipitation_info_box"),
-                infoBoxOutput(width = 4, "tempMax_info_box"),
-                infoBoxOutput(width = 4, "tempMin_info_box")
+                # elección cultivo 
+                column(3,
+                       selectInput("cultivo_balcarce",
+                                   label = strong("Seleccione el cultivo:"),
+                                   choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                  "Maíz ciclo corto" = "maiz_corto",
+                                                  "Soja" = "soja"
+                                                  # ,
+                                                  # "Girasol" = "girasol",
+                                                  # "Hortalizas" = "hortalizas"
+                                   ),
+                                   selected = "maiz_largo")
+                ),
+                column(3,
+                       dateInput("fecha_siembra_balcarce",
+                                 label = strong("Ingrese la fecha de siembra:"),
+                                 value = "2024-01-01")
+                )
+              ),
+              fluidRow(  
+                column(12,
+                       div(uiOutput("mensaje_cultivo_balcarce1"),
+                       )
+                ),
               ),
               br(),
               fluidRow(
                 column(6,
-                       fluidRow(
-                         column(6,
-                                selectInput(
-                                  inputId = "ano_selector", 
-                                  label = "Selecciona el Año:",
-                                  choices = unique(datos$Año),
-                                  selected = "2024"
-                                )
-                         ),
-                         column(6,
-                                selectInput(
-                                  inputId = "mes_selector", 
-                                  label = "Selecciona los meses:",
-                                  choices = c("Mostrar todos los meses", 
-                                              "enero", "febrero", "marzo", "abril",
-                                              "mayo", "junio", "julio", "agosto", 
-                                              "septiembre", "octubre", "noviembre", "diciembre"),
-                                  selected = "Mostrar todos los meses",
-                                  multiple = TRUE
-                                )
-                         )
+                       div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
+                           h4(HTML(("<strong>Datos de suelo</strong>"))),
+                           fluidRow(
+                             column(6,
+                                    numericInput("profundidad_balcarce",  
+                                                 label = strong("Profundidad (cm)"),
+                                                 value = 100),
+                                    br(),
+                                    numericInput("capacidad_campo_balcarce",  
+                                                 label = strong(HTML("Capacidad de Campo (mm/cm)
+                                                        <br><small>
+                                                        (Límite máximo de almacenamiento de agua)</small>")), 
+                                                 value = 3.70),
+                                    textOutput("almacenamiento_maximo_balcarce")
+                             ),
+                             column(6,
+                                    numericInput("fraccion_min_balcarce",  
+                                                 label = strong(HTML("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)<sup>3</sup>")), 
+                                                 value = 0.55,
+                                                 min = 0,
+                                                 max = 1),
+                                    textOutput("almacenamiento_minimo_balcarce"),
+                                    textOutput("agua_util_total_balcarce"),
+                                    br(),
+                                    numericInput("fraccion_inicial_balcarce",  
+                                                 label = strong("Fracción inicial de agua útil (0 - 1)"), 
+                                                 value = 0.50,
+                                                 min = 0,
+                                                 max = 1)
+                             )
+                           )
+                       )
+                ),
+                column(3,
+                       div(style = "background-color: #21838040; padding: 15px; border-radius: 10px;",
+                           h4(strong("Datos de cultivo")),
+                           numericInput("umbral_et_balcarce",  
+                                        label = strong(HTML("Umbral de fracción de agua útil<sup>2</sup>" 
+                                        )), 
+                                        value = NULL),
+                           textOutput("disminucion_et_balcarce"),
+                           br(),
+                           textOutput("GD_balcarce"),
+                       )
+                ),
+                
+                column(3,
+                       div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                           downloadButton("descarga_modelo_balcarce", "Descargar modelo de archivo para completar"),
+                           br(),
+                           br(),
+                           fileInput("clima_balcarce", "Ingresar datos propios (opcional)",
+                                     accept = c(".csv", ".xlsx"))
+                           ,
+                           helpText("El archivo debe contener datos diarios (sin datos faltantes) y las columnas: Fecha, Lluvia, Riego (primera letra mayúscula)")
                        )
                 )
               ),
+              fluidRow(  
+                column(12,
+                       br(),
+                       div(uiOutput("mensaje_cultivo_balcarce3"),
+                       )
+                ),
+              ),
               br(),
+              
               fluidRow( 
                 box(
-                  title = "Precipitaciones acumuladas mensuales (mm)"
-                  ,status = "gray"
-                  ,solidHeader = TRUE 
-                  ,collapsible = TRUE
-                  ,withSpinner(plotlyOutput("grafico_lluvia", height = "300px"),
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5)
+                  title = "Fracción de agua útil",
+                  status = "lightblue",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  withSpinner(plotlyOutput("agua_util_balcarce", height = "300px"),
+                              type = 5, 
+                              color = "#0dc5c1",  
+                              size = 0.5)
                 ),
                 box(
-                  title = "Precipitaciones y ETo acumuladas mensuales (mm)"
-                  ,status = "gray"
-                  ,solidHeader = TRUE 
-                  ,collapsible = TRUE
-                  ,withSpinner(plotlyOutput("grafico_lluvia_etp_acum", height = "300px"),
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5)
+                  title = "Consumo de agua",
+                  status = "lightblue",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  withSpinner(plotlyOutput("consumo_agua_balcarce", height = "300px"),
+                              type = 5, 
+                              color = "#0dc5c1",  
+                              size = 0.5)
                 ),
                 box(
-                  title = "Temperaturas medias mensuales (ºC)"
-                  ,status = "gray"
-                  ,solidHeader = TRUE 
-                  ,collapsible = TRUE 
-                  ,withSpinner(plotlyOutput("grafico_temperatura", height = "300px"),
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5)
+                  title = "Balance de agua",
+                  status = "lightblue",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  withSpinner(plotlyOutput("deficit_agua_balcarce", height = "300px"), 
+                              type = 5, 
+                              color = "#0dc5c1",  
+                              size = 0.5)
                 ),
-                box(
-                  title = "Número de días mensuales con heladas"
-                  ,status = "gray"
-                  ,solidHeader = TRUE 
-                  ,collapsible = TRUE 
-                  ,withSpinner(plotlyOutput("grafico_heladas", height = "300px"),
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5)
-                ) 
-              )
-      ),
-      
-      tabItem(tabName = "cambio_climatico",
-              fluidRow(
-                
-                column(12,
-                       div(style = "background-color: #2A9D8F60; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
-                           h5(HTML("<strong>Variabilidad Climática</strong>")),
-                           p("Es el resultado de ciclos naturales relacionados con la órbita terrestre, la radiación solar, la composición atmosférica, y la circulación oceánica y biosférica. Esta variabilidad puede manifestarse a corto plazo, como se observa en los episodios recurrentes de El Niño y La Niña, que están asociados con patrones de presión atmosférica y circulación oceánica.")
-                       )
+                column(6,
+                       h6(HTML(("<strong>ETM: </strong>MÁXIMO consumo de agua, si no hubiera deficiencias de agua."))),
+                       h6(HTML(("<strong>ETR: </strong>Consumo de agua REAL."))),
+                       br(),
+                       uiOutput("mensaje_cultivo_balcarce2")
                 )
               ),
-              fluidRow(
-                
-                column(12,
-                       div(style = "background-color: #F4A26160; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
-                           h5(HTML("<strong>Cambio Climático</strong>")),
-                           p("Se refiere a las variaciones en el estado del clima, identificables por cambios en el valor medio o la variabilidad de sus componentes, como la temperatura, que deben ser persistentes durante décadas o más. Estos cambios pueden ser resultado de procesos naturales internos o de forzamientos externos, como las fluctuaciones de los ciclos solares, erupciones volcánicas o alteraciones antropogénicas en la composición atmosférica y el uso del suelo.")
-                       )
-                )
-              ),
+              
               br(),
+              br(),
+              
               fluidRow(
-                column(3),
                 column(12,
-                       div(style = "text-align: center;",
-                           p("Esta aplicación presenta datos climáticos relevantes, incluyendo temperaturas medias, máximas y mínimas y precipitaciones acumuladas, para ayudar a comprender los impactos del cambio climático en nuestra región."),
-                           p("Utiliza el filtro para ver los datos anuales desde 1970, para un mes en particular o para el promedio anual:"),
+                       div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                           h4(strong("Cálculo de la huella hídrica de su cultivo")),
                            br(),
-                           div(style = "width: 200px; margin: 0 auto;",
-                               selectInput(
-                                 inputId = "mes_climatico", 
-                                 label = "Selecciona el mes:",
-                                 choices = c("Anual", 
-                                             "enero", "febrero", "marzo", "abril",
-                                             "mayo", "junio", "julio", "agosto", 
-                                             "septiembre", "octubre", "noviembre", "diciembre"),
-                                 selected = "Anual"
-                               )
+                           fluidRow(
+                             column(4, offset = 1,
+                                    div(style = "display: flex; flex-direction: column; align-items: center;",
+                                        infoBoxOutput("ETMacum_balcarce", width = 12),
+                                        infoBoxOutput("ETRacum_balcarce", width = 12)
+                                    )
+                             ),
+                             br(),
+                             column(4,offset = 1,
+                                    div(style = "display: flex; flex-direction: column; align-items: center;",
+                                        numericInput("rendimiento_balcarce",
+                                                     label = "Ingrese el rendimiento obtenido (kg / ha):",
+                                                     value = 0
+                                        ),
+                                        infoBoxOutput("huella_hidrica_balcarce", width = 12)
+                                        
+                                    )
+                             ),
                            )
                        )
-                       
+                )
+              )
+            ),
+            tabPanel(
+              title = "Otros sitios",
+              br(),
+              h4(HTML("Para aquellas zonas fuera del radio de influencia de la EEA Balcarce, podes ingresar tus propios datos.")),
+              br(),
+              h6(HTML("Desde la web <a href='https://siga.inta.gob.ar/#/' target='_blank'>siga.inta.gob.ar</a>, podes seleccionar la estación meteorológica más cercana a tu campo y descargar los datos de lluvia, temperaturas y evapotranspiración.")),
+              h6(HTML("Si no encontras valores de evapotranspiración para tu campo, podes consultarnos y te ayudamos con el cálculo: <strong>echarte.laura@inta.gob.ar</strong>")),
+              br(),
+              fluidRow(
+                div(
+                  style = "background-color: #1B263B40; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px; margin-top: 10px;",
+                  p("El consumo de agua del cultivo se estima considerando curvas de coeficiente de cultivos (es decir, kc = ETc/ETo) 
+          calibradas para las condiciones del Sudeste de Buenos Aires. Al inicio del crecimiento del cultivo, 
+          cuando la canopia cubre parcialmente el suelo, el consumo de agua está muy afectado por la evaporación de agua 
+          directamente desde el suelo. Esta depende de (i) intervalo de tiempo entre eventos de lluvia y riego, (ii) poder 
+          evaporante de la atmósfera, (iii) magnitud del evento de humedecimiento. En particular, las condiciones para las 
+          que se calibraron los modelos presentaban un intervalo de humedecimiento de aproóx. 5 a 7 días, una ETo media de 
+          apróx. 5,2 mm d", tags$sup("-1"), "y un promedio de lámina de agua de lluvia/riego de 15 mm. En ambientes con más frecuencia de 
+          humedecimiento inicial se puede esperar más evaporación, mientras que en ambientes con menor frecuencia de mojado 
+          se puede esperar una evaporación más restringida. Asimismo, en ambientes con mayor demanda evaporativa que la del 
+          Sudeste de Buenos Aires, el suelo se secará más rápidamente entre eventos de mojado y menor será el valor promedio 
+          temporal de Kc para un período dado.")
+                )
+              ),
+              br(),
+              fluidRow(
+                # elección cultivo 
+                column(3,
+                       selectInput("cultivo",
+                                   label = strong("Seleccione el cultivo:"),
+                                   choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                  "Maíz ciclo corto" = "maiz_corto",
+                                                  "Soja" = "soja"
+                                                  # ,
+                                                  # "Girasol" = "girasol",
+                                                  # "Hortalizas" = "hortalizas"
+                                   ),
+                                   selected = "maiz_largo")
+                ),
+                column(3,
+                       dateInput("fecha_siembra",
+                                 label = strong("Ingrese la fecha de siembra:"),
+                                 value = "2024-01-01")
+                )
+              ),
+              fluidRow(  
+                column(12,
+                       div(uiOutput("mensaje_cultivo1"),
+                       )
+                ),
+              ),
+              br(),
+              fluidRow(
+                column(6,
+                       div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
+                           h4(HTML(("<strong>Datos de suelo</strong>"))),
+                           fluidRow(
+                             column(6,
+                                    numericInput("profundidad",  
+                                                 label = strong("Profundidad (cm)"),
+                                                 value = 100),
+                                    br(),
+                                    numericInput("capacidad_campo",  
+                                                 label = strong(HTML("Capacidad de Campo (mm/cm)
+                                                        <br><small>
+                                                        (Límite máximo de almacenamiento de agua)</small>")), 
+                                                 value = 3.70),
+                                    textOutput("almacenamiento_maximo")
+                             ),
+                             column(6,
+                                    numericInput("fraccion_min",  
+                                                 label = strong(HTML("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)<sup>3</sup>")), 
+                                                 value = 0.55,
+                                                 min = 0,
+                                                 max = 1),
+                                    textOutput("almacenamiento_minimo"),
+                                    textOutput("agua_util_total"),
+                                    br(),
+                                    numericInput("fraccion_inicial",  
+                                                 label = strong("Fracción inicial de agua útil (0 - 1)"), 
+                                                 value = 0.50,
+                                                 min = 0,
+                                                 max = 1)
+                             )
+                           )
+                       )
+                ),
+                column(3,
+                       div(style = "background-color: #21838040; padding: 15px; border-radius: 10px;",
+                           h4(strong("Datos de cultivo")),
+                           numericInput("umbral_et",  
+                                        label = strong(HTML("Umbral de fracción de agua útil<sup>2</sup> 
+                                                        <br><small>
+                                                        (Debajo del cual se reduce la evapotranspiración)</small>")), 
+                                        value = NULL),
+                           textOutput("disminucion_et"),
+                           br(),
+                           textOutput("GD"),
+                       )
+                ),
+                column(3,
+                       div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                           downloadButton("descarga_modelo", "Descargar modelo de archivo para completar"),
+                           br(),
+                           br(),
+                           fileInput("otros_clima", "Ingresar datos ambientales propios",
+                                     accept = c(".csv", ".xlsx"))
+                           ,
+                           helpText("El archivo debe contener datos diarios y las columnas (sin datos faltantes): Fecha, Lluvia, Riego, Temperatura_Media, Temperatura_Minima y ET0 (primera letra mayúscula)")
+                       )
+                )
+              ),
+              br(),
+              fluidRow(  
+                column(12,
+                       div(uiOutput("mensaje_cultivo3"),
+                       )
+                ),
+              ),
+              br(),
+              
+              fluidRow(
+                box(
+                  title = "Fracción de agua útil",
+                  status = "lightblue",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  withSpinner(plotlyOutput("agua_util", height = "300px"),
+                              type = 5,
+                              color = "#0dc5c1",
+                              size = 0.5)
+                ),
+                box(
+                  title = "Consumo de agua",
+                  status = "lightblue",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  withSpinner(plotlyOutput("consumo_agua", height = "300px"),
+                              type = 5,
+                              color = "#0dc5c1",
+                              size = 0.5)
+                ),
+                box(
+                  title = "Balance de agua",
+                  status = "lightblue",
+                  solidHeader = TRUE,
+                  collapsible = TRUE,
+                  withSpinner(plotlyOutput("deficit_agua", height = "300px"),
+                              type = 5,
+                              color = "#0dc5c1",
+                              size = 0.5)
+                ),
+                
+                column(6,
+                       h6(HTML(("<strong>ETM: </strong>MÁXIMO consumo de agua, si no hubiera deficiencias de agua."))),
+                       h6(HTML(("<strong>ETR: </strong>Consumo de agua REAL."))),
+                       br(),
+                       uiOutput("mensaje_cultivo2")
                 )
               ),
               
               br(),
+              br(),
               
               fluidRow(
-                column(4, 
-                       box(
-                         title = "Temperaturas medias (ºC)",
-                         status = "orange",
-                         solidHeader = TRUE,
-                         collapsible = TRUE,
-                         withSpinner(plotlyOutput("grafico_temp_climatico", 
-                                                  height = "300px", 
-                                                  width = "100%"),
-                                     type = 5, 
-                                     color = "#0dc5c1",  
-                                     size = 0.5),
-                         width = 12
-                       )
-                ),
-                column(4, 
-                       box(
-                         title = "Precipitaciones acumuladas (mm)",
-                         status = "orange",
-                         solidHeader = TRUE,
-                         collapsible = TRUE,
-                         withSpinner(plotlyOutput("grafico_pp_climatico", 
-                                                  height = "300px", 
-                                                  width = "100%"),
-                                     type = 5, 
-                                     color = "#0dc5c1",  
-                                     size = 0.5),
-                         width = 12
-                       )
-                ),
-                column(4, 
-                       box(
-                         title = "Días con temp. máximas > a 25ºC y temp. mínimas < 3ºC",
-                         status = "orange",
-                         solidHeader = TRUE,
-                         collapsible = TRUE,
-                         withSpinner(plotlyOutput("grafico_heladas_climatico", 
-                                                  height = "300px", 
-                                                  width = "100%"),
-                                     type = 5, 
-                                     color = "#0dc5c1",  
-                                     size = 0.5),
-                         width = 12
+                column(12,
+                       div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                           h4(strong("Cálculo de la huella hídrica de su cultivo")),
+                           br(),
+                           fluidRow(
+                             column(4, offset = 1,
+                                    div(style = "display: flex; flex-direction: column; align-items: center;",
+                                        infoBoxOutput("ETMacum", width = 12),
+                                        infoBoxOutput("ETRacum", width = 12)
+                                    )
+                             ),
+                             br(),
+                             column(4,offset = 1,
+                                    div(style = "display: flex; flex-direction: column; align-items: center;",
+                                        numericInput("rendimiento",
+                                                     label = "Ingrese el rendimiento obtenido (kg / ha):",
+                                                     value = 0
+                                        ),
+                                        infoBoxOutput("huella_hidrica", width = 12)
+                                        
+                                    )
+                             ),
+                           )
                        )
                 )
               )
-      ),
-      
-      # tabItem(
-      #   tabName = "mapas",
-      #   h4(HTML("<strong>Mapas de suelo</strong>")),
-      #   h5(HTML("Recortes de la zona de influencia de EEA Balcarce, realizados por el Inst. de Clima y agua - INTA Castelar")),
-      #   br(),
-      #   br(),
-      #   fluidRow(
-      #     box(title = "Variación de agua disponible"
-      #         ,status = "navy"
-      #         ,solidHeader = FALSE
-      #         ,div(
-      #           style = "text-align: center;",
-      #           tags$img(
-      #             src = "agua.jpg",
-      #             style = "max-width: 100%; height: auto;",
-      #             alt = "Mapa-Consumo de agua"
-      #           )
-      #         ),
-      #         br(),
-      #         br(),
-      #         tags$figcaption("Variación del agua disponible hasta 2 metros, expresada en
-      #         mm, estimada mediante el uso de imágenes del satélite S-NPP con una resolución espacial de 500 metros. 
-      #         Acumulado a la fecha con respecto a la fecha anterior.
-      #                         Elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Patricio Oricchio."),
-      #         div(
-      #           style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-      #           "Representa el cambio en el agua disponible (expresado en mm) al final de un período de 10 
-      #           días con respecto al final del período anterior. Permite analizar la magnitud del aumento 
-      #           (período actual mayor al anterior) o reducción (período actual menor al anterior) del agua 
-      #           disponible en el perfil en hasta 2 metros de profundidad.")
-      #     ),
-      #     box(title = "% de agua útil"
-      #         ,status = "navy"
-      #         ,solidHeader = FALSE
-      #         ,div(
-      #           style = "text-align: center;",
-      #           tags$img(
-      #             src = "agua_util.jpg",
-      #             style = "max-width: 100%; height: auto;",
-      #             alt = "Mapa-agua útil"
-      #           )
-      #         ),
-      #         br(),
-      #         br(),
-      #         tags$figcaption("Agua en el suelo con respecto al máximo posible (% de agua útil).Resolución espacial: 500 m. 
-      #             Mapa elaborado por Instituto de Clima y Agua, INTA Castelar. Recorte: Lucas Gusmerotti."),
-      #         div(
-      #           style = "margin-top: 20px; text-align: left; padding: 10px; border: 2px solid #ddd; background-color: #f9f9f9;",
-      #           "El porcentaje de agua útil en el suelo (es decir, aquella porción de agua
-      #               que puede ser extraída por las plantas) puede ser estimado a través
-      #               de un balance de agua; donde se considera información del suelo, el
-      #               aporte de agua por lluvias y el consumo de agua de la cubierta
-      #               vegetal.")
-      #     ))
-      # ),
-      
-      tabItem(
-        tabName = "ambiente",
-        br(),
-        h4(HTML("<strong>Ambiente de los cultivos</strong>")),
-        h5(HTML("Te mostramos como fue cambiando el ambiente del cultivo durante el perdíodo crítico (PC), según la fecha de siembra desde el año 1991.")),
+            )
+          )
+        ),
         
-        br(),
-        
-        fluidRow(
-          # elección cultivo 
-          column(4,
-                 div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
-                     selectInput("cultivo_ambiente",
-                                 label = strong("Cultivo:"),
-                                 choices = list("Maíz ciclo largo" = "maiz_largo",
-                                                "Maíz ciclo corto" = "maiz_corto",
-                                                "Soja" = "soja"
-                                                # ,
-                                                # "Girasol" = "girasol",
-                                                # "Hortalizas" = "hortalizas"
-                                 ),
-                                 selected = "maiz")
-                 )
-          ),
-          column(4,
-                 div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
-                     numericInput("dia_siembra_ambiente",
-                                  label = strong("Día de siembra:"),
-                                  value = 1, 
-                                  min = 1, max = 31)
-                 )
-          ),
-          column(4,
-                 div(style = "background-color: #81B29A80; padding: 10px; border-radius: 10px;",
-                     selectInput("mes_siembra_ambiente",
-                                 label = strong("Mes de siembra:"),
-                                 choices = list("Octubre" = 10, "Noviembre" = 11, 
-                                                "Diciembre" = 12, "Enero" = 1),
-                                 selected = 10)
-                 )
-          ),
+        tabItem(
+          tabName = "huella_hidrica",
+          
+          br(),
+          
+          numericInput("rto_huella", "Rendimiento del cultivo (kg/ha):", value = 1000, min = 0),
+          actionButton("calcular", "Calcular huella hídrica",
+                       style = "background-color: #00BFFF; color: white; border: none;"),
+          
+          br(),
+          
+          valueBoxOutput("calcular_huella_hídrica"),
+          
+          br(),
+          
+          plotlyOutput("grafico_huella"),
+          textOutput("info_huella")
           
         ),
-        br(),
-        br(),
+        # tabItem(
+        #   tabName = "Dalbulus",
+        #   br(),
+        #   h4(HTML("<strong>Mapa de probabilidad de presencia de Dalbulus</strong>")),
+        #   br(),
+        #   h5(HTML("Al seleccionar la fecha, se muestra la probabilidad de emergencia de maíz guacho")),
+        #   br(),
+        # 
+        #   fluidRow(
+        #     dateInput("fecha_dalbulus",
+        #               label = strong("Ingrese la fecha:"),
+        #               value = "2024-01-01")
+        #     ),
+        # 
+        #     leafletOutput("mapa_arg"),
+        #   downloadButton("downloadMap", "Descargar mapa")
+        #   ),
         
-        fluidRow( 
-          box(
-            title = "Precipitaciones y ET0 acumuladas durante el período crítico",
-            status = "olive",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            withSpinner(plotlyOutput("pp_acum_PC", height = "300px"),
-                        type = 5, 
-                        color = "#0dc5c1",  
-                        size = 0.5)
-          ),
-          box(
-            title = "Radiación y días con temp. máx. > 35ºC durante el período crítico",
-            status = "olive",
-            solidHeader = TRUE,
-            collapsible = TRUE,
-            withSpinner(plotlyOutput("rad_temp_PC", height = "300px"),
-                        type = 5, 
-                        color = "#0dc5c1",  
-                        size = 0.5)
-          ),
-          h6(HTML("ET0: Evapotranspiración de referencia (mm) o demanda de agua del ambiente<br />Valores decádicos corresponden a la mediana."))
-        ),
-        
-        br(),
-        br(),
-        
-        h5(HTML("Podes comparar el ambiente de tu cultivo en 3 fechas de siembra 
-                diferentes")),
-        h6(HTML("(consideramos desde el año 2010, 
-                donde se observa un cambio en las temperaturas a nivel país).")),
-        
-        br(),
-        
-        fluidRow(
-          column(3,
-                 div(style = "background-color: #81B29A80; padding: 10px;  border-radius: 10px;",
-                     selectInput("cultivo_fecha",
-                                 label = strong("Cultivo:"),
-                                 choices = list("Maíz ciclo largo" = "maiz_largo",
-                                                "Maíz ciclo corto" = "maiz_corto",
-                                                "Soja" = "soja"
-                                                # ,
-                                                # "Girasol" = "girasol",
-                                                # "Hortalizas" = "hortalizas"
-                                 ),
-                                 selected = "maiz")
-                 ),
-                 br(),
-                 br(),
-                 column(12, align = "center",
-                        actionButton("btn_calcular", label = "Calcular", icon = icon("calculator"),
-                                     style = "color: white; background-color: #81B29A; border-color: #81B29A; border-radius: 10px; padding: 10px;")
-                 )
-                 
-          ),
-          column(3,
-                 div(style = "background-color: #E07A5F80; padding: 10px;  border-radius: 10px;",
-                     h6(HTML("<strong>Fecha 1:</strong>")),
-                     
-                     selectInput("mes_siembra1",
-                                 label = strong("Mes de siembra:"),
-                                 choices = list("Octubre" = 10, "Noviembre" = 11, 
-                                                "Diciembre" = 12, "Enero" = 1),
-                                 selected = 10),
-                     numericInput("dia_siembra1",
-                                  label = strong("Día de siembra:"),
-                                  value = 1, 
-                                  min = 1, max = 31),
-                     br(),
-                     textOutput("fecha_inicio_pc1"),
-                     textOutput("fecha_fin_pc1")
-                 )
-          ),
-          column(3,
-                 div(style = "background-color: #3D405B80; padding: 10px;  border-radius: 10px;",
-                     h6(HTML("<strong>Fecha 2:</strong>")),
-                     
-                     selectInput("mes_siembra2",
-                                 label = strong("Mes de siembra:"),
-                                 choices = list("Octubre" = 10, "Noviembre" = 11, 
-                                                "Diciembre" = 12, "Enero" = 1),
-                                 selected = 10),
-                     numericInput("dia_siembra2",
-                                  label = strong("Día de siembra:"),
-                                  value = 1, 
-                                  min = 1, max = 31),
-                     br(),
-                     textOutput("fecha_inicio_pc2"),
-                     textOutput("fecha_fin_pc2")
-                 )
-          ),
-          column(3,
-                 div(style = "background-color: #AEC3B080; padding: 10px;  border-radius: 10px;",
-                     h6(HTML("<strong>Fecha 3:</strong>")),
-                     
-                     selectInput("mes_siembra3",
-                                 label = strong("Mes de siembra:"),
-                                 choices = list("Octubre" = 10, "Noviembre" = 11, 
-                                                "Diciembre" = 12, "Enero" = 1),
-                                 selected = 10),
-                     numericInput("dia_siembra3",
-                                  label = strong("Día de siembra:"),
-                                  value = 1, 
-                                  min = 1, max = 31),
-                     br(),
-                     textOutput("fecha_inicio_pc3"),
-                     textOutput("fecha_fin_pc3")
-                 )
-          )
-        ),
-        
-        br(),
-        
-        fluidRow(column(4,
-        ),
-        column(4,
-               div(style = "background-color: #FB850080; padding: 10px; border-radius: 10px; text-align: center; align-items: center;",
-                   h5(HTML("<strong>Condiciones ambientales en el período crítico</strong>"))))),
-        br(),
-        
-        fluidRow(
-          column(4, 
-                 box(
-                   title = "Precipitaciones y ET0 acumuladas",
-                   status = "olive",
-                   solidHeader = TRUE,
-                   collapsible = TRUE,
-                   withSpinner(plotlyOutput("pc_lluvia", height = "300px", width = "100%"), 
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5),
-                   width = 12
-                 )
-          ),
-          column(4, 
-                 box(
-                   title = "Radiación global",
-                   status = "olive",
-                   solidHeader = TRUE,
-                   collapsible = TRUE,
-                   withSpinner(plotlyOutput("pc_radiacion", height = "300px", width = "100%"), 
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5),
-                   width = 12
-                 )
-          ),
-          column(4, 
-                 box(
-                   title = "Días con temperaturas máximas > a 35ºC",
-                   status = "olive",
-                   solidHeader = TRUE,
-                   collapsible = TRUE,
-                   withSpinner(plotlyOutput("pc_dias_35", height = "300px", width = "100%"), 
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5),
-                   width = 12
-                 )
-          ),
-        ),
-        br(),
-        
-        fluidRow(column(4,
-        ),
-        column(4,
-               div(style = "background-color: #FB850080; padding: 10px;  border-radius: 10px; text-align: center; align-items: center;",
-                   h5(HTML("<strong>Condiciones ambientales durante el llenado de grano</strong>"))))),
-        br(),
-        
-        fluidRow(
-          column(4, 
-                 box(
-                   title = "Precipitaciones y ET0 acumuladas",
-                   status = "olive",
-                   solidHeader = TRUE,
-                   collapsible = TRUE,
-                   withSpinner(plotlyOutput("lg_lluvia", height = "300px", width = "100%"), 
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5),
-                   width = 12
-                 )
-          ),
-          column(4, 
-                 box(
-                   title = "Radiación global",
-                   status = "olive",
-                   solidHeader = TRUE,
-                   collapsible = TRUE,
-                   withSpinner(plotlyOutput("lg_radiacion", height = "300px", width = "100%"), 
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5),
-                   width = 12
-                 )
-          ),
-          column(4, 
-                 box(
-                   title = "Días con temperaturas mínimas < a 2ºC",
-                   status = "olive",
-                   solidHeader = TRUE,
-                   collapsible = TRUE,
-                   withSpinner(plotlyOutput("lg_dias_2", height = "300px", width = "100%"), 
-                               type = 5, 
-                               color = "#0dc5c1",  
-                               size = 0.5),
-                   width = 12
-                 )
-          ),
-        )
-      ),
-      
-      tabItem(
-        tabName = "balance",
-        tabsetPanel(
-          id = "balance_agua",
-          tabPanel(
-            title = "Balcarce",
-            br(),
-            h4(HTML("<strong>Cálculo de balance de agua<sup>1</sup></strong>")),
-            h5(HTML("A partir de los datos del suelo y del cultivo seleccionado, podes calcular el balance de agua diario de tu campo. <br> 
-                Podes ingresar los datos en los recuadros o usar los valores predeterminados.")),
-            
-            br(),
-            
-            fluidRow(
-              # elección cultivo 
-              column(3,
-                     selectInput("cultivo_balcarce",
-                                 label = strong("Seleccione el cultivo:"),
-                                 choices = list("Maíz ciclo largo" = "maiz_largo",
-                                                "Maíz ciclo corto" = "maiz_corto",
-                                                "Soja" = "soja"
-                                                # ,
-                                                # "Girasol" = "girasol",
-                                                # "Hortalizas" = "hortalizas"
-                                 ),
-                                 selected = "maiz_largo")
-              ),
-              column(3,
-                     dateInput("fecha_siembra_balcarce",
-                               label = strong("Ingrese la fecha de siembra:"),
-                               value = "2024-01-01")
-              )
-            ),
-            fluidRow(  
-              column(12,
-                     div(uiOutput("mensaje_cultivo_balcarce1"),
-                     )
-              ),
-            ),
-            br(),
-            fluidRow(
-              column(6,
-                     div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
-                         h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>"))),
-                         fluidRow(
-                           column(6,
-                                  numericInput("profundidad_balcarce",  
-                                               label = strong("Profundidad (cm)"),
-                                               value = 100),
-                                  br(),
-                                  numericInput("capacidad_campo_balcarce",  
-                                               label = strong(HTML("Capacidad de Campo (mm/cm)
-                                                        <br><small>
-                                                        (Límite máximo de almacenamiento de agua)</small>")), 
-                                               value = 3.70),
-                                  textOutput("almacenamiento_maximo_balcarce")
-                           ),
-                           column(6,
-                                  numericInput("fraccion_min_balcarce",  
-                                               label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
-                                               value = 0.55,
-                                               min = 0,
-                                               max = 1),
-                                  textOutput("almacenamiento_minimo_balcarce"),
-                                  textOutput("agua_util_total_balcarce"),
-                                  br(),
-                                  numericInput("fraccion_inicial_balcarce",  
-                                               label = strong("Fracción inicial de agua útil (0 - 1)"), 
-                                               value = 0.50,
-                                               min = 0,
-                                               max = 1)
-                           )
-                         )
-                     )
-              ),
-              column(3,
-                     div(style = "background-color: #21838040; padding: 15px; border-radius: 10px;",
-                         h4(strong("Datos de cultivo")),
-                         numericInput("umbral_et_balcarce",  
-                                      label = strong(HTML("Umbral de fracción de agua útil 
-                                                        <br><small>
-                                                        (Debajo del cual se reduce la evapotranspiración)</small>")), 
-                                      value = NULL),
-                         textOutput("disminucion_et_balcarce"),
-                         br(),
-                         textOutput("GD_balcarce"),
-                     )
-              ),
-              
-              column(3,
-                     div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
-                         downloadButton("descarga_modelo_balcarce", "Descargar modelo de archivo para completar"),
-                         br(),
-                         br(),
-                         fileInput("clima_balcarce", "Ingresar datos propios (opcional)",
-                                   accept = c(".csv", ".xlsx"))
-                         ,
-                         helpText("El archivo debe contener datos diarios (sin datos faltantes) y las columnas: Fecha, Lluvia, Riego (primera letra mayúscula)")
-                     )
-              )
-            ),
-            fluidRow(  
-              column(12,
-                     br(),
-                     div(uiOutput("mensaje_cultivo_balcarce3"),
-                     )
-              ),
-            ),
-            br(),
-            
-            fluidRow( 
-              box(
-                title = "Fracción de agua útil",
-                status = "lightblue",
-                solidHeader = TRUE,
-                collapsible = TRUE,
-                withSpinner(plotlyOutput("agua_util_balcarce", height = "300px"),
-                            type = 5, 
-                            color = "#0dc5c1",  
-                            size = 0.5)
-              ),
-              box(
-                title = "Consumo de agua",
-                status = "lightblue",
-                solidHeader = TRUE,
-                collapsible = TRUE,
-                withSpinner(plotlyOutput("consumo_agua_balcarce", height = "300px"),
-                            type = 5, 
-                            color = "#0dc5c1",  
-                            size = 0.5)
-              ),
-              box(
-                title = "Balance de agua",
-                status = "lightblue",
-                solidHeader = TRUE,
-                collapsible = TRUE,
-                withSpinner(plotlyOutput("deficit_agua_balcarce", height = "300px"), 
-                            type = 5, 
-                            color = "#0dc5c1",  
-                            size = 0.5)
-              ),
-              column(3, 
-                     br(),
-                     br(),
-                     infoBoxOutput("ETMacum_balcarce", width = 9),
-                     infoBoxOutput("ETRacum_balcarce", width = 9)
-                     ),
-              column(3,
-                     br(),
-                     br(),
-                     h5(strong("Cálculo de la huella hídrica de su cultivo")),
-                     numericInput("rendimiento_balcarce",
-                                  label = "Ingrese el rendimiento obtenido (kg / ha):",
-                                  value = 0
-                                  ),
-                     infoBoxOutput("huella_hidrica_balcarce", width = 9)
-                     
-              ),
-            ),
-            
-            fluidRow(  
-              column(12,
-                     div(uiOutput("mensaje_cultivo_balcarce2"),
-                     )
-              ),
-            )
-          ),
-          tabPanel(
-            title = "Otros sitios",
-            br(),
-            h4(HTML("Para aquellas zonas fuera del radio de influencia de la EEA Balcarce, podes ingresar tus propios datos.")),
-            br(),
-            h6(HTML("Desde la web <a href='https://siga.inta.gob.ar/#/' target='_blank'>siga.inta.gob.ar</a>, podes seleccionar la estación meteorológica más cercana a tu campo y descargar los datos de lluvia, temperaturas y evapotranspiración.")),
-            h6(HTML("Si no encontras valores de evapotranspiración para tu campo, podes consultarnos y te ayudamos con el cálculo: <strong>echarte.laura@inta.gob.ar</strong>")),
-            br(),
-            fluidRow(
-              # elección cultivo 
-              column(3,
-                     selectInput("cultivo",
-                                 label = strong("Seleccione el cultivo:"),
-                                 choices = list("Maíz ciclo largo" = "maiz_largo",
-                                                "Maíz ciclo corto" = "maiz_corto",
-                                                "Soja" = "soja"
-                                                # ,
-                                                # "Girasol" = "girasol",
-                                                # "Hortalizas" = "hortalizas"
-                                 ),
-                                 selected = "maiz_largo")
-              ),
-              column(3,
-                     dateInput("fecha_siembra",
-                               label = strong("Ingrese la fecha de siembra:"),
-                               value = "2024-01-01")
-              )
-            ),
-            fluidRow(  
-              column(12,
-                     div(uiOutput("mensaje_cultivo1"),
-                     )
-              ),
-            ),
-            br(),
-            fluidRow(
-              column(6,
-                     div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
-                         h4(HTML(("<strong>Datos de suelo<sup>2</sup></strong>"))),
-                         fluidRow(
-                           column(6,
-                                  numericInput("profundidad",  
-                                               label = strong("Profundidad (cm)"),
-                                               value = 100),
-                                  br(),
-                                  numericInput("capacidad_campo",  
-                                               label = strong(HTML("Capacidad de Campo (mm/cm)
-                                                        <br><small>
-                                                        (Límite máximo de almacenamiento de agua)</small>")), 
-                                               value = 3.70),
-                                  textOutput("almacenamiento_maximo")
-                           ),
-                           column(6,
-                                  numericInput("fraccion_min",  
-                                               label = strong("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)"), 
-                                               value = 0.55,
-                                               min = 0,
-                                               max = 1),
-                                  textOutput("almacenamiento_minimo"),
-                                  textOutput("agua_util_total"),
-                                  br(),
-                                  numericInput("fraccion_inicial",  
-                                               label = strong("Fracción inicial de agua útil (0 - 1)"), 
-                                               value = 0.50,
-                                               min = 0,
-                                               max = 1)
-                           )
-                         )
-                     )
-              ),
-              column(3,
-                     div(style = "background-color: #21838040; padding: 15px; border-radius: 10px;",
-                         h4(strong("Datos de cultivo")),
-                         numericInput("umbral_et",  
-                                      label = strong(HTML("Umbral de fracción de agua útil 
-                                                        <br><small>
-                                                        (Debajo del cual se reduce la evapotranspiración)</small>")), 
-                                      value = NULL),
-                         textOutput("disminucion_et"),
-                         br(),
-                         textOutput("GD"),
-                     )
-              ),
-              column(3,
-                     div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
-                         downloadButton("descarga_modelo", "Descargar modelo de archivo para completar"),
-                         br(),
-                         br(),
-                         fileInput("otros_clima", "Ingresar datos ambientales propios",
-                                   accept = c(".csv", ".xlsx"))
-                         ,
-                         helpText("El archivo debe contener datos diarios y las columnas (sin datos faltantes): Fecha, Lluvia, Riego, Temperatura_Media, Temperatura_Minima y ET0 (primera letra mayúscula)")
-                     )
-              )
-            ),
-            fluidRow(  
-              column(12,
-                     div(uiOutput("mensaje_cultivo3"),
-                     )
-              ),
-            ),
-            br(),
-            
-            fluidRow(
-              box(
-                title = "Fracción de agua útil",
-                status = "lightblue",
-                solidHeader = TRUE,
-                collapsible = TRUE,
-                withSpinner(plotlyOutput("agua_util", height = "300px"),
-                            type = 5,
-                            color = "#0dc5c1",
-                            size = 0.5)
-              ),
-              box(
-                title = "Consumo de agua",
-                status = "lightblue",
-                solidHeader = TRUE,
-                collapsible = TRUE,
-                withSpinner(plotlyOutput("consumo_agua", height = "300px"),
-                            type = 5,
-                            color = "#0dc5c1",
-                            size = 0.5)
-              ),
-              box(
-                title = "Balance de agua",
-                status = "lightblue",
-                solidHeader = TRUE,
-                collapsible = TRUE,
-                withSpinner(plotlyOutput("deficit_agua", height = "300px"),
-                            type = 5,
-                            color = "#0dc5c1",
-                            size = 0.5)
-              ),
-              column(3, 
-                     br(),
-                     br(),
-                     infoBoxOutput("ETMacum", width = 9),
-                     infoBoxOutput("ETRacum", width = 9)
-              ),
-              column(3,
-                     br(),
-                     br(),
-                     h5(strong("Cálculo de la huella hídrica de su cultivo")),
-                     numericInput("rendimiento",
-                                  label = "Ingrese el rendimiento obtenido (kg / ha):",
-                                  value = 0
-                     ),
-                     infoBoxOutput("huella_hidrica", width = 9)
-                     
-              ),
-            ),
-            
-            fluidRow(  
-              column(12,
-                     div(uiOutput("mensaje_cultivo2"),
-                     )
-              ),
-            )
-          )
-        )
-      ),
-      
-      
-      # tabItem(
-      #   tabName = "Dalbulus",
-      #   br(),
-      #   h4(HTML("<strong>Mapa de probabilidad de presencia de Dalbulus</strong>")),
-      #   br(),
-      #   h5(HTML("Al seleccionar la fecha, se muestra la probabilidad de emergencia de maíz guacho")),
-      #   br(),
-      # 
-      #   fluidRow(
-      #     dateInput("fecha_dalbulus",
-      #               label = strong("Ingrese la fecha:"),
-      #               value = "2024-01-01")
-      #     ),
-      # 
-      #     leafletOutput("mapa_arg"),
-      #   downloadButton("downloadMap", "Descargar mapa")
-      #   ),
-      
-      tabItem(
-        tabName = "pronosticos",
-        br(),
-        h4(HTML("<strong>Pronósticos meteorológicos del área de influencia de EEA Balcarce</strong>")),
-        h6(HTML("Elaborados por el SMN y el Instituto de Clima y Agua - INTA Castelar.")),
-        br(),
-        br(),
-        
-        fluidRow( 
-          box(title = "Pronóstico semanal"
-              ,status = "navy"
-              ,solidHeader = FALSE
-              ,div(
-                style = "text-align: center;",
-                tags$img(
-                  src = "pronostico_lluvia.png",
-                  style = "max-width: 80%; height: auto;",
-                  alt = "Pronóstico semanal de lluvia"
+        tabItem(
+          tabName = "pronosticos",
+          br(),
+          h4(HTML("<strong>Pronósticos meteorológicos del área de influencia de EEA Balcarce</strong>")),
+          h6(HTML("Elaborados por el SMN y el Instituto de Clima y Agua - INTA Castelar.")),
+          br(),
+          br(),
+          
+          fluidRow( 
+            box(title = "Pronóstico semanal"
+                ,status = "navy"
+                ,solidHeader = FALSE
+                ,div(
+                  style = "text-align: center;",
+                  tags$img(
+                    src = "pronostico_lluvia.png",
+                    style = "max-width: 80%; height: auto;",
+                    alt = "Pronóstico semanal de lluvia"
+                  )
                 )
-              )
-          ),
-          box(title = "Pronóstico trimestral"
-              ,status = "navy"
-              ,solidHeader = FALSE
-              ,div(
-                style = "text-align: center;",
-                tags$img(
-                  src = "pronostico_tri.png",
-                  style = "max-width: 80%; height: auto;",
-                  alt = "Pronóstico trimestral"
-                )
-              )
-          ),
-        )
-      ),
-      
-      tabItem(
-        tabName = "informes",
-        br(),
-        h4(HTML("<strong>Informes</strong>")),
-        fluidRow(
-          column(
-            width = 3,
-            div(
-              style = "margin-left: 100px; margin-top: 50px;",  
-              tags$img(
-                src = "IMA.jpeg",
-                width = 300,
-                height = 420,
-                alt = "Informe Mensual Agropecuario"
-              ),
-              tags$br(),
-              tags$a(
-                "Descarga el informe completo aquí", href= "https://bit.ly/IMA-OCT24")
-            )),
-          column(
-            width = 3,
-            div(
-              style = "margin-left: 100px; margin-top: 50px;",  
-              tags$img(
-                src = "chicharrita.jpg",
-                width = 300,
-                height = 420,
-                alt = "Achaparramiento del Maíz"
-              ),
-              tags$br(),
-              tags$a(
-                "Descarga el informe completo aquí", href= "https://www.argentina.gob.ar/sites/default/files/2018/09/el_achaparramiento_del_maiz_y_las_decisiones_agricolas_en_argentina_mesatecnicanacional_inta.pdf")
             ),
-          ),
-          column(
-            width = 3,
-            div(
-              style = "margin-left: 100px; margin-top: 50px;",  
-              tags$img(
-                src = "ENSO.jpg",
-                width = 300,
-                height = 420,
-                alt = "ENSO y precipitaciones"
-              ),
-              tags$br(),
-              downloadLink(
-                outputId = "downloadReport", 
-                label = "Descarga el informe completo aquí"
-              ),
-            )
+            box(title = "Pronóstico trimestral"
+                ,status = "navy"
+                ,solidHeader = FALSE
+                ,div(
+                  style = "text-align: center;",
+                  tags$img(
+                    src = "pronostico_tri.png",
+                    style = "max-width: 80%; height: auto;",
+                    alt = "Pronóstico trimestral"
+                  )
+                )
+            ),
           )
-        )),
-      
-      tabItem(
-        tabName = "descarga",
-        br(),
-        h4(HTML("<strong>Datos disponibles de la EMC Balcarce</strong>")),
-        br(),
+        ),
         
-        dataTableOutput("datos"),
-        br(),
-        "Selecciona el periodo:",
-        fluidRow(
-          column(2,
-                 dateInput("fecha_inicio", "Fecha de Inicio", value = NULL, format = "dd/mm/yyyy")),
-          column(2,
-                 dateInput("fecha_fin", "Fecha de Fin", value = NULL, format = "dd/mm/yyyy"))
-        ),
-        selectInput(
-          "variables", 
-          "Seleccionar Variables:",
-          choices = c("Temperatura_Abrigo_150cm",
-                      "Temperatura_Abrigo_150cm_Maxima", "Temperatura_Abrigo_150cm_Minima",
-                      "Temperatura_Intemperie_5cm_Minima", "Temperatura_Intemperie_50cm_Minima",	
-                      "Temperatura_Suelo_5cm_Media", "Temperatura_Suelo_10cm_Media",
-                      "Temperatura_Inte_5cm", "Temperatura_Intemperie_150cm_Minima",
-                      "Humedad_Suelo", "Precipitacion_Pluviometrica", "Granizo",
-                      "Nieve", "Heliofania_Efectiva", "Heliofania_Relativa", "Tesion_Vapor_Media", 
-                      "Humedad_Media", "Humedad_Media_8_14_20", "Rocio_Medio",
-                      "Duracion_Follaje_Mojado", "Velocidad_Viento_200cm_Media",
-                      "Direccion_Viento_200cm", "Velocidad_Viento_1000cm_Media",
-                      "Direccion_Viento_1000cm", "Velocidad_Viento_Maxima", "Presion_Media",
-                      "Radiacion_Global", "Radiacion_Neta", "Evaporacion_Tanque",	
-                      "Evapotranspiracion_Potencial", "Profundidad_Napa", "Horas_Frio",	
-                      "Unidad_Frio"
+        tabItem(
+          tabName = "informes",
+          br(),
+          h4(HTML("<strong>Informes</strong>")),
+          fluidRow(
+            column(
+              width = 3,
+              div(
+                style = "margin-left: 100px; margin-top: 50px;",  
+                tags$img(
+                  src = "IMA.jpeg",
+                  width = 300,
+                  height = 420,
+                  alt = "Informe Mensual Agropecuario"
+                ),
+                tags$br(),
+                tags$a(
+                  "Descarga el informe completo aquí", href= "https://bit.ly/IMA-DIC24")
+              )),
+            column(
+              width = 3,
+              div(
+                style = "margin-left: 100px; margin-top: 50px;",  
+                tags$img(
+                  src = "chicharrita.jpg",
+                  width = 300,
+                  height = 420,
+                  alt = "Achaparramiento del Maíz"
+                ),
+                tags$br(),
+                tags$a(
+                  "Descarga el informe completo aquí", href= "https://www.argentina.gob.ar/sites/default/files/2018/09/el_achaparramiento_del_maiz_y_las_decisiones_agricolas_en_argentina_mesatecnicanacional_inta.pdf")
+              ),
+            ),
+            column(
+              width = 3,
+              div(
+                style = "margin-left: 100px; margin-top: 50px;",  
+                tags$img(
+                  src = "ENSO.jpg",
+                  width = 300,
+                  height = 420,
+                  alt = "ENSO y precipitaciones"
+                ),
+                tags$br(),
+                downloadLink(
+                  outputId = "downloadReport", 
+                  label = "Descarga el informe completo aquí"
+                ),
+              )
+            )
+          )),
+        
+        tabItem(
+          tabName = "descarga",
+          br(),
+          h4(HTML("<strong>Datos disponibles de la EMC Balcarce</strong>")),
+          br(),
+          
+          dataTableOutput("datos"),
+          br(),
+          "Selecciona el periodo:",
+          fluidRow(
+            column(2,
+                   dateInput("fecha_inicio", "Fecha de Inicio", value = NULL, format = "dd/mm/yyyy")),
+            column(2,
+                   dateInput("fecha_fin", "Fecha de Fin", value = NULL, format = "dd/mm/yyyy"))
           ),
-          selected = "Temperatura_Abrigo_150cm",
-          multiple = TRUE
+          selectInput(
+            "variables", 
+            "Seleccionar Variables:",
+            choices = c("Temperatura_Abrigo_150cm",
+                        "Temperatura_Abrigo_150cm_Maxima", "Temperatura_Abrigo_150cm_Minima",
+                        "Temperatura_Intemperie_5cm_Minima", "Temperatura_Intemperie_50cm_Minima",	
+                        "Temperatura_Suelo_5cm_Media", "Temperatura_Suelo_10cm_Media",
+                        "Temperatura_Inte_5cm", "Temperatura_Intemperie_150cm_Minima",
+                        "Humedad_Suelo", "Precipitacion_Pluviometrica", "Granizo",
+                        "Nieve", "Heliofania_Efectiva", "Heliofania_Relativa", "Tesion_Vapor_Media", 
+                        "Humedad_Media", "Humedad_Media_8_14_20", "Rocio_Medio",
+                        "Duracion_Follaje_Mojado", "Velocidad_Viento_200cm_Media",
+                        "Direccion_Viento_200cm", "Velocidad_Viento_1000cm_Media",
+                        "Direccion_Viento_1000cm", "Velocidad_Viento_Maxima", "Presion_Media",
+                        "Radiacion_Global", "Radiacion_Neta", "Evaporacion_Tanque",	
+                        "Evapotranspiracion_Potencial", "Profundidad_Napa", "Horas_Frio",	
+                        "Unidad_Frio"
+            ),
+            selected = "Temperatura_Abrigo_150cm",
+            multiple = TRUE
+          ),
+          downloadButton("Datos_meteo_Balcarce", "Descargar (.xlsx)")
         ),
-        downloadButton("Datos_meteo_Balcarce", "Descargar (.xlsx)")
-      ),
-      
-      tabItem(
-        tabName = "referencias",
-        br(),
-        h4(HTML("<strong>Referencias bibliográficas</strong>")),
-        br(),
-        br(),
-        h6(HTML("<strong>Allen</strong>, R.G.; Pereira, L.S. Raes, D. Y D. Smith. 1998. Crop evapotranspiration. Guides for computing crop water requirements. FAO Irrig. Drain. Nº 56. Italy, 300 p.")),
-        h6(HTML("<strong>Andrade</strong>, FH., Otegui, ME., Cirilo, A., Uhart, S. 2023.  “Ecofisiología y manejo del cultivo de maíz”.  Maizar.")),
-        h6(HTML("<strong>Cerrudo</strong>, A, Di Matteo J, Fernandez E, Robles M, Pico LO, Andrade FH. 2013. Yield components of maize as affected by short shading periods and thinning. Crop and Pasture Science 64, 580.")),
-        h6(HTML("<strong>Della Maggiora</strong>, A.I., A.I. Irigoyen, J. M. Gardiol, O. Caviglia and L. Echarte. 2002/03. Evaluación de un balance de agua en el suelo para maíz. Revista Argentina de Agrometeorología, 2(2):167-176.")),
-        h6(HTML("<strong>Echarte</strong>, L., Otegui, M.E. 2023. Consumo y eficiencia en el uso del agua. En: Andrade, FH., Otegui, ME., Cirilo, A., Uhart, S. (Eds) “Ecofisiología y manejo del cultivo de maíz” (pp. 221-244).  Maizar.")),
-        h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A. Irigoyen, A. 2002. Curvas de coeficientes de cultivo de maíz, girasol y soja. IX Reunión Argentina de Agrometeorología. Córdoba.")),
-        h6(HTML("<strong>Gardiol</strong>, J. M., Leonardo, A. S., & Aida, I. D.M. 2003. Modeling evapotranspiration of corn (Zea mays) under different plant densities. Journal of Hydrology, 271, 291–308. https://doi.org/10.1016/S0022-1694(02)00347-5.")),
-        h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A.; Irigoyen, A. 2006. Coeficientes de cultivo de soja basados en la evapotranspiración de referencia Penman-Monteith.")),
-        h6(HTML("<strong>Monzon</strong>, J. P., Cafaro La Menza, N., Cerrudo, A., Canepa, M., Rattalino Edreira, J. I., Specht, J., et al. 2021. Critical period for seed number determination in soybean as determined by crop growth rate, duration, and dry matter accumulation. Field Crops Res. 261:108016. doi: 10.1016/j.fcr.2020.108016.")),
-        h6(HTML("<strong>RECSO</strong>, Base de datos de RECSO Balcarce periodo 2013-2023. Compilada por Marina Montoya, INTA Balcarce. Agosto 2023. Colaboradores: Auxilares Walter Suarez, Silvio Giuliano, Carlos Antonelli, Mauro Zabaleta, Mariano Ruberto (INTA Balcarce). Fuente: Información publicada anualmente por Comunicaciones INTA Balcarce. Actividades incluidas en el convenio INTA-ASA.")),
+        
+        tabItem(
+          tabName = "referencias",
+          br(),
+          h4(HTML("<strong>Referencias bibliográficas</strong>")),
+          br(),
+          br(),
+          h6(HTML("<strong>Allen</strong>, R.G.; Pereira, L.S. Raes, D. Y D. Smith. 1998. Crop evapotranspiration. Guides for computing crop water requirements. FAO Irrig. Drain. Nº 56. Italy, 300 p.")),
+          h6(HTML("<strong>Andrade</strong>, FH., Otegui, ME., Cirilo, A., Uhart, S. 2023.  “Ecofisiología y manejo del cultivo de maíz”.  Maizar.")),
+          h6(HTML("<strong>Cerrudo</strong>, A, Di Matteo J, Fernandez E, Robles M, Pico LO, Andrade FH. 2013. Yield components of maize as affected by short shading periods and thinning. Crop and Pasture Science 64, 580.")),
+          h6(HTML("<strong>Della Maggiora</strong>, A.I., A.I. Irigoyen, J. M. Gardiol, O. Caviglia and L. Echarte. 2002/03. Evaluación de un balance de agua en el suelo para maíz. Revista Argentina de Agrometeorología, 2(2):167-176.")),
+          h6(HTML("<strong>Echarte</strong>, L., Otegui, M.E. 2023. Consumo y eficiencia en el uso del agua. En: Andrade, FH., Otegui, ME., Cirilo, A., Uhart, S. (Eds) “Ecofisiología y manejo del cultivo de maíz” (pp. 221-244).  Maizar.")),
+          h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A. Irigoyen, A. 2002. Curvas de coeficientes de cultivo de maíz, girasol y soja. IX Reunión Argentina de Agrometeorología. Córdoba.")),
+          h6(HTML("<strong>Gardiol</strong>, J. M., Leonardo, A. S., & Aida, I. D.M. 2003. Modeling evapotranspiration of corn (Zea mays) under different plant densities. Journal of Hydrology, 271, 291–308. https://doi.org/10.1016/S0022-1694(02)00347-5.")),
+          h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A.; Irigoyen, A. 2006. Coeficientes de cultivo de soja basados en la evapotranspiración de referencia Penman-Monteith.")),
+          h6(HTML("<strong>Monzon</strong>, J. P., Cafaro La Menza, N., Cerrudo, A., Canepa, M., Rattalino Edreira, J. I., Specht, J., et al. 2021. Critical period for seed number determination in soybean as determined by crop growth rate, duration, and dry matter accumulation. Field Crops Res. 261:108016. doi: 10.1016/j.fcr.2020.108016.")),
+          h6(HTML("<strong>RECSO</strong>, Base de datos de RECSO Balcarce periodo 2013-2023. Compilada por Marina Montoya, INTA Balcarce. Agosto 2023. Colaboradores: Auxilares Walter Suarez, Silvio Giuliano, Carlos Antonelli, Mauro Zabaleta, Mariano Ruberto (INTA Balcarce). Fuente: Información publicada anualmente por Comunicaciones INTA Balcarce. Actividades incluidas en el convenio INTA-ASA.")),
+        )
       )
     )
   )
-)
+
 
 
 
@@ -1460,10 +1618,10 @@ server <- function(input, output, session) {
   output$value1 <- renderInfoBox({
     infoBox(
       title = div(p("Ultima fecha", 
-                    style = "text-align: center; font-size: 18px; font-weight: bold;"), 
+                    style = "text-align: center; font-size: 20px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(format(ultima_fecha, "%d/%m/%Y"), 
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 28px; font-weight: bold;"),
       icon = icon("calendar"),
       color = "orange",
       fill = TRUE
@@ -1473,10 +1631,10 @@ server <- function(input, output, session) {
   output$value2 <- renderInfoBox({
     infoBox(
       title = div(p("Lluvia", 
-                    style = "text-align: center;font-size: 18px; font-weight: bold;"), 
+                    style = "text-align: center;font-size: 20px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(paste(round(lluvia_ultimo_dia, 1), "mm"),
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 28px; font-weight: bold;"),
       icon = icon("tint"),
       color = "info",
       fill = TRUE
@@ -1486,10 +1644,10 @@ server <- function(input, output, session) {
   output$value3 <- renderInfoBox({
     infoBox(
       title = div(p("Temperatura Máxima", 
-                    style = "text-align: center;font-size: 18px; font-weight: bold;"), 
+                    style = "text-align: center;font-size: 20px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(paste(round(Tmax_ultimo_dia, 1), "ºC"), 
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),  
+                  style = "text-align: center; font-size: 28px; font-weight: bold;"),  
       icon = icon("sun"),
       color = "danger",
       fill = TRUE
@@ -1499,10 +1657,10 @@ server <- function(input, output, session) {
   output$value4 <- renderInfoBox({
     infoBox(
       title = div(p("Temperatura Mínima", 
-                    style = "text-align: center;font-size: 18px; font-weight: bold;"), 
+                    style = "text-align: center;font-size: 20px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(paste(round(Tmin_ultimo_dia, 1), "ºC"),
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 28px; font-weight: bold;"),
       icon = icon("snowflake"),
       color = "warning",
       fill = TRUE
@@ -1694,9 +1852,9 @@ server <- function(input, output, session) {
                                              "Temperatura_Minima",
                                              "Temp_Min_Historica"),                                                  
                                   labels = c("Máxima Año Seleccionado",
-                                             "Máxima Histórica (1991 - 2020)",
+                                             "Máxima (1991 - 2020)",
                                              "Mínima Año Seleccionado",
-                                             "Mínima Histórica (1991 - 2020)")))
+                                             "Mínima (1991 - 2020)")))
     
     
     temp_plot <- ggplot(dataset_completo_temperatura_long, aes(x = Mes, 
@@ -1706,9 +1864,9 @@ server <- function(input, output, session) {
       geom_line(linewidth = 1) +
       geom_point(size = 1) +
       scale_color_manual(values = c("Máxima Año Seleccionado" = "#D00000",
-                                    "Máxima Histórica (1991 - 2020)" = "#FCB9B2",
+                                    "Máxima (1991 - 2020)" = "#FCB9B2",
                                     "Mínima Año Seleccionado" = "#FFBA08",
-                                    "Mínima Histórica (1991 - 2020)" = "#EDDEA4"
+                                    "Mínima (1991 - 2020)" = "#EDDEA4"
       )) +
       labs(x = "", y = "Temperatura media mensual (ºC)", 
            color = "") +
@@ -1722,9 +1880,9 @@ server <- function(input, output, session) {
             axis.line = element_line(color = "black"))
     
     ggplotly(temp_plot) %>%
-      layout(legend = list(orientation = "v", 
-                           x = 0.4, 
-                           y = 1.2))
+        layout(legend = list(orientation = "h", 
+                           x = 0, 
+                           y = 1.5))
   })
   
   
@@ -1961,8 +2119,8 @@ server <- function(input, output, session) {
         mutate(Tipo = factor(Tipo,
                              levels = c("dias_bajos",
                                         "dias_altos"),                                                  
-                             labels = c("Días Temp. Mín. < 3ºC",
-                                        "Días Temp. Máx. > 25ºC")))
+                             labels = c("Días < 3ºC",
+                                        "Días > 25ºC")))
       
       
       
@@ -1975,7 +2133,7 @@ server <- function(input, output, session) {
         labs(x = "", y = "Días", 
              title = "",
              color = "") +
-        scale_color_manual(values = c("Días Temp. Mín. < 3ºC" = "#A8DADC", "Días Temp. Máx. > 25ºC" = "#E63946")) +
+        scale_color_manual(values = c("Días < 3ºC" = "#A8DADC", "Días > 25ºC" = "#E63946")) +
         theme_minimal() +
         theme(axis.text.x = element_text(angle = 60, hjust = 1))
       
@@ -1990,12 +2148,7 @@ server <- function(input, output, session) {
           dias_bajos = sum(dia_bajo, na.rm = TRUE),
           dias_altos = sum(dia_alto, na.rm = TRUE)
         ) 
-      # %>%
-      #   mutate(Mes = factor(Mes,
-      #                       
-      #                       labels = c("enero", "febrero", "marzo", "abril",
-      #                                  "mayo", "junio", "julio", "agosto", 
-      #                                  "septiembre", "octubre", "noviembre", "diciembre")))
+      
       
       dias_extremos_long_mes <- dias_extremos_mes %>%
         pivot_longer(cols = c(dias_bajos, dias_altos), 
@@ -2023,7 +2176,7 @@ server <- function(input, output, session) {
     
     ggplotly(tt_dias_extremos) %>% 
       layout(legend = list(orientation = "h", 
-                           x = 0.1, y = 1.3))
+                           x = 0.0, y = 1.2))
   })
   
   
@@ -3412,19 +3565,43 @@ server <- function(input, output, session) {
       tagList(
         p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
     y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+        p(tags$sup("2"), "El umbral de agua disponible por debajo del cual disminuye la ET del cultivo se considera, 
+           generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
+           demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
+           evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos. 
+           En el caso del maíz para las condiciones de Balcarce, este umbral ha sido determinado en 0,8."
+        ),
+        p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
+          respecto del máximo para suelos con diferente textura"),
+        img(src = "Tabla.png", height = "200px", width = "400px")
       )
     } else if (input$cultivo_balcarce == "maiz_corto") {
       tagList(
         p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
-          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+    y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
+        p(tags$sup("2"), "El umbral de agua disponible por debajo del cual disminuye la ET del cultivo se considera, 
+           generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
+           demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
+           evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos. 
+           En el caso del maíz para las condiciones de Balcarce, este umbral ha sido determinado en 0,8."
+        ),
+        p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
+          respecto del máximo para suelos con diferente textura"),
+        img(src = "Tabla.png", height = "200px", width = "400px")
       )
     } else if (input$cultivo_balcarce == "soja") {
       tagList(
-        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),<br>
-          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
+    y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
+        p(tags$sup("2"), "El umbral de agua disponible por debajo del cual disminuye la ET del cultivo se considera, 
+           generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
+           demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
+           evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos. 
+           En el caso del maíz para las condiciones de Balcarce, este umbral ha sido determinado en 0,8."
+        ),
+        p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
+          respecto del máximo para suelos con diferente textura"),
+        img(src = "Tabla.png", height = "200px", width = "400px")
       )
     }
   })
@@ -3611,7 +3788,7 @@ server <- function(input, output, session) {
     return(datos_filtrados)
     
   })
-
+  
   #Calculos de ETM y ETR acumulados
   
   etm_etr_acum_balcarce <- reactive({
@@ -3642,10 +3819,10 @@ server <- function(input, output, session) {
     acumulados <- etm_etr_acum_balcarce()
     infoBox(
       title = "",
-      subtitle = div(p("ETM Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),  
+      subtitle = div(p("ETM Acumulado", style = "text-align: center; font-size: 20px; font-weight: bold;"), style = "margin-bottom: 2px;"),  
       value = div(paste(round(acumulados$ultimo_etm_acum_balcarce, 1), "mm"),
-                        style = "text-align: center; font-size: 30px; font-weight: bold;"),
-                  icon = tags$i(class = "fa fa-circle-up", style = "font-size: 60px; opacity: 0.6;"),
+                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
+      icon = tags$i(class = "fa fa-circle-up", style = "font-size: 60px; opacity: 0.6;"),
       color = "danger",
       fill = TRUE
     )
@@ -3656,9 +3833,9 @@ server <- function(input, output, session) {
     acumulados <- etm_etr_acum_balcarce()
     infoBox(
       title = "",
-      subtitle = div(p("ETR Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),
+      subtitle = div(p("ETR Acumulado", style = "text-align: center; font-size: 20px; font-weight: bold;"), style = "margin-bottom: 2px;"),
       value = div(paste(round(acumulados$ultimo_etr_acum_balcarce, 1), "mm"),
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-retweet", style = "font-size: 60px; opacity: 0.6;"),
       color = "olive",
       fill = TRUE
@@ -3671,12 +3848,12 @@ server <- function(input, output, session) {
     infoBox(
       title = "",
       subtitle = div(
-        HTML("<div style='text-align: center; font-size: 24px; font-weight: bold;'>Huella hídrica </div>
+        HTML("<div style='text-align: center; font-size: 20px; font-weight: bold;'>Huella hídrica </div>
             <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>"),
         style = "margin-bottom: 0px;"
       ),
       value = div(paste(round(acumulados$huella_hidrica_balcarce, 1), "(l / kg)"),
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-water", style = "font-size: 60px; opacity: 0.6;"),
       color = "lightblue",
       fill = TRUE
@@ -3890,9 +4067,9 @@ server <- function(input, output, session) {
     }
     
     ggplotly(cons_agua_balcarce) %>% 
-      layout(legend = list(orientation = "v", x = 0.1, y = 1.3)) %>% 
-      plotly::style(name = "ETM: Máximo consumo de agua si no hubiera deficiencias de agua", traces = 1)  %>% 
-      plotly::style(name = "ETR: Consumo de agua REAL", traces = 2) 
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.1)) %>%  
+      plotly::style(name = "ETM", traces = 1)  %>% 
+      plotly::style(name = "ETR", traces = 2) 
   })
   
   
@@ -4002,7 +4179,7 @@ server <- function(input, output, session) {
     }
     
     ggplotly(def_agua_balcarce) %>% 
-      layout(legend = list(orientation = "h", x = 0.3, y = 1.2)) %>% 
+      layout(legend = list(orientation = "h", x = 0.1, y = 1.2)) %>% 
       plotly::style(name = "Precipitación", traces = 1) %>% 
       plotly::style(name = "Déficit hídrico", traces = 2)%>% 
       plotly::style(name = "Riego", traces = 3)
@@ -4092,7 +4269,7 @@ server <- function(input, output, session) {
   observeEvent(input$cultivo, {
     
     if (input$cultivo == "maiz_largo" || input$cultivo == "maiz_corto") {
-      updateNumericInput(session, "umbral_et", value = 0.8)
+      updateNumericInput(session, "umbral_et", value = 0.5)
       
     } else if (input$cultivo == "soja") {
       updateNumericInput(session, "umbral_et", value = 0.5)
@@ -4150,19 +4327,40 @@ server <- function(input, output, session) {
       tagList(
         p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
     y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+        p(tags$sup("2"), "El umbral de agua disponible por debajo del cual disminuye la ET del cultivo se considera, 
+           generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
+           demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
+           evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos."
+        ),
+        p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
+          respecto del máximo para suelos con diferente textura"),
+        img(src = "Tabla.png", height = "200px", width = "400px")
       )
     } else if (input$cultivo == "maiz_corto") {
       tagList(
         p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
-          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+    y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
+        p(tags$sup("2"), "El umbral de agua disponible por debajo del cual disminuye la ET del cultivo se considera, 
+           generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
+           demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
+           evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos."
+        ),
+        p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
+          respecto del máximo para suelos con diferente textura"),
+        img(src = "Tabla.png", height = "200px", width = "400px")
       )
     } else if (input$cultivo == "soja") {
       tagList(
-        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),<br>
-          y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
-        p(tags$sup("2"), ": Valores de referencia para un suelo de textura franco-arcillosa.")
+        p(tags$sup("1"), ": Los balances de agua suponen (i) suelos sin pendiente (es decir que no se considera escurrimiento de agua),
+    y (ii) 100% de lluvia efectiva (es decir que toda la lluvia ingresa al suelo, independientemente de su intensidad)."),
+        p(tags$sup("2"), "El umbral de agua disponible por debajo del cual disminuye la ET del cultivo se considera, 
+           generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
+           demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
+           evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos."
+        ),
+        p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
+          respecto del máximo para suelos con diferente textura"),
+        img(src = "Tabla.png", height = "200px", width = "400px")
       )
     }
   })
@@ -4340,15 +4538,15 @@ server <- function(input, output, session) {
     )
   })
   
-
+  
   # ETM acumulado
   output$ETMacum <- renderInfoBox({
     acumulados <- etm_etr_acum()
     infoBox(
       title = "",
-      subtitle = div(p("ETM Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),  
+      subtitle = div(p("ETM Acumulado", style = "text-align: center; font-size: 20px; font-weight: bold;"), style = "margin-bottom: 2px;"),  
       value = div(paste(round(acumulados$ultimo_etm_acum, 1), "mm"),
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-circle-up", style = "font-size: 60px; opacity: 0.6;"),
       color = "danger",
       fill = TRUE)
@@ -4359,9 +4557,9 @@ server <- function(input, output, session) {
     acumulados <- etm_etr_acum()
     infoBox(
       title = "",
-      subtitle = div(p("ETR Acumulado", style = "text-align: center; font-size: 24px; font-weight: bold;"), style = "margin-bottom: 2px;"),
+      subtitle = div(p("ETR Acumulado", style = "text-align: center; font-size: 20px; font-weight: bold;"), style = "margin-bottom: 2px;"),
       value = div(paste(round(acumulados$ultimo_etr_acum, 1), "mm"),
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-retweet", style = "font-size: 50px; opacity: 0.6;"),
       color = "olive",
       fill = TRUE
@@ -4374,12 +4572,12 @@ server <- function(input, output, session) {
     infoBox(
       title = "",
       subtitle = div(
-        HTML("<div style='text-align: center; font-size: 24px; font-weight: bold;'>Huella hídrica</div>
+        HTML("<div style='text-align: center; font-size: 20px; font-weight: bold;'>Huella hídrica</div>
             <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>"),
         style = "margin-bottom: 0px;"
       ),
       value = div(paste(round(acumulados$huella_hidrica, 1), "l / kg"),
-                  style = "text-align: center; font-size: 30px; font-weight: bold;"),
+                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-water", style = "font-size: 50px; opacity: 0.6;"),
       color = "lightblue",
       fill = TRUE
@@ -4593,9 +4791,9 @@ server <- function(input, output, session) {
     }
     
     ggplotly(cons_agua) %>% 
-      layout(legend = list(orientation = "v", x = 0.1, y = 1.3)) %>% 
-      plotly::style(name = "ETM: Máximo consumo de agua si no hubiera deficiencias de agua", traces = 1)  %>% 
-      plotly::style(name = "ETR: Consumo de agua REAL", traces = 2) 
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.1)) %>% 
+      plotly::style(name = "ETM", traces = 1)  %>% 
+      plotly::style(name = "ETR", traces = 2) 
   })
   
   
@@ -4705,10 +4903,52 @@ server <- function(input, output, session) {
     }
     
     ggplotly(def_agua) %>% 
-      layout(legend = list(orientation = "h", x = 0.3, y = 1.2)) %>% 
+      layout(legend = list(orientation = "h", x = 0.1, y = 1.2)) %>% 
       plotly::style(name = "Precipitación", traces = 1) %>% 
       plotly::style(name = "Déficit hídrico", traces = 2)%>% 
       plotly::style(name = "Riego", traces = 3)
+  })
+  
+  ## Huella hídrica
+  
+  huella_hidrica <- reactive({
+    rendimiento <- input$yield
+    if (rendimiento > 0) {
+      # Suponiendo un valor de referencia
+      huella <- 5000 / rendimiento # Ejemplo: 5000 L por kg total
+      return(huella)
+    }
+    return(NA)
+  })
+  
+  # Mostrar en el valueBox
+  output$calcular_huella_hidrica <- renderValueBox({
+    
+    valueBox(
+      value = paste0(round(huella_hidrica, 2), " L/kg"),
+      subtitle = "Huella Hídrica",
+      color = "blue"
+    )
+  })
+  
+  # Mostrar gráfico
+  output$grafico_huella <- renderPlotly({
+    plot_ly(
+      x = c("Tu cultivo", "Promedio"),
+      y = c(huella_hidrica, 2500), # Compara con un promedio
+      type = "bar",
+      marker = list(color = c("blue", "grey"))
+    )
+  })
+  
+  # Texto adicional
+  output$info_huella <- renderText({
+    acumulados <- etm_etr_acum()
+    paste(
+      "La huella hídrica de tu cultivo es de",
+      round(huella_hidrica, 2), "L/kg.",
+      "Esto representa el agua necesaria para producir 1 kg de cultivo."
+    )
   })
   
   
@@ -4868,14 +5108,36 @@ server <- function(input, output, session) {
 }
 
 
-
-
-
 # Run the app ----
 shinyApp(ui = ui, server = server)
+
+# renv::snapshot()
+# renv::init() 
+
+# rsconnect::forgetDeployment(appPath = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo")
+
+# rsconnect::setAccountInfo(name='intabalcarce',
+#                           token='77F02260172FAF69FBFBEA5CCA574B99',
+#                           secret='u8vt3UUrp8R9AfAnasDLAwmQilGTd4LctZy9ebnj')
+# rsconnect::deployApp(appDir = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo", appPrimaryDoc = "app.R",
+#                      appName = "Agromet", account = 'intabalcarce', server = 'shinyapps.io')
+
+
+# Conectar a la base de datos
+# con <- dbConnect(SQLite(), "datos_diarios.sqlite")
 # 
-# rsconnect::setAccountInfo(name='8js2kq-nuria-lewczuk',
-#                             token='111A9791794261A82E719E515597DD66',
-#                             secret='m+wC8DYne2Mr69yhsLI/2i4QF7Zy5PQUFPIe5Xkr')
-# rsconnect::deployApp(appDir = "E:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo", appPrimaryDoc = "ui.R",
-#                      appName = "MiAppMeteo", account = '8js2kq-nuria-lewczuk', server = 'shinyapps.io')
+# # Listar tablas existentes
+# tablas <- dbListTables(con)
+# print(tablas)
+# 
+# # Leer la tabla `datos_siga` y visualizar los datos
+# datos_siga <- dbReadTable(con, "datos_siga")
+# print(head(datos_siga))  # Muestra las primeras filas
+# 
+# # También puedes ejecutar una consulta SQL
+# query <- "SELECT * FROM datos_siga LIMIT 10"
+# resultados <- dbGetQuery(con, query)
+# print(resultados)
+# 
+# # Desconectar
+# dbDisconnect(con)
