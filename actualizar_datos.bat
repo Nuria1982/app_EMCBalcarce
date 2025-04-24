@@ -1,0 +1,1 @@
+Rscript "C:\ruta\a\actualizar_datos.R"

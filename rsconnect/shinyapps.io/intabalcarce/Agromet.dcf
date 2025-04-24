@@ -1,0 +1,12 @@
+name: Agromet
+title: Agromet
+username: intabalcarce
+account: intabalcarce
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 13791817
+bundleId: 10171164
+url: https://intabalcarce.shinyapps.io/Agromet/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
