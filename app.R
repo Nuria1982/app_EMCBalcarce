@@ -23,22 +23,25 @@ library(jsonlite)
 # library(RSQLite)
 # library(digest)
 
+# library(googlesheets4)
+# gs4_auth()
+
 
 # con <- dbConnect(SQLite(), "datos_diarios.sqlite")
 # #
 # # # Función para obtener los datos desde la API
 # obtener_datos_api <- function() {
 # 
-#    api_url <- "https://siga.inta.gob.ar/CdnaUV0iiERRpFQE.php?param_type=diario&param_value=32/23-01-2025/23-01-2025"
+#  api_url <- "https://siga.inta.gob.ar/CdnaUV0iiERRpFQE.php?param_type=diario&param_value=32/23-01-2025/23-01-2025"
 # 
-# #   # fecha_inicio <- format(Sys.Date() - 2, "%d-%m-%Y")
-# #   # fecha_fin <- format(Sys.Date() - 2, "%d-%m-%Y")
+#  fecha_inicio <- format(Sys.Date() - 2, "%d-%m-%Y")
+#  fecha_fin <- format(Sys.Date() - 2, "%d-%m-%Y")
 # 
-# #   # Construir la URL con las fechas dinámicas
-# #   # api_url <- paste0("https://siga.inta.gob.ar/CdnaUV0iiERRpFQE.php?param_type=diario&param_value=32/",
-# #   # fecha_inicio, "/", fecha_fin)
-# #
-# #   # Realizar la consulta HTTP a la API
+ # #Construir la URL con las fechas dinámicas
+#  api_url <- paste0("https://siga.inta.gob.ar/CdnaUV0iiERRpFQE.php?param_type=diario&param_value=32/",
+#    # fecha_inicio, "/", fecha_fin)
+# 
+# # Realizar la consulta HTTP a la API
 #   response <- GET(api_url)
 #   contenido <- content(response, as = "text")
 # 
@@ -139,6 +142,32 @@ library(jsonlite)
 #   )
 # 
 
+
+######## contador de usuario ##########
+
+# get_user_country <- function() {
+#   tryCatch({
+#     res <- GET("http://ip-api.com/json/")
+#     ip_data <- content(res, "parsed")
+#     country <- ip_data$country  # país
+#     return(country)
+#   }, error = function(e) {
+#     return("Desconocido")
+#   })
+# }
+# 
+# 
+# update_counter <- function() {
+#   sheet_url <- "https://docs.google.com/spreadsheets/d/tu-sheet-id/edit"
+#   data <- read_sheet(sheet_url)
+#   counter <- data$counter[1] + 1
+#   write_sheet(data.frame(counter = counter), sheet_url)
+#   return(counter)
+# }
+
+
+
+###############################################################################
 balcarce_EMC <- read_excel("balcarce_EMC.xlsx", 
                            col_types = c("date", "text", "numeric", 
                                          "numeric", "numeric", "numeric", 
@@ -223,40 +252,54 @@ ui <-
     
     
     dashboardHeader(
+      disable = FALSE,
       title = div(
         style = "font-size: 24px; font-weight: bold; text-align: center; color: black;",
         "Agrometeorología Balcarce"
-        #   # titleWidth = 350,
-        #   #  tags$style(HTML('.navbar { background-color: #2596be; }'))
-      ),
-      
-      # Agregar los íconos de Instagram y GitHub en la parte derecha
-      tags$li(class = "dropdown",
-              style = "float: right; padding-right: 10px; list-style: none;",
-              tags$a(href = "https://www.instagram.com/agromet_inta.balcarce/#", 
-                     target = "instagram", 
-                     icon("instagram"), 
-                     title = "Instagram", 
-                     style = "font-size: 20px; color: black;")),
-      
-      tags$li(class = "dropdown",
-              style = "float: right; padding-right: 10px; list-style: none;",
-              tags$a(href = "https://github.com/Nuria1982", 
-                     target = "gitHub", 
-                     icon("github"), 
-                     title = "GitHub", 
-                     style = "font-size: 20px; color: black;"))
+      )
+
+      # íconos de Instagram y GitHub 
+      # tags$li(class = "dropdown",
+      #         style = "float: right; padding-right: 10px; list-style: none;",
+      #         tags$a(href = "https://www.instagram.com/agromet_inta.balcarce/#",
+      #                target = "instagram",
+      #                icon("instagram"),
+      #                title = "Instagram",
+      #                style = "font-size: 20px; color: black;")),
+      # 
+      # tags$li(class = "dropdown",
+      #         style = "float: right; padding-right: 10px; list-style: none;",
+      #         tags$a(href = "https://github.com/Nuria1982/app_EMCBalcarce",
+      #                target = "gitHub",
+      #                icon("github"),
+      #                title = "GitHub",
+      #                style = "font-size: 20px; color: black;"))
     ),
     
     dashboardSidebar(
       width = 350,
       tags$style(HTML("
       .main-sidebar {
-        background-color: white; /* Azul con opacidad */
+        background-color: white; 
       }
       .main-sidebar .sidebar-menu > li > a {
-        color: black; /* Cambiar el color de los textos del menú a blanco */
+        color: black; 
       }
+      .user-info-box {
+      border: 2px solid #83C5BE; 
+      background-color: #f0f8ff; 
+      padding: 15px; 
+      border-radius: 10px; 
+      margin-top: 20px;
+      margin-bottom: 20px;
+      }
+    .user-info-line {
+      display: flex;
+      align-items: center;
+    }
+    .user-info-line p {
+      margin-right: 10px;  
+    }
     ")),
       
       fluid = FALSE,
@@ -265,8 +308,7 @@ ui <-
       collapsed = FALSE,
       
       br(),
-      br(),
-      
+
       div(
         style = "text-align: center;",
         tags$img(src = "EstacionBalcarce.jpg",
@@ -274,7 +316,6 @@ ui <-
                  width = "220px")
       ),
       
-      br(),
       br(),
       
       sidebarMenu(id = "siderbarID",
@@ -313,8 +354,7 @@ ui <-
                            tabName = "referencias", 
                            icon = icon("book"))),
       br(),
-      
-      
+
       # tags$head(
       #   tags$style(HTML("
       #   .clima-box {
@@ -334,18 +374,16 @@ ui <-
       #     textOutput("humedad"),
       #     textOutput("viento")
       # ),
-      # 
-      br(),
       
       tags$p(
-        # strong("Nuestras Redes sociales"),
+        strong("Nuestras Redes sociales"),
+        br(),
+        tags$a(
+          icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
         # br(),
         # tags$a(
-        #   icon("instagram"), "Instagram", href= "https://www.instagram.com/agromet_inta.balcarce/#"),
-        # # br(),
-        # # tags$a(
-        # #   icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
-        # br(),
+        #   icon("twitter"), "Twitter", href= "https://twitter.com/agrometbalcarce"),
+        br(),
         tags$p(
           strong("Para comunicarse con el grupo "),
           tags$h6(
@@ -364,13 +402,33 @@ ui <-
                    height = "80px",
                    width = "200px")
         )
-      )
+      #   ,
+      # 
+      # div(class = "user-info-box",
+      #     div(class = "user-info-line",
+      #         h6(textOutput("counter"))
+      #         
+      #     ),
+      #     div(class = "user-info-line",
+      #         textOutput("user_country")
+      #     )
+      # )
+      
+    )
     ),
     
     
     dashboardBody(
       tags$head(
         tags$style(HTML("
+        # body {
+        #   background-image: url('imagen1.jpg');
+        #   background-size: cover;
+        #   background-repeat: no-repeat;
+        #   background-attachment: fixed;
+        #    opacity: 0.7;
+        # }
+          
         .small-box {height: 80px; 
                     text-align:center;
                     display: flex; 
@@ -911,32 +969,46 @@ ui <-
               br(),
               
               fluidRow(
-                # elección cultivo 
                 column(3,
-                       selectInput("cultivo_balcarce",
-                                   label = strong("Seleccione el cultivo:"),
-                                   choices = list("Maíz ciclo largo" = "maiz_largo",
-                                                  "Maíz ciclo corto" = "maiz_corto",
-                                                  "Soja" = "soja"
-                                                  # ,
-                                                  # "Girasol" = "girasol",
-                                                  # "Hortalizas" = "hortalizas"
-                                   ),
-                                   selected = "maiz_largo")
+                       # elección cultivo
+                       fluidRow(
+                         column(12,
+                                selectInput("cultivo_balcarce",
+                                            label = strong("Seleccione el cultivo:"),
+                                            choices = list("Maíz ciclo largo" = "maiz_largo",
+                                                           "Maíz ciclo corto" = "maiz_corto",
+                                                           "Soja" = "soja"
+                                                           # ,
+                                                           # "Girasol" = "girasol",
+                                                           # "Hortalizas" = "hortalizas"
+                                            ),
+                                            selected = "maiz_largo")
+                         ),
+                         column(12,
+                                conditionalPanel(
+                                  condition = "input.cultivo_balcarce == 'maiz_largo'",
+                                  selectInput("densidad_siembra",
+                                              label = HTML("<strong>Seleccione la densidad de plantas<br>(plantas / m<sup>2</sup>):</strong>"),
+                                              choices = c("4" = 4, "8" = 8),
+                                              selected = 4)
+                                )
+                         )
+                       )
                 ),
-                column(3,
+                column(3, 
                        dateInput("fecha_siembra_balcarce",
                                  label = strong("Ingrese la fecha de siembra:"),
                                  value = "2024-01-01")
                 )
+                
               ),
-              fluidRow(  
-                column(12,
-                       div(uiOutput("mensaje_cultivo_balcarce1"),
-                       )
+                fluidRow(  
+                  column(12,
+                         div(uiOutput("mensaje_cultivo_balcarce1"),
+                         )
+                  ),
                 ),
-              ),
-              br(),
+                br(),
               fluidRow(
                 column(6,
                        div(style = "background-color: #DDB89240; padding: 15px; border-radius: 10px;",
@@ -957,7 +1029,7 @@ ui <-
                              column(6,
                                     numericInput("fraccion_min_balcarce",  
                                                  label = strong(HTML("Fracción de almacenamiento mínimo respecto del máximo (0 - 1)<sup>3</sup>")), 
-                                                 value = 0.55,
+                                                 value = 0.50,
                                                  min = 0,
                                                  max = 1),
                                     textOutput("almacenamiento_minimo_balcarce"),
@@ -965,8 +1037,7 @@ ui <-
                                     br(),
                                     numericInput("fraccion_inicial_balcarce",  
                                                  label = strong("Fracción inicial de agua útil (0 - 1)"), 
-                                                 value = 0.50,
-                                                 min = 0,
+                                                 value = NULL,
                                                  max = 1)
                              )
                            )
@@ -1115,6 +1186,7 @@ ui <-
                                    ),
                                    selected = "maiz_largo")
                 ),
+                
                 column(3,
                        dateInput("fecha_siembra",
                                  label = strong("Ingrese la fecha de siembra:"),
@@ -1354,14 +1426,14 @@ ui <-
               div(
                 style = "margin-left: 100px; margin-top: 50px;",  
                 tags$img(
-                  src = "IMA.jpeg",
+                  src = "IMA.jpg",
                   width = 300,
                   height = 420,
                   alt = "Informe Mensual Agropecuario"
                 ),
                 tags$br(),
                 tags$a(
-                  "Descarga el informe completo aquí", href= "https://bit.ly/IMA-DIC24")
+                  "Descarga el informe completo aquí", href= "https://bit.ly/IMA-MAR25")
               )),
             column(
               width = 3,
@@ -1442,16 +1514,22 @@ ui <-
           h4(HTML("<strong>Referencias bibliográficas</strong>")),
           br(),
           br(),
-          h6(HTML("<strong>Allen</strong>, R.G.; Pereira, L.S. Raes, D. Y D. Smith. 1998. Crop evapotranspiration. Guides for computing crop water requirements. FAO Irrig. Drain. Nº 56. Italy, 300 p.")),
+          h6(HTML("<strong>Allen</strong>, R.G., Pereira, L.S. Raes, D. Y D. Smith. 1998. Crop evapotranspiration. Guides for computing crop water requirements. FAO Irrig. Drain. Nº 56. Italy, 300 p.")),
           h6(HTML("<strong>Andrade</strong>, FH., Otegui, ME., Cirilo, A., Uhart, S. 2023.  “Ecofisiología y manejo del cultivo de maíz”.  Maizar.")),
           h6(HTML("<strong>Cerrudo</strong>, A, Di Matteo J, Fernandez E, Robles M, Pico LO, Andrade FH. 2013. Yield components of maize as affected by short shading periods and thinning. Crop and Pasture Science 64, 580.")),
+          h6(HTML("<strong>Chang et al.</strong> (2021). shiny: Web Application Framework for R. R package version 1.7.1, <https://CRAN.R-project.org/package=shiny>")),
           h6(HTML("<strong>Della Maggiora</strong>, A.I., A.I. Irigoyen, J. M. Gardiol, O. Caviglia and L. Echarte. 2002/03. Evaluación de un balance de agua en el suelo para maíz. Revista Argentina de Agrometeorología, 2(2):167-176.")),
           h6(HTML("<strong>Echarte</strong>, L., Otegui, M.E. 2023. Consumo y eficiencia en el uso del agua. En: Andrade, FH., Otegui, ME., Cirilo, A., Uhart, S. (Eds) “Ecofisiología y manejo del cultivo de maíz” (pp. 221-244).  Maizar.")),
-          h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A. Irigoyen, A. 2002. Curvas de coeficientes de cultivo de maíz, girasol y soja. IX Reunión Argentina de Agrometeorología. Córdoba.")),
+          h6(HTML("<strong>Gardiol</strong>, J.M., Della Maggiora, A. Irigoyen, A. 2002. Curvas de coeficientes de cultivo de maíz, girasol y soja. IX Reunión Argentina de Agrometeorología. Córdoba.")),
           h6(HTML("<strong>Gardiol</strong>, J. M., Leonardo, A. S., & Aida, I. D.M. 2003. Modeling evapotranspiration of corn (Zea mays) under different plant densities. Journal of Hydrology, 271, 291–308. https://doi.org/10.1016/S0022-1694(02)00347-5.")),
-          h6(HTML("<strong>Gardiol</strong>, J.M.; Della Maggiora, A.; Irigoyen, A. 2006. Coeficientes de cultivo de soja basados en la evapotranspiración de referencia Penman-Monteith.")),
+          h6(HTML("<strong>Gardiol</strong>, J.M., Della Maggiora, A., Irigoyen, A. 2006. Coeficientes de cultivo de soja basados en la evapotranspiración de referencia Penman-Monteith.")),
           h6(HTML("<strong>Monzon</strong>, J. P., Cafaro La Menza, N., Cerrudo, A., Canepa, M., Rattalino Edreira, J. I., Specht, J., et al. 2021. Critical period for seed number determination in soybean as determined by crop growth rate, duration, and dry matter accumulation. Field Crops Res. 261:108016. doi: 10.1016/j.fcr.2020.108016.")),
           h6(HTML("<strong>RECSO</strong>, Base de datos de RECSO Balcarce periodo 2013-2023. Compilada por Marina Montoya, INTA Balcarce. Agosto 2023. Colaboradores: Auxilares Walter Suarez, Silvio Giuliano, Carlos Antonelli, Mauro Zabaleta, Mariano Ruberto (INTA Balcarce). Fuente: Información publicada anualmente por Comunicaciones INTA Balcarce. Actividades incluidas en el convenio INTA-ASA.")),
+          # h6(HTML("<strong>Sievert</strong>, C, Iannone R, Allaire J, Borges B (2023). flexdashboard: R Markdown Format for Flexible Dashboards. R package version 0.6.1.9000, <https://pkgs.rstudio.com/flexdashboard/, https://github.com/rstudio/flexdashboard/>")),
+          h6(HTML("<strong>Winston</strong>, C. and, Borges Ribeiro, B. shinydashboard: Create Dashboards with 'Shiny'. http://rstudio.github.io/shinydashboard/,  https://github.com/rstudio/shinydashboard/>")),
+          br(),
+          br(),
+          h6(HTML("La aplicación fue desarrollada por <a href='https://github.com/Nuria1982/app_EMCBalcarce' target='_blank'>Nuria Lewczuk</a> utilizando el paquete Shiny y Shinydashboard de R."))
         )
       )
     )
@@ -1559,6 +1637,47 @@ server <- function(input, output, session) {
   ################## REGISTRO DE USUARIO ##############
   
   
+  ##############################################################################
+  
+  ####### Contador de usuario ###########
+  
+  # Mostrar el contador de usuarios
+  output$counter <- renderText({
+    
+    counter_file <- "counter.Rdata"
+    
+    if (!file.exists(counter_file)) {
+      counter_data <- list(counter = 0, users = character())
+      save(counter_data, file = counter_file)
+    } else {
+      # Cargar los datos del contador
+      load(counter_file)
+    }
+    
+    # Verificar que counter_data esté definido
+    if (!exists("counter_data")) {
+      counter_data <- list(counter = 0, users = character())
+    }
+    
+    # Identificador único de usuario por sesión
+    user_id <- session$token
+    
+    # Actualizar el contador solo si el usuario es nuevo
+    if (!user_id %in% counter_data$users) {
+      counter_data$counter <- counter_data$counter + 1
+      counter_data$users <- c(counter_data$users, user_id)
+      save(counter_data, file = counter_file)
+    }
+    
+    # Mostrar el contador
+    paste0("Usuarios: ", counter_data$counter)
+  })
+  
+  # Mostrar el país del usuario
+  output$user_country <- renderText({
+    country <- get_user_country()
+    paste("Estás conectado desde:", country)
+  })
   
   ######### Info EMC Balcarce ###########
   
@@ -1617,12 +1736,12 @@ server <- function(input, output, session) {
   ### InfoBox Outputs
   output$value1 <- renderInfoBox({
     infoBox(
-      title = div(p("Ultima fecha", 
+      title = div(p("Última fecha", 
                     style = "text-align: center; font-size: 20px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(format(ultima_fecha, "%d/%m/%Y"), 
                   style = "text-align: center; font-size: 28px; font-weight: bold;"),
-      icon = icon("calendar"),
+      icon = tags$i(class = "fa fa-calendar", style = "font-size: 60px; opacity: 0.6;"),
       color = "orange",
       fill = TRUE
     )
@@ -1635,7 +1754,7 @@ server <- function(input, output, session) {
                   style = "margin-bottom: 6px;"),  
       value = div(paste(round(lluvia_ultimo_dia, 1), "mm"),
                   style = "text-align: center; font-size: 28px; font-weight: bold;"),
-      icon = icon("tint"),
+      icon = tags$i(class = "fa fa-tint", style = "font-size: 60px; opacity: 0.6;"),
       color = "info",
       fill = TRUE
     )
@@ -1643,12 +1762,12 @@ server <- function(input, output, session) {
   
   output$value3 <- renderInfoBox({
     infoBox(
-      title = div(p("Temperatura Máxima", 
+      title = div(p("Temp. Máxima", 
                     style = "text-align: center;font-size: 20px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(paste(round(Tmax_ultimo_dia, 1), "ºC"), 
                   style = "text-align: center; font-size: 28px; font-weight: bold;"),  
-      icon = icon("sun"),
+      icon = tags$i(class = "fa fa-sun", style = "font-size: 60px; opacity: 0.6;"),
       color = "danger",
       fill = TRUE
     )
@@ -1656,12 +1775,12 @@ server <- function(input, output, session) {
   
   output$value4 <- renderInfoBox({
     infoBox(
-      title = div(p("Temperatura Mínima", 
+      title = div(p("Temp. Mínima", 
                     style = "text-align: center;font-size: 20px; font-weight: bold;"), 
                   style = "margin-bottom: 6px;"),  
       value = div(paste(round(Tmin_ultimo_dia, 1), "ºC"),
                   style = "text-align: center; font-size: 28px; font-weight: bold;"),
-      icon = icon("snowflake"),
+      icon = tags$i(class = "fa fa-snowflake", style = "font-size: 60px; opacity: 0.6;"),
       color = "warning",
       fill = TRUE
     )
@@ -3025,13 +3144,13 @@ server <- function(input, output, session) {
       dia_juliano <- dia_juliano + 365
     }
     
-    if (input$cultivo == "maiz_largo") {
+    if (cultivo == "maiz_largo") {
       
       
       gd_min <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       gd_max <- round(((-0.0024 * (dia_juliano^2)) - (1.7585 * dia_juliano) + 2469.3), 0)
       
-    } else if (input$cultivo == "maiz_corto") {
+    } else if (cultivo == "maiz_corto") {
       
       
       gd_min <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
@@ -3069,7 +3188,7 @@ server <- function(input, output, session) {
         ) %>%
         mutate(
           TTB = case_when(
-            input$cultivo %in% c("maiz_largo", "maiz_corto") ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
+            cultivo %in% c("maiz_largo", "maiz_corto") ~ if_else(Temperatura_Abrigo_150cm - 8 < 0, 
                                                                        0, 
                                                                        Temperatura_Abrigo_150cm - 8),
             
@@ -3175,29 +3294,29 @@ server <- function(input, output, session) {
     historicos_llenado_grano2 <- llenado_grano2()
     historicos_llenado_grano3 <- llenado_grano3()
     
-    output$fecha_inicio_lg1 <- renderText({
-      paste("Fecha inicio llenado grano:", as.character(llenado_grano1()$fecha_inicio))
-    })
-    
-    output$fecha_fin_lg1 <- renderText({
-      paste("Fecha fin llenado grano:", as.character(llenado_grano1()$fecha_fin))
-    })
-    
-    output$fecha_inicio_lg2 <- renderText({
-      paste("Fecha inicio llenado grano:", as.character(llenado_grano2()$fecha_inicio))
-    })
-    
-    output$fecha_fin_lg2 <- renderText({
-      paste("Fecha fin llenado grano:", as.character(llenado_grano2()$fecha_fin))
-    })
-    
-    output$fecha_inicio_lg3 <- renderText({
-      paste("Fecha inicio llenado grano:", as.character(llenado_grano3()$fecha_inicio))
-    })
-    
-    output$fecha_fin_lg3 <- renderText({
-      paste("Fecha fin llenado grano:", as.character(llenado_grano3()$fecha_fin))
-    })
+    # output$fecha_inicio_lg1 <- renderText({
+    #   paste("Fecha inicio llenado grano:", as.character(llenado_grano1()$fecha_inicio))
+    # })
+    # 
+    # output$fecha_fin_lg1 <- renderText({
+    #   paste("Fecha fin llenado grano:", as.character(llenado_grano1()$fecha_fin))
+    # })
+    # 
+    # output$fecha_inicio_lg2 <- renderText({
+    #   paste("Fecha inicio llenado grano:", as.character(llenado_grano2()$fecha_inicio))
+    # })
+    # 
+    # output$fecha_fin_lg2 <- renderText({
+    #   paste("Fecha fin llenado grano:", as.character(llenado_grano2()$fecha_fin))
+    # })
+    # 
+    # output$fecha_inicio_lg3 <- renderText({
+    #   paste("Fecha inicio llenado grano:", as.character(llenado_grano3()$fecha_inicio))
+    # })
+    # 
+    # output$fecha_fin_lg3 <- renderText({
+    #   paste("Fecha fin llenado grano:", as.character(llenado_grano3()$fecha_fin))
+    # })
     
     #Lluvia
     output$lg_lluvia <- renderPlotly({
@@ -3421,8 +3540,6 @@ server <- function(input, output, session) {
   
   #Para Balcarce
   
-  # Otros sitios fuera de Balcarce
-  
   output$descarga_modelo_balcarce <- downloadHandler(
     filename = function() {
       "data_usuario.xlsx"
@@ -3507,7 +3624,7 @@ server <- function(input, output, session) {
   observeEvent(input$cultivo_balcarce, {
     
     if (input$cultivo_balcarce == "maiz_largo" || input$cultivo_balcarce == "maiz_corto") {
-      updateNumericInput(session, "umbral_et_balcarce", value = 0.8)
+      updateNumericInput(session, "umbral_et_balcarce", value = 0.5)
       
     } else if (input$cultivo_balcarce == "soja") {
       updateNumericInput(session, "umbral_et_balcarce", value = 0.5)
@@ -3569,7 +3686,7 @@ server <- function(input, output, session) {
            generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
            demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
            evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos. 
-           En el caso del maíz para las condiciones de Balcarce, este umbral ha sido determinado en 0,8."
+          "
         ),
         p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
           respecto del máximo para suelos con diferente textura"),
@@ -3583,7 +3700,7 @@ server <- function(input, output, session) {
            generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
            demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
            evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos. 
-           En el caso del maíz para las condiciones de Balcarce, este umbral ha sido determinado en 0,8."
+          "
         ),
         p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
           respecto del máximo para suelos con diferente textura"),
@@ -3597,7 +3714,7 @@ server <- function(input, output, session) {
            generalmente, entre 0,7 para plantas de raíces poco profundas creciendo en ambientes de alta 
            demanda evaporativa, hasta 0,30 para plantas de raíces profundas en condiciones de baja demanda 
            evaporativa. Un valor de 0,50 es generalmente utilizado para una amplia variedad de cultivos. 
-           En el caso del maíz para las condiciones de Balcarce, este umbral ha sido determinado en 0,8."
+           "
         ),
         p(tags$sup("3"), "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
           respecto del máximo para suelos con diferente textura"),
@@ -3674,6 +3791,19 @@ server <- function(input, output, session) {
     paste("Grados-Días:", GD_balcarce())
   })
   
+  observe({
+    req(input$cultivo_balcarce)
+    
+    valor_default <- case_when(
+      input$cultivo_balcarce == "maiz_largo" & input$densidad_siembra == 8 ~ 0.55,
+      input$cultivo_balcarce %in% c("maiz_largo", "maiz_corto", "soja") ~ 0.50,
+      TRUE ~ 0.50
+    )
+    
+    updateNumericInput(session, "fraccion_inicial_balcarce", value = valor_default)
+  })
+  
+  
   balance_agua_balcarce <- reactive({
     
     if (is.null(input$fecha_siembra_balcarce)) {
@@ -3717,12 +3847,33 @@ server <- function(input, output, session) {
           #                0, 
           #                Temperatura_Abrigo_150cm - 9)  
         ),
-        GD_acum_balcarce = cumsum(TTB_balcarce),
+        GD_acum_balcarce = cumsum(TTB_balcarce)
+      ) %>%
+      # Filtrar solo las filas donde GD_acum_balcarce >= 70
+      filter(GD_acum_balcarce >= 70) %>%
+      mutate(
         Ttrelativo_balcarce = GD_acum_balcarce / GD_balcarce,
-        
-        Kc_balcarce = if_else(Ttrelativo_balcarce > 0.16, 
-                              2.988041 * Ttrelativo_balcarce^4 - 4.052411 * Ttrelativo_balcarce^3 - 3.999317 * Ttrelativo_balcarce^2 + 6.015032 * Ttrelativo_balcarce - 0.390632, 
-                              0.4),
+        Kc_balcarce = case_when(
+          input$cultivo_balcarce == "maiz_largo" & input$densidad_siembra == 4 ~ 
+            if_else(Ttrelativo_balcarce < 0.2,
+                    (2 / (7^0.49)) * 1^((-0.02 - (0.04 * log(7))) * Evapotranspiracion_Potencial),
+                    -5.0431 * Ttrelativo_balcarce^2 + 6.5687 * Ttrelativo_balcarce - 0.8352),
+          
+          input$cultivo_balcarce == "maiz_largo" & input$densidad_siembra == 8 ~ 
+            if_else(Ttrelativo_balcarce < 0.2, 
+                    (2 / (7^0.49)) * 1^((-0.02 - (0.04 * log(7))) * Evapotranspiracion_Potencial), 
+                    -4.8222 * Ttrelativo_balcarce^2 + 5.9944 * Ttrelativo_balcarce - 0.5498),
+          
+          input$cultivo_balcarce == "maiz_corto" ~ 
+            if_else(Ttrelativo_balcarce < 0.2, 
+                    (2 / (7^0.49)) * 1^((-0.02 - (0.04 * log(7))) * Evapotranspiracion_Potencial), 
+                    -4.8222 * Ttrelativo_balcarce^2 + 5.9944 * Ttrelativo_balcarce - 0.5498),
+          
+          input$cultivo_balcarce == "soja" ~
+            if_else(Ttrelativo_balcarce > 0.16, 
+                    2.988041 * Ttrelativo_balcarce^4 - 4.052411 * Ttrelativo_balcarce^3 - 3.999317 * Ttrelativo_balcarce^2 + 6.015032 * Ttrelativo_balcarce - 0.390632, 
+                    0.4)
+        ),
         ETM_balcarce = Kc_balcarce * Evapotranspiracion_Potencial,
         ETM_acum_balcarce = cumsum(ETM_balcarce),
         
@@ -3820,7 +3971,7 @@ server <- function(input, output, session) {
     infoBox(
       title = "",
       subtitle = div(p("ETM Acumulado", style = "text-align: center; font-size: 20px; font-weight: bold;"), style = "margin-bottom: 2px;"),  
-      value = div(paste(round(acumulados$ultimo_etm_acum_balcarce, 1), "mm"),
+      value = div(paste(round(acumulados$ultimo_etm_acum_balcarce, 0), "mm"),
                   style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-circle-up", style = "font-size: 60px; opacity: 0.6;"),
       color = "danger",
@@ -3834,7 +3985,7 @@ server <- function(input, output, session) {
     infoBox(
       title = "",
       subtitle = div(p("ETR Acumulado", style = "text-align: center; font-size: 20px; font-weight: bold;"), style = "margin-bottom: 2px;"),
-      value = div(paste(round(acumulados$ultimo_etr_acum_balcarce, 1), "mm"),
+      value = div(paste(round(acumulados$ultimo_etr_acum_balcarce, 0), "mm"),
                   style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-retweet", style = "font-size: 60px; opacity: 0.6;"),
       color = "olive",
@@ -3852,7 +4003,7 @@ server <- function(input, output, session) {
             <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>"),
         style = "margin-bottom: 0px;"
       ),
-      value = div(paste(round(acumulados$huella_hidrica_balcarce, 1), "(l / kg)"),
+      value = div(paste(round(acumulados$huella_hidrica_balcarce, 0), "(l / kg)"),
                   style = "text-align: center; font-size: 24px; font-weight: bold;"),
       icon = tags$i(class = "fa fa-water", style = "font-size: 60px; opacity: 0.6;"),
       color = "lightblue",
@@ -4434,6 +4585,8 @@ server <- function(input, output, session) {
   output$GD <- renderText({
     paste("Grados-Días:", GD())
   })
+  
+  
   
   balance_agua <- reactive({
     
@@ -5112,7 +5265,7 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 
 # renv::snapshot()
-# renv::init() 
+# renv::init()
 
 # rsconnect::forgetDeployment(appPath = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo")
 
