@@ -4036,7 +4036,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo_balcarce == "maiz_corto") {
       
@@ -4048,7 +4048,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo_balcarce == "soja") {
       
@@ -4139,7 +4139,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo_balcarce == "maiz_corto") {
       
@@ -4151,7 +4151,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo_balcarce == "soja") {
       
@@ -4248,7 +4248,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo_balcarce == "maiz_corto") {
       
@@ -4260,7 +4260,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo_balcarce == "soja") {
       
@@ -4762,7 +4762,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo == "maiz_corto") {
       
@@ -4774,7 +4774,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo == "soja") {
       
@@ -4865,7 +4865,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo == "maiz_corto") {
       
@@ -4877,7 +4877,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo == "soja") {
       
@@ -4974,7 +4974,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo == "maiz_corto") {
       
@@ -4986,7 +4986,7 @@ server <- function(input, output, session) {
       
       GD_umbral <- 340
       
-      color_rect <- "cornsilk3"
+      color_rect <- "darkgreen"
       
     } else if (input$cultivo == "soja") {
       
