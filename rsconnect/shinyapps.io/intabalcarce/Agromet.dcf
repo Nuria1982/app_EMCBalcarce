@@ -5,7 +5,7 @@ account: intabalcarce
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 13791817
-bundleId:
+bundleId: 10384406
 url: https://intabalcarce.shinyapps.io/Agromet/
 version: 1
 asMultiple: FALSE

@@ -2153,6 +2153,8 @@ server <- function(input, output, session) {
       
       # Acumulado por año
       pp_acum <- datos %>%
+        # filter(Mes %in% c("abril", "mayo", "junio", "julio", "agosto", "septiembre")) %>% 
+        #filter(Mes %in% c("octubre", "noviembre", "diciembre", "enero", "febrero", "marzo")) %>%
         group_by(Año) %>%
         summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE))
       
@@ -2172,11 +2174,93 @@ server <- function(input, output, session) {
         labs(x = "", y = "mm", title = "") +
         scale_x_discrete(breaks = pp_acum$Año[pp_acum$Año %% 10 == 0]) +
         theme_minimal() +
-        theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+        theme(axis.text.x = element_text(angle = 60, hjust = 1),
+              plot.caption = element_text(hjust = 0.5, face = "italic")) +
         geom_text(data = etiquetas_10_anios, 
                   aes(x = factor(Año_medio), y = max_y, label = Precipitacion_media), 
                   vjust = -0.5, color = "black", size = 3.5)
       
+      
+      # pp_acum$Año <- as.numeric(pp_acum$Año) 
+      # etiquetas_10_anios$Año_medio <- as.numeric(as.character(etiquetas_10_anios$Año_medio))
+      # pp_climatico_oct_marz <- ggplot(pp_acum, 
+      #                                 aes(x = Año, 
+      #                                     y = Precipitacion_Acumulada)) +
+      #   geom_smooth(method = "lm", se = FALSE,
+      #               linetype = "dashed", color = "red") +
+      #   geom_bar(stat = "identity", 
+      #            fill = "#007EA7", 
+      #            color = "#003459", 
+      #            alpha = 0.5) +
+      #   labs(x = "", 
+      #        y = "Precipitación (mm)", 
+      #        title = "",
+      #        caption = "Meses considerados: Octubre a Marzo") +
+      #   scale_y_continuous(breaks = seq(0, max(pp_acum$Precipitacion_Acumulada, na.rm = TRUE), by = 250)) +  
+      #   scale_x_continuous(breaks = seq(min(pp_acum$Año), max(pp_acum$Año), by = 2)) + 
+      #   theme_minimal() +
+      #   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+      #   geom_text(data = etiquetas_10_anios, 
+      #             aes(x = Año_medio, y = max_y, label = Precipitacion_media), 
+      #             vjust = -0.5, color = "black", size = 3.5)
+      # pp_climatico_oct_marz
+      # pp_climatico_abr_sept <- ggplot(pp_acum, 
+      #                                  aes(x = factor(Año), 
+      #                                      y = Precipitacion_Acumulada)) +
+      #   # geom_smooth(method = "lm", se = FALSE, 
+      #   #             linetype = "dashed", color = "red") +
+      #   geom_bar(stat = "identity", 
+      #            fill = "#007EA7", 
+      #            color = "#003459", 
+      #            alpha = 0.5) +
+      #   labs(x = "", y = "Precipitación (mm)", title = "",
+      #        caption = "Meses considerados: Abril a Septiembre") +
+      #   scale_y_continuous(breaks = seq(0, max(pp_acum$Precipitacion_Acumulada, na.rm = TRUE), by = 250)) +  
+      #   scale_x_discrete(breaks = pp_acum$Año[pp_acum$Año %% 2 == 0]) +
+      #   theme_minimal() +
+      #   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+      #   geom_text(data = etiquetas_10_anios, 
+      #             aes(x = factor(Año_medio), y = max_y, label = Precipitacion_media), 
+      #             vjust = -0.5, color = "black", size = 3.5)
+      # 
+      # 
+      # ggsave("pp_climatico_abr_sept.jpg", 
+      #        plot = pp_climatico_abr_sept,  # Gráfico a exportar
+      #        width = 10,           # Ancho del gráfico en pulgadas
+      #        height = 6,           # Altura del gráfico en pulgadas
+      #        dpi = 300)
+      # 
+      # ggsave("pp_climatico_oct_marz.jpg", 
+      #        plot = pp_climatico_oct_marz,  # Gráfico a exportar
+      #        width = 10,           # Ancho del gráfico en pulgadas
+      #        height = 6,           # Altura del gráfico en pulgadas
+      #        dpi = 300)
+      # 
+      # pp_climatico_anual <- ggplot(pp_acum, 
+      #                                 aes(x = factor(Año), 
+      #                                     y = Precipitacion_Acumulada)) +
+      #   # geom_smooth(method = "lm", se = FALSE, 
+      #   #             linetype = "dashed", color = "red") +
+      #   geom_bar(stat = "identity", 
+      #            fill = "#007EA7", 
+      #            color = "#003459", 
+      #            alpha = 0.5) +
+      #   labs(x = "", y = "Precipitación (mm)", title = "",
+      #        caption = "Acumulados anuales") +
+      #   scale_y_continuous(breaks = seq(0, max(pp_acum$Precipitacion_Acumulada, na.rm = TRUE), by = 250)) +  
+      #   scale_x_discrete(breaks = pp_acum$Año[pp_acum$Año %% 2 == 0]) +
+      #   theme_minimal() +
+      #   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+      #   geom_text(data = etiquetas_10_anios, 
+      #             aes(x = factor(Año_medio), y = max_y, label = Precipitacion_media), 
+      #             vjust = -0.5, color = "black", size = 3.5)
+      # 
+      # 
+      # ggsave("pp_climatico_anual.jpg", 
+      #        plot = pp_climatico_anual,  # Gráfico a exportar
+      #        width = 10,           # Ancho del gráfico en pulgadas
+      #        height = 6,           # Altura del gráfico en pulgadas
+      #        dpi = 300)
     } else {
       
       # Acumulado por mes
