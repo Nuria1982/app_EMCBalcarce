@@ -665,7 +665,7 @@ ui <-
               column(6, 
                      offset = 3,
                      box(
-                       title = "Probabilidad de tener al menos 1 día con heladas agrometeorológicas",
+                       title = "Probabilidad de tener al menos 1 día en el mes con heladas agrometeorológicas",
                        status = "lightblue",
                        solidHeader = TRUE,
                        collapsible = TRUE,
@@ -769,7 +769,7 @@ ui <-
             fluidRow(
               column(6, offset = 3,
                      box(
-                       title = "Probabilidad de tener al menos 1 días con heladas meteorológicas",
+                       title = "Probabilidad de tener al menos 1 día en el mes con heladas meteorológicas",
                        status = "lightblue",
                        solidHeader = TRUE,
                        collapsible = TRUE,
