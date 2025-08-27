@@ -26,6 +26,10 @@ library(jsonlite)
 # library(googlesheets4)
 # gs4_auth()
 
+library(broom)
+library(purrr)
+library(minpack.lm)
+# library(patchwork)
 
 # con <- dbConnect(SQLite(), "datos_diarios.sqlite")
 # #
@@ -325,6 +329,9 @@ ui <-
                   menuItem("Cambio climático", 
                            tabName = "cambio_climatico",
                            icon = icon("earth-americas")),
+                  menuItem("Heladas",
+                           tabName = "heladas",
+                           icon = icon("snowflake")),
                   # menuItem("Mapas",
                   #          tabName = "mapas", 
                   #          icon = icon("map")),
@@ -545,7 +552,8 @@ ui <-
                 )
         ),
         
-        tabItem(tabName = "cambio_climatico",
+        tabItem(
+          tabName = "cambio_climatico",
                 fluidRow(
                   
                   column(12,
@@ -638,6 +646,222 @@ ui <-
                   )
                 )
         ),
+        
+          tabItem(
+            tabName = "heladas",
+            fluidRow(
+              
+              column(12,
+                     div(style = "background-color: #3A7CA560; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
+                         h5(HTML("<strong>Heladas agrometeorológicas</strong>")),
+                         p("Ocurre cuando la temperatura medida en el abrigo meteorológico es igual o inferior a 3 °C, 
+                           equivalente a 0 °C o menos a la intemperie en superficie.")
+                     )
+              )
+            ),
+            
+            fluidRow(
+              
+              column(6, 
+                     offset = 3,
+                     box(
+                       title = "Probabilidad de tener al menos 1 día con heladas agrometeorológicas",
+                       status = "lightblue",
+                       solidHeader = TRUE,
+                       collapsible = TRUE,
+                       withSpinner(plotlyOutput("prob_helada_ene_dic_3", 
+                                              height = "500px", 
+                                              width = "100%"),
+                                   image = getOption("imagen_nieve"),
+                                   type = 5, 
+                                   color = "#0dc5c1",  
+                                   size = 0.5),
+                       width = 12
+                     )
+              )
+            ),
+            fluidRow(
+                    column(6, 
+                           box(
+                             title = "Frecuencia acumulada de primera helada agrometeorológica",
+                             status = "lightblue",
+                             solidHeader = TRUE,
+                             collapsible = TRUE,
+                             width = 12,
+                             fluidRow(
+                               column(4,
+                                      selectInput("periodo_prim_helada_3",
+                                                  label = "Período:",
+                                                  choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                                  selected = "1971-2000")
+                               ),
+                               column(4,
+                                      numericInput("dia_prim_helada_3",
+                                                   label = "Día:",
+                                                   value = 17, min = 1, max = 31)
+                               ),
+                               column(4,
+                                      selectInput("mes_prim_helada_3",
+                                                  label = "Mes:",
+                                                  choices = list("febrero" = 2, "marzo" = 3, "abril" = 4, "mayo" = 5),
+                                                  selected = 4)
+                               )
+                             ),
+                             withSpinner(plotlyOutput("acum_primera_helada_3", 
+                                                      height = "300px", 
+                                                      width = "100%"),
+                                         # image = getOption("imagen_nieve"),
+                                         type = 5, 
+                                         color = "#0dc5c1",  
+                                         size = 0.5)
+                           )
+                    ),
+                    column(6, 
+                           box(
+                             title = "Frecuencia acumulada de última helada agrometeorológica",
+                             status = "lightblue",
+                             solidHeader = TRUE,
+                             collapsible = TRUE,
+                             width = 12,
+                             fluidRow(
+                               column(4,
+                                      selectInput("periodo_ult_helada_3",
+                                                  label = "Período:",
+                                                  choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                                  selected = "1971-2000")
+                               ),
+                               column(4,
+                                      numericInput("dia_ult_helada_3",
+                                                   label = "Día:",
+                                                   value = 15, min = 1, max = 31)
+                               ),
+                               column(4,
+                                      selectInput("mes_ult_helada_3",
+                                                  label = "Mes:",
+                                                  choices = list("octubre" = 10, "noviembre" = 11, "diciembre" = 12),
+                                                  selected = 11)
+                               )
+                             ),
+                             withSpinner(
+                               plotlyOutput("acum_ultima_helada_3", 
+                                            height = "300px", 
+                                            width = "100%"),
+                               # image = "www/imagen_nieve.png"
+                               type = 5,
+                               color = "#0dc5c1",
+                               size = 0.5
+                               )
+                           )
+                    )
+                  
+            ),
+            fluidRow(
+              
+              column(12,
+                     div(style = "background-color: #3A7CA560; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
+                         h5(HTML("<strong>Heladas meteorológicas</strong>")),
+                         p("Se produce cuando la temperatura del aire medida en abrigo meteorológico es igual o inferior a 0 °C.")
+                     )
+              )
+            ),
+            
+            
+            fluidRow(
+              column(6, offset = 3,
+                     box(
+                       title = "Probabilidad de tener al menos 1 días con heladas meteorológicas",
+                       status = "lightblue",
+                       solidHeader = TRUE,
+                       collapsible = TRUE,
+                       withSpinner(
+                         plotlyOutput("prob_helada_ene_dic_0", 
+                                              height = "500px", 
+                                              width = "100%"),
+                                   image = getOption("imagen_nieve"),
+                                   type = 5, 
+                                   color = "#0dc5c1",  
+                                   size = 0.5),
+                       width = 12
+                     )
+              )
+            ),
+            fluidRow(
+              column(6, 
+                     box(
+                       title = "Frecuencia acumulada de primera helada meteorológica",
+                       status = "lightblue",
+                       solidHeader = TRUE,
+                       collapsible = TRUE,
+                       width = 12,
+                       fluidRow(
+                         column(4,
+                                selectInput("periodo_prim_helada_0",
+                                            label = "Período:",
+                                            choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                            selected = "1971-2000")
+                         ),
+                         column(4,
+                                numericInput("dia_prim_helada_0",
+                                             label = "Día:",
+                                             value = 27, min = 1, max = 31)
+                         ),
+                         column(4,
+                                selectInput("mes_prim_helada_0",
+                                            label = "Mes:",
+                                            choices = list("abril" = 4, "mayo" = 5, "junio" = 6, "julio" = 7),
+                                            selected = 5)
+                         )
+                       ),
+                       withSpinner(plotlyOutput("acum_primera_helada_0", 
+                                                height = "300px", 
+                                                width = "100%"),
+                                   # image = getOption("imagen_nieve"),
+                                   type = 5, 
+                                   color = "#0dc5c1",  
+                                   size = 0.5)
+                     )
+              ),
+              column(6, 
+                     box(
+                       title = "Frecuencia acumulada de última helada meteorológica",
+                       status = "lightblue",
+                       solidHeader = TRUE,
+                       collapsible = TRUE,
+                       width = 12,
+                       fluidRow(
+                         column(4,
+                                selectInput("periodo_ult_helada_0",
+                                            label = "Período:",
+                                            choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                            selected = "1971-2000")
+                         ),
+                         column(4,
+                                numericInput("dia_ult_helada_0",
+                                             label = "Día:",
+                                             value = 27, min = 1, max = 31)
+                         ),
+                         column(4,
+                                selectInput("mes_ult_helada_0",
+                                            label = "Mes:",
+                                            choices = list("agosto" = 8, "septiembre" = 9, "octubre" = 10, 
+                                                           "noviembre" = 11, "diciembre" = 12),
+                                            selected = 9)
+                         )
+                       ),
+                       withSpinner(
+                         plotlyOutput("acum_ultima_helada_0", 
+                                      height = "300px", 
+                                      width = "100%"),
+                         # image = "www/imagen_nieve.png"
+                         type = 5,
+                         color = "#0dc5c1",
+                         size = 0.5
+                       )
+                     )
+              )
+              
+            )
+            ),
         
         # tabItem(
         #   tabName = "mapas",
@@ -2382,6 +2606,835 @@ server <- function(input, output, session) {
                            x = 0.0, y = 1.2))
   })
   
+  ##### HELADAS ######
+  ## Prob de al menos 1 helada ##
+  
+  prob_mes_helada_3 <- function(df, start_year, end_year) {
+    df %>% filter(Año >= start_year, Año <= end_year, 
+                  !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      group_by(Año, Mes) %>%
+      summarise( hubo_helada = any(Temperatura_Abrigo_150cm_Minima <= 3), 
+                 .groups = "drop" ) %>%
+      group_by(Mes) %>%
+      summarise( meses_con_helada = sum(hubo_helada), 
+                 total_meses = n(), .groups = "drop" ) %>%
+      mutate( periodo = paste0(start_year, "-", end_year), 
+              prob_helada = meses_con_helada / total_meses * 100 )
+  }
+
+  # Probabilidad por periodo
+  p1_3 <- prob_mes_helada_3(balcarce_EMC, 1971, 2000)
+  p2_3 <- prob_mes_helada_3(balcarce_EMC, 1981, 2010)
+  p3_3 <- prob_mes_helada_3(balcarce_EMC, 1991, 2020)
+  # p4_3 <- prob_mes_helada_3(balcarce_EMC, 2014, 2024)
+  
+  # Unir todo
+  p_todos_3 <- bind_rows(p1_3, p2_3, p3_3)
+  
+  meses_orden <- c("enero","febrero","marzo","abril","mayo","junio", "julio",
+                   "agosto","septiembre","octubre","noviembre","diciembre")
+  
+  p_todos_3 <- p_todos_3 %>% mutate(Mes = factor(Mes, levels = meses_orden)) %>%
+    arrange(Mes, periodo)
+  
+  colores_periodo <- c(
+    "1971-2000" = "#1b9e77",
+    "1981-2010" = "#d95f02",
+    "1991-2020" = "#7570b3",
+    "2014-2024" = "#e7298a"
+  )
+  
+  output$prob_helada_ene_dic_3 <- renderPlotly({
+    p_base <- ggplot(p_todos_3, aes(x = Mes, y = prob_helada, color = periodo, group = periodo)) +
+      geom_smooth(se = FALSE, method = "loess", span = 0.5, linewidth = 1) +
+      scale_color_manual(values = colores_periodo) +
+      scale_y_continuous(limits = c(0, 105), labels = scales::percent_format(scale = 1)) +
+      labs(x = "", y = "Probabilidad (%)", color = NULL) +
+      theme_minimal(base_size = 14) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "right")
+    
+    # Puntos invisibles para tooltip
+    p_tooltip <- p_todos_3 %>%
+      ggplot(aes(x = Mes, y = prob_helada, color = periodo,
+                 text = paste0("Periodo: ", periodo,
+                               "<br>Mes: ", Mes,
+                               "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada)))) +
+      geom_point(size = 0, alpha = 0)
+    
+    # Combinar todo con ggplotly
+    ggplotly(p_base + geom_point(data = p_todos_3,
+                                 aes(x = Mes, y = prob_helada, color = periodo,
+                                     text = paste0("Periodo: ", periodo,
+                                                   "<br>Mes: ", Mes,
+                                                   "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada))),
+                                 size = 0, alpha = 0),
+             tooltip = "text")
+  })
+
+  ## frec acum primera helada ##
+  
+  heladas_prim_anuales_3 <- function(df, start_year, end_year) {
+    df %>%
+      filter(Año >= start_year, Año <= end_year,
+             !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      mutate(
+        fecha = as.Date(Fecha),
+        dia_juliano = yday(fecha)
+      ) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
+      group_by(Año) %>%
+      summarise(
+        primera = min(dia_juliano),
+        .groups = "drop"
+      ) %>%
+      # convertir día juliano a fecha usando un año ficticio (2000)
+      mutate(
+        fecha_primera = as.Date(primera, origin = "1999-12-31")
+      ) %>%
+      arrange(Año)
+  }
+  
+  h_ano1 <- heladas_prim_anuales_3(balcarce_EMC, 1971, 2000)
+  h_ano2 <- heladas_prim_anuales_3(balcarce_EMC, 1981, 2010)
+  h_ano3 <- heladas_prim_anuales_3(balcarce_EMC, 1991, 2020)
+  h_ano4 <- heladas_prim_anuales_3(balcarce_EMC, 2014, 2024)
+  
+  h_ano1 <- h_ano1 %>% mutate(periodo = "1971-2000")
+  h_ano2 <- h_ano2 %>% mutate(periodo = "1981-2010")
+  h_ano3 <- h_ano3 %>% mutate(periodo = "1991-2020")
+  h_ano4 <- h_ano4 %>% mutate(periodo = "2014-2024")
+  
+  # Unimos todos
+  h_todos <- bind_rows(h_ano1, h_ano2, h_ano3, h_ano4)
+  
+  h_frec <- h_todos %>%
+    mutate(fecha_sin_anio = as.Date(format(fecha_primera, "2000-%m-%d"))) %>%
+    group_by(periodo) %>%
+    arrange(primera, .by_group = TRUE) %>%
+    mutate(frec_acum = row_number() / n()) %>%
+    ungroup()
+
+
+  h_frec <- h_frec %>%
+    mutate(dia_juliano = yday(fecha_sin_anio))
+
+  ajustar_logistico <- function(df) {
+    fit <- nls(frec_acum ~ 1/(1 + exp(-(a + b*dia_juliano))),
+               data = df,
+               start = list(a = -5, b = 0.05))
+    
+    coefs <- coef(fit)  # <<--- guardamos a y b
+    
+    pred <- tibble(
+      dia_juliano = seq(min(df$dia_juliano), max(df$dia_juliano), length.out = 200)
+    ) %>%
+      mutate(
+        frec_acum = predict(fit, newdata = .),
+        fecha_sin_anio = as.Date(dia_juliano - 1, origin = "2000-01-01"),
+        periodo = unique(df$periodo),
+        a = coefs["a"],   # <<--- guardamos dentro del df
+        b = coefs["b"]
+      )
+    pred
+  }
+  
+  h_pred <- h_frec %>%
+    group_by(periodo) %>%
+    group_split() %>%
+    map_dfr(ajustar_logistico)
+
+  puntos_50 <- h_pred %>%
+    group_by(periodo) %>%
+    slice_min(abs(frec_acum - 0.5), n = 1) %>%
+    ungroup() %>%
+    mutate(etiqueta = format(fecha_sin_anio, "%d-%b"))
+
+  puntos_50 <- puntos_50 %>%
+    arrange(periodo) %>%
+    mutate(
+      x_pos = as.Date("2000-03-15"),   # fijo a la izquierda del eje
+      y_pos = seq(0.25, 0.1, length.out = n())  # distribuidas verticalmente
+    )
+
+  
+  
+  output$acum_primera_helada_3 <- renderPlotly({
+    
+    mes <- as.integer(input$mes_prim_helada_3)
+    dia <- as.integer(input$dia_prim_helada_3)
+    if (is.na(mes) || is.na(dia)) return(NULL) 
+    
+    fecha_sel <- as.Date(sprintf("2000-%02d-%02d", mes, dia))
+    dia_jul_sel <- yday(fecha_sel)
+    
+    # Filtrar parámetros para el período elegido
+    params <- h_pred %>% filter(periodo == input$periodo_prim_helada_3) %>% slice(1)
+    if (nrow(params) == 0) return(NULL)
+    
+    a <- params$a
+    b <- params$b
+    
+    # Frecuencia acumulada exacta usando la función logística
+    frec_sel <- 1 / (1 + exp(-(a + b * dia_jul_sel)))
+    
+    # Dataframe del punto seleccionado
+    punto_sel <- tibble(
+      fecha_sin_anio = fecha_sel,
+      frec_acum = frec_sel
+    )
+    
+    colores_periodo <- c(
+      "1971-2000" = "#1b9e77",
+      "1981-2010" = "#d95f02",
+      "1991-2020" = "#7570b3",
+      "2014-2024" = "#e7298a"
+    )
+    color_sel <- colores_periodo[input$periodo_prim_helada_3]
+    
+    # Graficar base
+   plot_prim_helada <- ggplot() +
+      geom_point(data = h_frec, 
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum, 
+                     color = periodo,
+                     text = paste0("Periodo: ", periodo,
+                                   "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                   "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                     ), 
+                 size = 1) +
+      geom_line(data = h_pred, 
+                aes(x = fecha_sin_anio,
+                    y = frec_acum, 
+                    color = periodo), 
+                linewidth = 1) +
+     geom_point(data = h_pred, 
+                aes(x = fecha_sin_anio, 
+                    y = frec_acum,
+                    color = periodo,
+                    text = paste0("Periodo: ", periodo,
+                                  "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                  "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                ),
+                size = 0, alpha = 0) +
+      # Punto seleccionado (mismo color)
+      geom_point(data = punto_sel,
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum),
+                 size = 2, color = color_sel, 
+                 fill = color_sel, 
+                 shape = 21, 
+                 stroke = 1.5) +
+      # Línea punteada hacia el eje Y
+      geom_segment(data = punto_sel,
+                   aes(x = min(h_frec$fecha_sin_anio), 
+                       xend = fecha_sin_anio,
+                       y = frec_acum, 
+                       yend = frec_acum),
+                   color = color_sel, 
+                   linetype = "dashed", 
+                   linewidth = 1) +
+      scale_x_date(date_labels = "%d-%b", 
+                   date_breaks = "10 day") +
+      scale_y_continuous(labels = function(x) x * 100) +
+      scale_color_manual(values = colores_periodo) +
+      labs(x = "Fecha de primera helada",
+           y = "Frecuencia acumulada (%)",
+           color = NULL) +
+      theme_minimal() +
+      theme(
+        legend.position = "top",           
+        legend.justification = "center",   
+        legend.title = element_blank(),    
+        legend.box.margin = margin(-5,0,-5,0),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+      )
+   ggplotly(plot_prim_helada, tooltip = "text") 
+  })
+  
+  
+  ## frec acum ult helada ##
+
+  heladas_ult_anuales_3 <- function(df, start_year, end_year) {
+    df %>%
+      filter(Año >= start_year, Año <= end_year,
+             !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      mutate(
+        fecha = as.Date(Fecha),
+        dia_juliano = yday(fecha)
+      ) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
+      group_by(Año) %>%
+      summarise(
+        ultima = max(dia_juliano),
+        .groups = "drop"
+      ) %>%
+      mutate(
+        fecha_ultima = as.Date(ultima, origin = "1999-12-31")
+      ) %>%
+      arrange(Año)
+  }
+  #
+  h_ano1_ult <- heladas_ult_anuales_3(balcarce_EMC, 1971, 2000) %>% mutate(periodo = "1971-2000")
+  h_ano2_ult <- heladas_ult_anuales_3(balcarce_EMC, 1981, 2010) %>% mutate(periodo = "1981-2010")
+  h_ano3_ult <- heladas_ult_anuales_3(balcarce_EMC, 1991, 2020) %>% mutate(periodo = "1991-2020")
+  h_ano4_ult <- heladas_ult_anuales_3(balcarce_EMC, 2014, 2024) %>% mutate(periodo = "2014-2024")
+  
+  h_todos_ult <- bind_rows(h_ano1_ult, h_ano2_ult, h_ano3_ult, h_ano4_ult)
+  
+  h_frec_ult <- h_todos_ult %>%
+    mutate(fecha_sin_anio = as.Date(format(fecha_ultima, "2000-%m-%d"))) %>%
+    group_by(periodo) %>%
+    arrange(desc(ultima), .by_group = TRUE) %>%
+    mutate(frec_acum = row_number() / n()) %>%
+    ungroup() %>%
+    mutate(dia_juliano = yday(fecha_sin_anio))
+  
+  
+  ajustar_logistico_ult <- function(df) {
+    start_a <- -log(1 / min(df$frec_acum) - 1)  # estimación inicial de 'a'
+    start_b <- 0.05                             # estimación inicial de pendiente
+    
+    fit <- tryCatch(
+      nlsLM(frec_acum ~ 1/(1 + exp(-(a + b*dia_juliano))),
+            data = df,
+            start = list(a = start_a, b = start_b),
+            control = nls.lm.control(maxiter = 500)),
+      error = function(e) return(NULL)
+    )
+    if (is.null(fit)) return(NULL)
+    
+    coefs <- coef(fit)
+    
+    tibble(dia_juliano = seq(min(df$dia_juliano), max(df$dia_juliano), length.out = 200)) %>%
+      mutate(
+        frec_acum = predict(fit, newdata = .),
+        fecha_sin_anio = as.Date(dia_juliano - 1, origin = "2000-01-01"),
+        periodo = unique(df$periodo),
+        a = coefs["a"],
+        b = coefs["b"]
+      )
+  }
+  
+  h_pred_ult <- h_frec_ult %>%
+    group_by(periodo) %>%
+    group_split() %>%
+    map_dfr(ajustar_logistico_ult)
+  
+  # puntos_50_ult <- h_pred_ult %>%
+  #   group_by(periodo) %>%
+  #   slice_min(abs(frec_acum - 0.5), n = 1) %>%
+  #   ungroup() %>%
+  #   mutate(etiqueta = format(fecha_sin_anio, "%d-%b"))
+  #
+  # puntos_50_ult <- puntos_50_ult %>%
+  #   arrange(periodo) %>%
+  #   mutate(
+  #     x_pos = as.Date("2000-03-15"),   # fijo a la izquierda del eje
+  #     y_pos = seq(0.25, 0.1, length.out = n())  # distribuidas verticalmente
+  #   )
+
+  output$acum_ultima_helada_3 <- renderPlotly({
+    
+    mes_ult <- as.integer(input$mes_ult_helada_3)
+    dia_ult <- as.integer(input$dia_ult_helada_3)
+    if (is.na(mes_ult) || is.na(dia_ult)) return(NULL)
+    
+    fecha_sel_ult <- as.Date(sprintf("2000-%02d-%02d", mes_ult, dia_ult))
+    dia_jul_sel_ult <- yday(fecha_sel_ult)
+    
+    # Parámetros del periodo elegido
+    params_ult <- h_pred_ult %>% filter(periodo == input$periodo_ult_helada_3) %>% 
+      slice(1)
+    if (nrow(params_ult) == 0) return(NULL)
+    
+    a_ult <- params_ult$a
+    b_ult <- params_ult$b
+    
+    # Frecuencia acumulada exacta con la función logística
+    frec_sel_ult <- 1 / (1 + exp(-(a_ult + b_ult * dia_jul_sel_ult)))
+    
+    # Dataframe del punto seleccionado
+    punto_sel_ult <- tibble(
+      fecha_sin_anio = fecha_sel_ult,
+      frec_acum = frec_sel_ult
+    )
+    
+    colores_periodo <- c(
+      "1971-2000" = "#1b9e77",
+      "1981-2010" = "#d95f02",
+      "1991-2020" = "#7570b3",
+      "2014-2024" = "#e7298a"
+    )
+    color_sel_ult <- colores_periodo[input$periodo_ult_helada_3]
+    
+    # Graficar
+    plot_ult_helada <-  ggplot() +
+      geom_point(data = h_frec_ult, 
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum, 
+                     color = periodo,
+                     text = paste0("Periodo: ", periodo,
+                                   "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                   "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                     ), 
+                 size = 1) +
+      geom_line(data = h_pred_ult, 
+                aes(x = fecha_sin_anio, 
+                    y = frec_acum, 
+                    color = periodo), 
+                linewidth = 1) +
+      geom_point(data = h_pred_ult, 
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum,
+                     color = periodo,
+                     text = paste0("Periodo: ", periodo,
+                                   "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                   "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                 ),
+                 size = 0, alpha = 0) +
+      geom_point(data = punto_sel_ult,
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum),
+                 size = 2, 
+                 color = color_sel_ult, 
+                 fill = color_sel_ult, 
+                 shape = 21, 
+                 stroke = 1.5) +
+      geom_segment(data = punto_sel_ult,
+                   aes(x = min(h_frec_ult$fecha_sin_anio), 
+                       xend = fecha_sin_anio,
+                       y = frec_acum, 
+                       yend = frec_acum),
+                   color = color_sel_ult, 
+                   linetype = "dashed", 
+                   linewidth = 1) +
+      scale_x_date(date_labels = "%d-%b", 
+                   date_breaks = "10 day") +
+      scale_y_continuous(labels = function(x) x * 100) +
+      scale_color_manual(values = colores_periodo) +
+      labs(x = "Fecha de última helada",
+           y = "Frecuencia acumulada (%)",
+           color = NULL) +
+      theme_minimal() +
+      theme(
+        legend.position = "top",
+        legend.justification = "center",
+        legend.title = element_blank(),
+        legend.box.margin = margin(-5,0,-5,0),
+        axis.text.x = element_text(angle = 45, hjust = 1) 
+      )
+    ggplotly(plot_ult_helada, tooltip = "text")
+  })
+  
+  
+  ## Prob de al menos 1 helada meteorológica ##
+  
+  prob_mes_helada_0 <- function(df, start_year, end_year) {
+    df %>% filter(Año >= start_year, Año <= end_year, !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      group_by(Año, Mes) %>%
+      summarise( hubo_helada = any(Temperatura_Abrigo_150cm_Minima <= 0), .groups = "drop" ) %>%
+      group_by(Mes) %>%
+      summarise( meses_con_helada = sum(hubo_helada), total_meses = n(), .groups = "drop" ) %>%
+      mutate( periodo = paste0(start_year, "-", end_year), prob_helada = meses_con_helada / total_meses * 100 )
+  }
+  
+  # Probabilidad por periodo
+  p1_0 <- prob_mes_helada_0(balcarce_EMC, 1971, 2000)
+  p2_0 <- prob_mes_helada_0(balcarce_EMC, 1981, 2010)
+  p3_0 <- prob_mes_helada_0(balcarce_EMC, 1991, 2020)
+  # p4_0 <- prob_mes_helada_0(balcarce_EMC, 2014, 2024)
+  # Unir todo
+  p_todos_0 <- bind_rows(p1_0, p2_0, p3_0)
+  
+  meses_orden <- c("enero","febrero","marzo","abril","mayo","junio", "julio",
+                   "agosto","septiembre","octubre","noviembre","diciembre")
+  
+  p_todos_0 <- p_todos_0 %>% mutate(Mes = factor(Mes, levels = meses_orden)) %>%
+    arrange(Mes, periodo)
+  
+  colores_periodo <- c(
+    "1971-2000" = "#1b9e77",
+    "1981-2010" = "#d95f02",
+    "1991-2020" = "#7570b3",
+    "2014-2024" = "#e7298a"
+  )
+  
+  output$prob_helada_ene_dic_0 <- renderPlotly({
+    plot_base <- ggplot(p_todos_0, aes(x = Mes, y = prob_helada, color = periodo, group = periodo)) +
+      geom_smooth(se = FALSE, method = "loess", span = 0.5, linewidth = 1) +
+      scale_color_manual(values = colores_periodo) +
+      scale_y_continuous(limits = c(0, 105), labels = scales::percent_format(scale = 1)) +
+      labs(x = "", y = "Probabilidad (%)", color = NULL) +
+      theme_minimal(base_size = 14) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "right")
+    
+    # Agregar puntos invisibles para tooltip
+    plot_base <- plot_base +
+      geom_point(aes(text = paste0("Periodo: ", periodo,
+                                   "<br>Mes: ", Mes,
+                                   "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada))),
+                 size = 0, alpha = 0)
+    
+    # Convertir a plotly mostrando solo tooltip
+    ggplotly(plot_base, tooltip = "text")
+  })
+ 
+  # ## frec acum primera helada ##
+  heladas_prim_anuales_0 <- function(df, start_year, end_year) {
+    df %>%
+      filter(Año >= start_year, Año <= end_year,
+             !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      mutate(
+        fecha = as.Date(Fecha),
+        dia_juliano = yday(fecha)
+      ) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 0) %>%
+      group_by(Año) %>%
+      summarise(
+        primera = min(dia_juliano),
+        .groups = "drop"
+      ) %>%
+      # convertir día juliano a fecha usando un año ficticio (2000)
+      mutate(
+        fecha_primera = as.Date(primera, origin = "1999-12-31")
+      ) %>%
+      arrange(Año)
+  }
+  
+  h_ano1_0 <- heladas_prim_anuales_0(balcarce_EMC, 1971, 2000)
+  h_ano2_0 <- heladas_prim_anuales_0(balcarce_EMC, 1981, 2010)
+  h_ano3_0 <- heladas_prim_anuales_0(balcarce_EMC, 1991, 2020)
+  h_ano4_0 <- heladas_prim_anuales_0(balcarce_EMC, 2014, 2024)
+  
+  h_ano1_0 <- h_ano1_0 %>% mutate(periodo = "1971-2000")
+  h_ano2_0 <- h_ano2_0 %>% mutate(periodo = "1981-2010")
+  h_ano3_0 <- h_ano3_0 %>% mutate(periodo = "1991-2020")
+  h_ano4_0 <- h_ano4_0 %>% mutate(periodo = "2014-2024")
+  
+  # Unimos todos
+  h_todos_0 <- bind_rows(h_ano1_0, h_ano2_0, h_ano3_0, h_ano4_0)
+  
+  h_frec_0 <- h_todos_0 %>%
+    mutate(fecha_sin_anio = as.Date(format(fecha_primera, "2000-%m-%d"))) %>%
+    group_by(periodo) %>%
+    arrange(primera, .by_group = TRUE) %>%
+    mutate(frec_acum = row_number() / n()) %>%
+    ungroup()
+  
+  
+  h_frec_0 <- h_frec_0 %>%
+    mutate(dia_juliano = yday(fecha_sin_anio))
+  
+  ajustar_logistico_0 <- function(df) {
+    fit <- nls(frec_acum ~ 1/(1 + exp(-(a + b*dia_juliano))),
+               data = df,
+               start = list(a = -5, b = 0.05))
+    
+    coefs <- coef(fit)  # <<--- guardamos a y b
+    
+    pred <- tibble(
+      dia_juliano = seq(min(df$dia_juliano), max(df$dia_juliano), length.out = 200)
+    ) %>%
+      mutate(
+        frec_acum = predict(fit, newdata = .),
+        fecha_sin_anio = as.Date(dia_juliano - 1, origin = "2000-01-01"),
+        periodo = unique(df$periodo),
+        a = coefs["a"],   # <<--- guardamos dentro del df
+        b = coefs["b"]
+      )
+    pred
+  }
+  
+  h_pred_0 <- h_frec_0 %>%
+    group_by(periodo) %>%
+    group_split() %>%
+    map_dfr(ajustar_logistico_0)
+  
+  puntos_50_0 <- h_pred_0 %>%
+    group_by(periodo) %>%
+    slice_min(abs(frec_acum - 0.5), n = 1) %>%
+    ungroup() %>%
+    mutate(etiqueta = format(fecha_sin_anio, "%d-%b"))
+  
+  puntos_50_0 <- puntos_50_0 %>%
+    arrange(periodo) %>%
+    mutate(
+      x_pos = as.Date("2000-03-15"),   # fijo a la izquierda del eje
+      y_pos = seq(0.25, 0.1, length.out = n())  # distribuidas verticalmente
+    )
+  
+  
+  
+  output$acum_primera_helada_0 <- renderPlotly({
+    
+    mes_0 <- as.integer(input$mes_prim_helada_0)
+    dia_0 <- as.integer(input$dia_prim_helada_0)
+    if (is.na(mes_0) || is.na(dia_0)) return(NULL) 
+    
+    fecha_sel_0 <- as.Date(sprintf("2000-%02d-%02d", mes_0, dia_0))
+    dia_jul_sel <- yday(fecha_sel_0)
+    
+    # Filtrar parámetros para el período elegido
+    params <- h_pred_0 %>% filter(periodo == input$periodo_prim_helada_0) %>% slice(1)
+    if (nrow(params) == 0) return(NULL)
+    
+    a <- params$a
+    b <- params$b
+    
+    # Frecuencia acumulada exacta usando la función logística
+    frec_sel_0 <- 1 / (1 + exp(-(a + b * dia_jul_sel)))
+    
+    # Dataframe del punto seleccionado
+    punto_sel_0 <- tibble(
+      fecha_sin_anio = fecha_sel_0,
+      frec_acum = frec_sel_0
+    )
+    
+    colores_periodo <- c(
+      "1971-2000" = "#1b9e77",
+      "1981-2010" = "#d95f02",
+      "1991-2020" = "#7570b3",
+      "2014-2024" = "#e7298a"
+    )
+    color_sel <- colores_periodo[input$periodo_prim_helada_0]
+    
+    # Graficar base
+    plot_prim_helada_0 <- ggplot() +
+      geom_point(data = h_frec_0, 
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum, 
+                     color = periodo,
+                     text = paste0("Periodo: ", periodo,
+                                   "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                   "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                 ), 
+                 size = 1) +
+      geom_line(data = h_pred_0, 
+                aes(x = fecha_sin_anio,
+                    y = frec_acum, 
+                    color = periodo
+                    ), 
+                linewidth = 1) +
+      geom_point(data = h_pred_0, 
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum,
+                     color = periodo,
+                     text = paste0("Periodo: ", periodo,
+                                   "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                   "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                 ),
+                 size = 0, alpha = 0) +
+      # Punto seleccionado (mismo color)
+      geom_point(data = punto_sel_0,
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum),
+                 size = 2, color = color_sel, 
+                 fill = color_sel, 
+                 shape = 21, 
+                 stroke = 1.5) +
+      # Línea punteada hacia el eje Y
+      geom_segment(data = punto_sel_0,
+                   aes(x = min(h_frec_0$fecha_sin_anio), 
+                       xend = fecha_sin_anio,
+                       y = frec_acum, 
+                       yend = frec_acum),
+                   color = color_sel, 
+                   linetype = "dashed", 
+                   linewidth = 1) +
+      scale_x_date(date_labels = "%d-%b", 
+                   date_breaks = "10 day") +
+      scale_y_continuous(labels = function(x) x * 100) +
+      scale_color_manual(values = colores_periodo) +
+      labs(x = "Fecha de primera helada",
+           y = "Frecuencia acumulada (%)",
+           color = NULL) +
+      theme_minimal() +
+      theme(
+        legend.position = "top",           
+        legend.justification = "center",   
+        legend.title = element_blank(),    
+        legend.box.margin = margin(-5,0,-5,0),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+      )
+    ggplotly(plot_prim_helada_0, tooltip = "text") 
+  })
+  
+   
+  ## frec acum ult helada ##
+  
+  heladas_ult_anuales_0 <- function(df, start_year, end_year) {
+    df %>%
+      filter(Año >= start_year, Año <= end_year,
+             !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      mutate(
+        fecha = as.Date(Fecha),
+        dia_juliano = yday(fecha)
+      ) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 0) %>%
+      group_by(Año) %>%
+      summarise(
+        ultima = max(dia_juliano),
+        .groups = "drop"
+      ) %>%
+      mutate(
+        fecha_ultima = as.Date(ultima, origin = "1999-12-31")
+      ) %>%
+      arrange(Año)
+  }
+  #
+  h_ano1_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 1971, 2000) %>% mutate(periodo = "1971-2000")
+  h_ano2_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 1981, 2010) %>% mutate(periodo = "1981-2010")
+  h_ano3_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 1991, 2020) %>% mutate(periodo = "1991-2020")
+  h_ano4_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 2014, 2024) %>% mutate(periodo = "2014-2024")
+  
+  h_todos_ult_0 <- bind_rows(h_ano1_ult_0, h_ano2_ult_0, h_ano3_ult_0, h_ano4_ult_0)
+  
+  h_frec_ult_0 <- h_todos_ult_0 %>%
+    mutate(fecha_sin_anio = as.Date(format(fecha_ultima, "2000-%m-%d"))) %>%
+    group_by(periodo) %>%
+    arrange(desc(ultima), .by_group = TRUE) %>%
+    mutate(frec_acum = row_number() / n()) %>%
+    ungroup() %>%
+    mutate(dia_juliano = yday(fecha_sin_anio))
+  
+  
+  ajustar_logistico_ult_0 <- function(df) {
+    start_a <- -log(1 / min(df$frec_acum) - 1)  # estimación inicial de 'a'
+    start_b <- 0.05                             # estimación inicial de pendiente
+    
+    fit <- tryCatch(
+      nlsLM(frec_acum ~ 1/(1 + exp(-(a + b*dia_juliano))),
+            data = df,
+            start = list(a = start_a, b = start_b),
+            control = nls.lm.control(maxiter = 500)),
+      error = function(e) return(NULL)
+    )
+    if (is.null(fit)) return(NULL)
+    
+    coefs <- coef(fit)
+    
+    tibble(dia_juliano = seq(min(df$dia_juliano), max(df$dia_juliano), length.out = 200)) %>%
+      mutate(
+        frec_acum = predict(fit, newdata = .),
+        fecha_sin_anio = as.Date(dia_juliano - 1, origin = "2000-01-01"),
+        periodo = unique(df$periodo),
+        a = coefs["a"],
+        b = coefs["b"]
+      )
+  }
+  
+  h_pred_ult_0 <- h_frec_ult_0 %>%
+    group_by(periodo) %>%
+    group_split() %>%
+    map_dfr(ajustar_logistico_ult)
+  
+  # puntos_50_ult <- h_pred_ult %>%
+  #   group_by(periodo) %>%
+  #   slice_min(abs(frec_acum - 0.5), n = 1) %>%
+  #   ungroup() %>%
+  #   mutate(etiqueta = format(fecha_sin_anio, "%d-%b"))
+  #
+  # puntos_50_ult <- puntos_50_ult %>%
+  #   arrange(periodo) %>%
+  #   mutate(
+  #     x_pos = as.Date("2000-03-15"),   # fijo a la izquierda del eje
+  #     y_pos = seq(0.25, 0.1, length.out = n())  # distribuidas verticalmente
+  #   )
+  
+  output$acum_ultima_helada_0 <- renderPlotly({
+    
+    mes_ult_0 <- as.integer(input$mes_ult_helada_0)
+    dia_ult_0 <- as.integer(input$dia_ult_helada_0)
+    if (is.na(mes_ult_0) || is.na(dia_ult_0)) return(NULL)
+    
+    fecha_sel_ult <- as.Date(sprintf("2000-%02d-%02d", mes_ult_0, dia_ult_0))
+    dia_jul_sel_ult <- yday(fecha_sel_ult)
+    
+    # Parámetros del periodo elegido
+    params_ult_0 <- h_pred_ult_0 %>% filter(periodo == input$periodo_ult_helada_0) %>% 
+      slice(1)
+    if (nrow(params_ult_0) == 0) return(NULL)
+    
+    a_ult <- params_ult_0$a
+    b_ult <- params_ult_0$b
+    
+    # Frecuencia acumulada exacta con la función logística
+    frec_sel_ult <- 1 / (1 + exp(-(a_ult + b_ult * dia_jul_sel_ult)))
+    
+    # Dataframe del punto seleccionado
+    punto_sel_ult_0 <- tibble(
+      fecha_sin_anio = fecha_sel_ult,
+      frec_acum = frec_sel_ult
+    )
+    
+    colores_periodo <- c(
+      "1971-2000" = "#1b9e77",
+      "1981-2010" = "#d95f02",
+      "1991-2020" = "#7570b3",
+      "2014-2024" = "#e7298a"
+    )
+    color_sel_ult_0 <- colores_periodo[input$periodo_ult_helada_0]
+    
+    # Graficar
+    plot_ult_helada_0 <-  ggplot() +
+      geom_point(data = h_frec_ult_0, 
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum, 
+                     color = periodo,
+                     text = paste0("Periodo: ", periodo,
+                                   "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                   "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                 ), 
+                 size = 1) +
+      geom_line(data = h_pred_ult_0, 
+                aes(x = fecha_sin_anio, 
+                    y = frec_acum, 
+                    color = periodo), 
+                linewidth = 1) +
+      geom_point(data = h_pred_ult_0, 
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum,
+                     color = periodo,
+                     text = paste0("Periodo: ", periodo,
+                                   "<br>Fecha: ", format(fecha_sin_anio, "%d-%b"),
+                                   "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
+                 ),
+                 size = 0, alpha = 0) +
+      geom_point(data = punto_sel_ult_0,
+                 aes(x = fecha_sin_anio, 
+                     y = frec_acum),
+                 size = 2, 
+                 color = color_sel_ult_0, 
+                 fill = color_sel_ult_0, 
+                 shape = 21, 
+                 stroke = 1.5) +
+      geom_segment(data = punto_sel_ult_0,
+                   aes(x = min(h_frec_ult_0$fecha_sin_anio), 
+                       xend = fecha_sin_anio,
+                       y = frec_acum, 
+                       yend = frec_acum),
+                   color = color_sel_ult_0, 
+                   linetype = "dashed", 
+                   linewidth = 1) +
+      scale_x_date(date_labels = "%d-%b", 
+                   date_breaks = "10 day") +
+      scale_y_continuous(labels = function(x) x * 100) +
+      scale_color_manual(values = colores_periodo) +
+      labs(x = "Fecha de última helada",
+           y = "Frecuencia acumulada (%)",
+           color = NULL) +
+      theme_minimal() +
+      theme(
+        legend.position = "top",
+        legend.justification = "center",
+        legend.title = element_blank(),
+        legend.box.margin = margin(-5,0,-5,0),
+        axis.text.x = element_text(angle = 45, hjust = 1) 
+      )
+    ggplotly(plot_ult_helada_0, tooltip = "text")
+  })
   
   ##### AMBIENTE #####
   
@@ -5348,8 +6401,10 @@ server <- function(input, output, session) {
 # Run the app ----
 shinyApp(ui = ui, server = server)
 
-# renv::snapshot()
-# renv::init()
+# renv::snapshot() #para capturar todas las dependencias 
+# renv::status() #para ver si hay paquetes no instalados
+
+
 
 # rsconnect::forgetDeployment(appPath = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo")
 
