@@ -186,7 +186,7 @@ balcarce_EMC <- read_excel("balcarce_EMC.xlsx",
                                          "numeric", "numeric", "numeric", 
                                          "numeric", "numeric"))
 
-dalbulus <- read_excel("dalbulus.xlsx")
+#dalbulus <- read_excel("dalbulus.xlsx")
 
 datos_EMC <- balcarce_EMC 
 datos_EMC <- datos_EMC %>%
@@ -669,6 +669,14 @@ ui <-
                        status = "lightblue",
                        solidHeader = TRUE,
                        collapsible = TRUE,
+                       fluidRow(
+                         column(4,
+                                selectInput("periodo_helada_3",
+                                            label = "Período:",
+                                            choices = c("Todos", "1971-2000", "1981-2010", "1991-2020"),
+                                            selected = "Todos")
+                         )
+                         ),
                        withSpinner(plotlyOutput("prob_helada_ene_dic_3", 
                                               height = "500px", 
                                               width = "100%"),
@@ -773,6 +781,14 @@ ui <-
                        status = "lightblue",
                        solidHeader = TRUE,
                        collapsible = TRUE,
+                       fluidRow(
+                         column(4,
+                                selectInput("periodo_helada_0",
+                                            label = "Período:",
+                                            choices = c("Todos", "1971-2000", "1981-2010", "1991-2020"),
+                                            selected = "Todos")
+                         )
+                       ),
                        withSpinner(
                          plotlyOutput("prob_helada_ene_dic_0", 
                                               height = "500px", 
@@ -2609,6 +2625,42 @@ server <- function(input, output, session) {
   ##### HELADAS ######
   ## Prob de al menos 1 helada ##
   
+  heladas_periodo_3 <- function(df, start_year, end_year) {
+    df %>%
+      filter(Año >= start_year, Año <= end_year,
+             !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      mutate(
+        fecha = as.Date(Fecha),
+        dia_juliano = yday(fecha)
+      ) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
+      group_by(Año) %>%
+      summarise(
+        primera = min(dia_juliano),
+        ultima  = max(dia_juliano),
+        .groups = "drop"
+      ) %>%
+      summarise(
+        periodo = paste0(start_year, "-", end_year),
+        primera_media = mean(primera, na.rm = TRUE),
+        ultima_media  = mean(ultima, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      # convertir de día juliano a fecha usando un año ficticio (2000)
+      mutate(
+        fecha_primera_media = as.Date(primera_media, origin = "1999-12-31"),
+        fecha_ultima_media  = as.Date(ultima_media, origin = "1999-12-31")
+      )
+  }
+  
+  
+  h1 <- heladas_periodo_3(balcarce_EMC, 1971, 2000)
+  h2 <- heladas_periodo_3(balcarce_EMC, 1981, 2010)
+  h3 <- heladas_periodo_3(balcarce_EMC, 1991, 2020)
+  
+  
+  fechas_helada_3 <- bind_rows(h1, h2, h3)
+      
   prob_mes_helada_3 <- function(df, start_year, end_year) {
     df %>% filter(Año >= start_year, Año <= end_year, 
                   !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
@@ -2631,11 +2683,18 @@ server <- function(input, output, session) {
   # Unir todo
   p_todos_3 <- bind_rows(p1_3, p2_3, p3_3)
   
-  meses_orden <- c("enero","febrero","marzo","abril","mayo","junio", "julio",
-                   "agosto","septiembre","octubre","noviembre","diciembre")
+  meses_orden <- c("enero","febrero","marzo","abril","mayo","junio",
+                   "julio","agosto","septiembre","octubre","noviembre","diciembre")
   
-  p_todos_3 <- p_todos_3 %>% mutate(Mes = factor(Mes, levels = meses_orden)) %>%
-    arrange(Mes, periodo)
+  dias_medios <- c(15,45,74,105,135,166,196,227,258,288,319,349)
+  
+  p_todos_3 <- p_todos_3 %>%
+    mutate(
+      Mes = factor(Mes, levels = meses_orden),
+      dia_juliano = dias_medios[match(Mes, meses_orden)]
+    ) %>%
+    arrange(dia_juliano, periodo)
+  
   
   colores_periodo <- c(
     "1971-2000" = "#1b9e77",
@@ -2645,31 +2704,68 @@ server <- function(input, output, session) {
   )
   
   output$prob_helada_ene_dic_3 <- renderPlotly({
-    p_base <- ggplot(p_todos_3, aes(x = Mes, y = prob_helada, color = periodo, group = periodo)) +
+    datos_filtrados <- if (input$periodo_helada_3 == "Todos") {
+      p_todos_3
+    } else {
+      p_todos_3 %>% filter(periodo == input$periodo_helada_3)
+    }
+    
+    # Filtrar líneas de fechas medias
+    fechas_filtradas <- if (input$periodo_helada_3 == "Todos") {
+      fechas_helada_3
+    } else {
+      fechas_helada_3 %>% filter(periodo == input$periodo_helada_3)
+    }
+    
+    y_offset <- max(datos_filtrados$prob_helada, na.rm = TRUE) * 0.01
+    
+    p_base <- ggplot(datos_filtrados, aes(x = dia_juliano, y = prob_helada, color = periodo, group = periodo)) +
       geom_smooth(se = FALSE, method = "loess", span = 0.5, linewidth = 1) +
+      
+      # líneas verticales de primera helada
+      geom_vline(data = fechas_filtradas, 
+                 aes(xintercept = primera_media, color = periodo),
+                 linetype = "dashed", inherit.aes = FALSE) +
+      geom_vline(data = fechas_filtradas, 
+                 aes(xintercept = ultima_media, color = periodo), 
+                 linetype = "dashed", inherit.aes = FALSE) +
+      
+      # etiquetas sobre líneas
+      geom_text(data = fechas_filtradas,
+                aes(x = primera_media,
+                    y = max(datos_filtrados$prob_helada, na.rm=TRUE) + y_offset,
+                    label = format(fecha_primera_media, "%d/%m"),
+                    color = periodo),
+                angle = 90, vjust = -1.5, size = 3, inherit.aes = FALSE) +
+      geom_text(data = fechas_filtradas,
+                aes(x = ultima_media,
+                    y = max(datos_filtrados$prob_helada, na.rm=TRUE) + y_offset,
+                    label = format(fecha_ultima_media, "%d/%m"),
+                    color = periodo),
+                angle = 90, vjust = -1.5, size = 3, inherit.aes = FALSE) +
+      
+      scale_x_continuous(
+        breaks = dias_medios, 
+        labels = meses_orden,
+        limits = c(0, 365)
+      ) +
       scale_color_manual(values = colores_periodo) +
-      scale_y_continuous(limits = c(0, 105), labels = scales::percent_format(scale = 1)) +
-      labs(x = "", y = "Probabilidad (%)", color = NULL) +
+      scale_y_continuous(limits = c(-8, 105), labels = scales::percent_format(scale = 1)) +
+      labs(x = "Mes", y = "Probabilidad (%)", color = NULL) +
       theme_minimal(base_size = 14) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1),
             legend.position = "right")
     
     # Puntos invisibles para tooltip
-    p_tooltip <- p_todos_3 %>%
-      ggplot(aes(x = Mes, y = prob_helada, color = periodo,
-                 text = paste0("Periodo: ", periodo,
-                               "<br>Mes: ", Mes,
-                               "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada)))) +
-      geom_point(size = 0, alpha = 0)
+    p_base <- p_base +
+      geom_point(aes(text = paste0("Periodo: ", periodo,
+                                   "<br>Mes: ", Mes,
+                                   "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada))),
+                 size = 0, alpha = 0)
     
-    # Combinar todo con ggplotly
-    ggplotly(p_base + geom_point(data = p_todos_3,
-                                 aes(x = Mes, y = prob_helada, color = periodo,
-                                     text = paste0("Periodo: ", periodo,
-                                                   "<br>Mes: ", Mes,
-                                                   "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada))),
-                                 size = 0, alpha = 0),
-             tooltip = "text")
+    ggplotly(p_base, tooltip = "text")
+    
+    
   })
 
   ## frec acum primera helada ##
@@ -3030,6 +3126,42 @@ server <- function(input, output, session) {
   
   ## Prob de al menos 1 helada meteorológica ##
   
+  heladas_periodo_0 <- function(df, start_year, end_year) {
+    df %>%
+      filter(Año >= start_year, Año <= end_year,
+             !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+      mutate(
+        fecha = as.Date(Fecha),
+        dia_juliano = yday(fecha)
+      ) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 0) %>%
+      group_by(Año) %>%
+      summarise(
+        primera = min(dia_juliano),
+        ultima  = max(dia_juliano),
+        .groups = "drop"
+      ) %>%
+      summarise(
+        periodo = paste0(start_year, "-", end_year),
+        primera_media = mean(primera, na.rm = TRUE),
+        ultima_media  = mean(ultima, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      # convertir de día juliano a fecha usando un año ficticio (2000)
+      mutate(
+        fecha_primera_media = as.Date(primera_media, origin = "1999-12-31"),
+        fecha_ultima_media  = as.Date(ultima_media, origin = "1999-12-31")
+      )
+  }
+  
+  
+  h1 <- heladas_periodo_0(balcarce_EMC, 1971, 2000)
+  h2 <- heladas_periodo_0(balcarce_EMC, 1981, 2010)
+  h3 <- heladas_periodo_0(balcarce_EMC, 1991, 2020)
+  
+  
+  fechas_helada_0 <- bind_rows(h1, h2, h3)
+  
   prob_mes_helada_0 <- function(df, start_year, end_year) {
     df %>% filter(Año >= start_year, Año <= end_year, !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       group_by(Año, Mes) %>%
@@ -3047,11 +3179,17 @@ server <- function(input, output, session) {
   # Unir todo
   p_todos_0 <- bind_rows(p1_0, p2_0, p3_0)
   
-  meses_orden <- c("enero","febrero","marzo","abril","mayo","junio", "julio",
-                   "agosto","septiembre","octubre","noviembre","diciembre")
+  meses_orden <- c("enero","febrero","marzo","abril","mayo","junio",
+                   "julio","agosto","septiembre","octubre","noviembre","diciembre")
   
-  p_todos_0 <- p_todos_0 %>% mutate(Mes = factor(Mes, levels = meses_orden)) %>%
-    arrange(Mes, periodo)
+  dias_medios <- c(15,45,74,105,135,166,196,227,258,288,319,349)
+  
+  p_todos_0 <- p_todos_0 %>%
+    mutate(
+      Mes = factor(Mes, levels = meses_orden),
+      dia_juliano = dias_medios[match(Mes, meses_orden)]
+    ) %>%
+    arrange(dia_juliano, periodo)
   
   colores_periodo <- c(
     "1971-2000" = "#1b9e77",
@@ -3061,24 +3199,66 @@ server <- function(input, output, session) {
   )
   
   output$prob_helada_ene_dic_0 <- renderPlotly({
-    plot_base <- ggplot(p_todos_0, aes(x = Mes, y = prob_helada, color = periodo, group = periodo)) +
+    datos_filtrados <- if (input$periodo_helada_0 == "Todos") {
+      p_todos_0
+    } else {
+      p_todos_0 %>% filter(periodo == input$periodo_helada_0)
+    }
+    
+    # Filtrar líneas de fechas medias
+    fechas_filtradas <- if (input$periodo_helada_0 == "Todos") {
+      fechas_helada_0
+    } else {
+      fechas_helada_0 %>% filter(periodo == input$periodo_helada_0)
+    }
+    
+    y_offset <- max(datos_filtrados$prob_helada, na.rm = TRUE) * 0.01
+    
+    p_base <- ggplot(datos_filtrados, aes(x = dia_juliano, y = prob_helada, color = periodo, group = periodo)) +
       geom_smooth(se = FALSE, method = "loess", span = 0.5, linewidth = 1) +
+      
+      # líneas verticales de primera helada
+      geom_vline(data = fechas_filtradas, 
+                 aes(xintercept = primera_media, color = periodo),
+                 linetype = "dashed", inherit.aes = FALSE) +
+      geom_vline(data = fechas_filtradas, 
+                 aes(xintercept = ultima_media, color = periodo), 
+                 linetype = "dashed", inherit.aes = FALSE) +
+      
+      # etiquetas sobre líneas
+      geom_text(data = fechas_filtradas,
+                aes(x = primera_media,
+                    y = max(datos_filtrados$prob_helada, na.rm=TRUE) + y_offset,
+                    label = format(fecha_primera_media, "%d/%m"),
+                    color = periodo),
+                angle = 90, vjust = -1.5, size = 3, inherit.aes = FALSE) +
+      geom_text(data = fechas_filtradas,
+                aes(x = ultima_media,
+                    y = max(datos_filtrados$prob_helada, na.rm=TRUE) + y_offset,
+                    label = format(fecha_ultima_media, "%d/%m"),
+                    color = periodo),
+                angle = 90, vjust = -1.5, size = 3, inherit.aes = FALSE) +
+      
+      scale_x_continuous(
+        breaks = dias_medios, 
+        labels = meses_orden,
+        limits = c(0, 365)
+      ) +
       scale_color_manual(values = colores_periodo) +
-      scale_y_continuous(limits = c(0, 105), labels = scales::percent_format(scale = 1)) +
-      labs(x = "", y = "Probabilidad (%)", color = NULL) +
+      scale_y_continuous(limits = c(-8, 105), labels = scales::percent_format(scale = 1)) +
+      labs(x = "Mes", y = "Probabilidad (%)", color = NULL) +
       theme_minimal(base_size = 14) +
       theme(axis.text.x = element_text(angle = 45, hjust = 1),
             legend.position = "right")
     
-    # Agregar puntos invisibles para tooltip
-    plot_base <- plot_base +
+    # Puntos invisibles para tooltip
+    p_base <- p_base +
       geom_point(aes(text = paste0("Periodo: ", periodo,
                                    "<br>Mes: ", Mes,
                                    "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada))),
                  size = 0, alpha = 0)
     
-    # Convertir a plotly mostrando solo tooltip
-    ggplotly(plot_base, tooltip = "text")
+    ggplotly(p_base, tooltip = "text")
   })
  
   # ## frec acum primera helada ##
@@ -6244,101 +6424,101 @@ server <- function(input, output, session) {
   
   ## Dalbulus ##
   
-  dalbulus_filtrados <- reactive({
-    filtered_data <- dalbulus %>% filter(Fecha == as.Date(input$fecha_dalbulus, format = "%d/%m/%Y"))
-  })
-  
-  
-  pal <- colorFactor("viridis", levels = unique(dalbulus$MG))
-  pal_poligono <- colorFactor(c("#BC4B51", "#F4A259", "#8CB369"), levels = c("Zona Alta", "Zona transición", "Zona Baja"))
-  
-  output$mapa_arg <- renderLeaflet({
-    
-    dalbulus_data <- dalbulus_filtrados()
-    
-    leaflet(data = dalbulus_data) %>%
-      addTiles() %>%
-      setView(lng = -65.0, lat = -31.5, zoom = 4) %>%
-      
-      addPolygons(
-        lng = c(-66.9, -66.9, -56.80, -55.57, -56.04, -58.55, -57.67, -62.79),
-        lat = c(-21.9, -29.8, -29.8, -28.15, -27.32, -27.24, -25.34, -21.9),
-        color = "#BC4B51", fillColor = "#BC4B51", weight = 2, fillOpacity = 0.4,
-        label = "Zona Alta Carga"
-      ) %>%
-      
-      addPolygons(
-        lng = c(-66.9, -66.9, -58.40, -57.50),
-        lat = c(-29.8, -32.4, -32.4, -29.8),
-        color = "#F4A259", fillColor = "#F4A259", weight = 2, fillOpacity = 0.4,
-        label = "Zona Transición"
-      ) %>%
-      
-      addPolygons(
-        lng = c(-66.9, -66.9, -57.90, -56.77, -58.44, -58.40),
-        lat = c(-32.4, -38.5, -38.5, -36.34, -34.57, -32.4),
-        color = "#8CB369", fillColor = "#8CB369", weight = 2, fillOpacity = 0.4,
-        label = "Zona Baja Carga"
-      ) %>%
-      
-      addCircles(~lng, ~lat, radius = 30000) %>%
-      addCircleMarkers(~lng, ~lat, color = ~pal(MG),
-                       popup = ~paste0("<b>Estación: </b>", Nombre, "<hr>",
-                                       "<b>Probabilidad de maíz guacho: </b>", MG),
-                       label = ~Nombre) %>%
-      addLegend(position = "bottomright",
-                pal = pal_poligono, values = c("Zona Alta", "Zona transición", "Zona Baja"),
-                title = "Capacidad de supervivencia del vector",
-                opacity = 1)
-  })
-  
-  #Descargar mapa
-  output$downloadMap <- downloadHandler(
-    filename = function() {
-      paste("map-", Sys.Date(), ".png", sep = "")
-    },
-    content = function(file) {
-      # Create a temporary HTML file to save the leaflet map
-      tempFile <- tempfile(fileext = ".html")
-      saveWidget(
-        leaflet(data = dalbulus_filtrados()) %>%
-          addTiles() %>%
-          setView(lng = -65.0, lat = -31.5, zoom = 5) %>%
-          addPolygons(
-            lng = c(-66.9, -66.9, -56.80, -55.57, -56.04, -58.55, -57.67, -62.79),
-            lat = c(-21.9, -29.8, -29.8, -28.15, -27.32, -27.24, -25.34, -21.9),
-            color = "#BC4B51", fillColor = "#BC4B51", weight = 2, fillOpacity = 0.4,
-            label = "Zona Alta Carga"
-          ) %>%
-          addPolygons(
-            lng = c(-66.9, -66.9, -58.40, -57.50),
-            lat = c(-29.8, -32.4, -32.4, -29.8),
-            color = "#F4A259", fillColor = "#F4A259", weight = 2, fillOpacity = 0.4,
-            label = "Zona Transición"
-          ) %>%
-          addPolygons(
-            lng = c(-66.9, -66.9, -57.90, -56.77, -58.44, -58.40),
-            lat = c(-32.4, -38.5, -38.5, -36.34, -34.57, -32.4),
-            color = "#8CB369", fillColor = "#8CB369", weight = 2, fillOpacity = 0.4,
-            label = "Zona Baja Carga"
-          ) %>%
-          addCircles(lng = ~lng, lat = ~lat, radius = 30000) %>%
-          addCircleMarkers(lng = ~lng, lat = ~lat, color = ~pal(MG),
-                           popup = ~paste0("<b>Estación: </b>", Nombre, "<hr>",
-                                           "<b>Probabilidad de maíz guacho: </b>", MG),
-                           label = ~Nombre) %>%
-          addLegend(position = "bottomright",
-                    pal = pal_poligono, values = c("Zona Alta", "Zona transición", "Zona Baja"),
-                    title = "Capacidad de supervivencia del vector",
-                    opacity = 1),
-        file = tempFile,
-        selfcontained = TRUE
-      )
-      
-      # Take a screenshot of the HTML file
-      webshot(tempFile, file = file)
-    }
-  )
+  # dalbulus_filtrados <- reactive({
+  #   filtered_data <- dalbulus %>% filter(Fecha == as.Date(input$fecha_dalbulus, format = "%d/%m/%Y"))
+  # })
+  # 
+  # 
+  # pal <- colorFactor("viridis", levels = unique(dalbulus$MG))
+  # pal_poligono <- colorFactor(c("#BC4B51", "#F4A259", "#8CB369"), levels = c("Zona Alta", "Zona transición", "Zona Baja"))
+  # 
+  # output$mapa_arg <- renderLeaflet({
+  #   
+  #   dalbulus_data <- dalbulus_filtrados()
+  #   
+  #   leaflet(data = dalbulus_data) %>%
+  #     addTiles() %>%
+  #     setView(lng = -65.0, lat = -31.5, zoom = 4) %>%
+  #     
+  #     addPolygons(
+  #       lng = c(-66.9, -66.9, -56.80, -55.57, -56.04, -58.55, -57.67, -62.79),
+  #       lat = c(-21.9, -29.8, -29.8, -28.15, -27.32, -27.24, -25.34, -21.9),
+  #       color = "#BC4B51", fillColor = "#BC4B51", weight = 2, fillOpacity = 0.4,
+  #       label = "Zona Alta Carga"
+  #     ) %>%
+  #     
+  #     addPolygons(
+  #       lng = c(-66.9, -66.9, -58.40, -57.50),
+  #       lat = c(-29.8, -32.4, -32.4, -29.8),
+  #       color = "#F4A259", fillColor = "#F4A259", weight = 2, fillOpacity = 0.4,
+  #       label = "Zona Transición"
+  #     ) %>%
+  #     
+  #     addPolygons(
+  #       lng = c(-66.9, -66.9, -57.90, -56.77, -58.44, -58.40),
+  #       lat = c(-32.4, -38.5, -38.5, -36.34, -34.57, -32.4),
+  #       color = "#8CB369", fillColor = "#8CB369", weight = 2, fillOpacity = 0.4,
+  #       label = "Zona Baja Carga"
+  #     ) %>%
+  #     
+  #     addCircles(~lng, ~lat, radius = 30000) %>%
+  #     addCircleMarkers(~lng, ~lat, color = ~pal(MG),
+  #                      popup = ~paste0("<b>Estación: </b>", Nombre, "<hr>",
+  #                                      "<b>Probabilidad de maíz guacho: </b>", MG),
+  #                      label = ~Nombre) %>%
+  #     addLegend(position = "bottomright",
+  #               pal = pal_poligono, values = c("Zona Alta", "Zona transición", "Zona Baja"),
+  #               title = "Capacidad de supervivencia del vector",
+  #               opacity = 1)
+  # })
+  # 
+  # #Descargar mapa
+  # output$downloadMap <- downloadHandler(
+  #   filename = function() {
+  #     paste("map-", Sys.Date(), ".png", sep = "")
+  #   },
+  #   content = function(file) {
+  #     # Create a temporary HTML file to save the leaflet map
+  #     tempFile <- tempfile(fileext = ".html")
+  #     saveWidget(
+  #       leaflet(data = dalbulus_filtrados()) %>%
+  #         addTiles() %>%
+  #         setView(lng = -65.0, lat = -31.5, zoom = 5) %>%
+  #         addPolygons(
+  #           lng = c(-66.9, -66.9, -56.80, -55.57, -56.04, -58.55, -57.67, -62.79),
+  #           lat = c(-21.9, -29.8, -29.8, -28.15, -27.32, -27.24, -25.34, -21.9),
+  #           color = "#BC4B51", fillColor = "#BC4B51", weight = 2, fillOpacity = 0.4,
+  #           label = "Zona Alta Carga"
+  #         ) %>%
+  #         addPolygons(
+  #           lng = c(-66.9, -66.9, -58.40, -57.50),
+  #           lat = c(-29.8, -32.4, -32.4, -29.8),
+  #           color = "#F4A259", fillColor = "#F4A259", weight = 2, fillOpacity = 0.4,
+  #           label = "Zona Transición"
+  #         ) %>%
+  #         addPolygons(
+  #           lng = c(-66.9, -66.9, -57.90, -56.77, -58.44, -58.40),
+  #           lat = c(-32.4, -38.5, -38.5, -36.34, -34.57, -32.4),
+  #           color = "#8CB369", fillColor = "#8CB369", weight = 2, fillOpacity = 0.4,
+  #           label = "Zona Baja Carga"
+  #         ) %>%
+  #         addCircles(lng = ~lng, lat = ~lat, radius = 30000) %>%
+  #         addCircleMarkers(lng = ~lng, lat = ~lat, color = ~pal(MG),
+  #                          popup = ~paste0("<b>Estación: </b>", Nombre, "<hr>",
+  #                                          "<b>Probabilidad de maíz guacho: </b>", MG),
+  #                          label = ~Nombre) %>%
+  #         addLegend(position = "bottomright",
+  #                   pal = pal_poligono, values = c("Zona Alta", "Zona transición", "Zona Baja"),
+  #                   title = "Capacidad de supervivencia del vector",
+  #                   opacity = 1),
+  #       file = tempFile,
+  #       selfcontained = TRUE
+  #     )
+  #     
+  #     # Take a screenshot of the HTML file
+  #     webshot(tempFile, file = file)
+  #   }
+  # )
   
   
   
