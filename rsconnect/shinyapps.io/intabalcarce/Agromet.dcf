@@ -5,8 +5,9 @@ account: intabalcarce
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 13791817
-bundleId: 10452632
+bundleId: 11480116
 url: https://intabalcarce.shinyapps.io/Agromet/
 version: 1
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: actualizar_datos.bat|ajuste umbral R.xlsx|Balance_agua_app.mp4|dalbulus.xlsx|nuevos ajustes balances.xlsx|pp_climatico_abr_sept.jpg|pp_climatico_anual.jpg|pp_climatico_oct_marz.jpg|precios_plan.png
