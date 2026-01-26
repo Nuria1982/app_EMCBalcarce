@@ -19,13 +19,6 @@ library(leaflet)
 library(webshot)
 library(httr)
 library(jsonlite)
-# library(DBI)
-# library(RSQLite)
-# library(digest)
-
-# library(googlesheets4)
-# gs4_auth()
-
 library(broom)
 library(purrr)
 library(minpack.lm)
@@ -147,29 +140,6 @@ library(minpack.lm)
 # 
 
 
-######## contador de usuario ##########
-
-# get_user_country <- function() {
-#   tryCatch({
-#     res <- GET("http://ip-api.com/json/")
-#     ip_data <- content(res, "parsed")
-#     country <- ip_data$country  # país
-#     return(country)
-#   }, error = function(e) {
-#     return("Desconocido")
-#   })
-# }
-# 
-# 
-# update_counter <- function() {
-#   sheet_url <- "https://docs.google.com/spreadsheets/d/tu-sheet-id/edit"
-#   data <- read_sheet(sheet_url)
-#   counter <- data$counter[1] + 1
-#   write_sheet(data.frame(counter = counter), sheet_url)
-#   return(counter)
-# }
-
-
 
 ###############################################################################
 balcarce_EMC <- read_excel("balcarce_EMC.xlsx", 
@@ -215,7 +185,6 @@ Tmin_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Minima
 ## historicos 1991-2020 ##
 datos_historicos <- datos_EMC %>%
   filter(Año >= 1991 & Año <= 2020)
-# datos_historicos
 
 datos_historicos_avg <- datos_historicos %>%
   mutate(Dia_Mes = format(Fecha, "%m-%d")) %>%
@@ -247,7 +216,6 @@ datos <- datos_EMC %>%
 
 #################
 
-# Define UI ----
 ui <- 
   dashboardPage(
     
@@ -348,9 +316,9 @@ ui <-
                            # menuSubItem("Dalbulus",
                            #             tabName = "Dalbulus")
                   ),
-                  menuItem("Pronósticos",
-                           tabName = "pronosticos", 
-                           icon = icon("bar-chart")),
+                  # menuItem("Pronósticos",
+                  #          tabName = "pronosticos", 
+                  #          icon = icon("bar-chart")),
                   menuItem("informes",
                            tabName = "informes", 
                            icon = icon("file")),
@@ -361,7 +329,19 @@ ui <-
                            tabName = "referencias", 
                            icon = icon("book"))),
       br(),
-
+      
+      tags$head(
+        tags$script(src = "https://www.googletagmanager.com/gtag/js?id=G-TW1X22VFRM"),
+        tags$script(HTML("
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-TW1X22VFRM');
+        "))
+      ),
+      
+      
+      
       # tags$head(
       #   tags$style(HTML("
       #   .clima-box {
@@ -409,6 +389,16 @@ ui <-
                    height = "80px",
                    width = "200px")
         )
+        # ,
+        # div(
+        #   style = "max-width: 330px; margin: 0 auto;",
+        #   tags$div(id = "mrwide6e4571ad4674450821d56dda737b1bd")
+        # )
+        )
+      
+
+      
+        
       #   ,
       # 
       # div(class = "user-info-box",
@@ -421,7 +411,7 @@ ui <-
       #     )
       # )
       
-    )
+    
     ),
     
     
@@ -465,6 +455,28 @@ ui <-
         }
         "))
       ),
+      
+  #     tags$script(HTML("
+  #     function loadMeteoredWidgetHard(){
+  #   var old = document.getElementById('meteored-loader-script');
+  #   if (old) old.remove();
+  # 
+  #   var s = document.createElement('script');
+  #   s.id = 'meteored-loader-script';
+  #   s.async = true;
+  #   s.src = 'https://api.meteored.com/widget/loader/e6e4571ad4674450821d56dda737b1bd';
+  #   document.body.appendChild(s);
+  # }
+  # 
+  # document.addEventListener('DOMContentLoaded', function () {
+  #   setTimeout(loadMeteoredWidgetHard, 800);
+  # });
+  # 
+  # $(document).on('shiny:connected shiny:message', function () {
+  #   setTimeout(loadMeteoredWidgetHard, 800);
+  # }); 
+  #   "))
+    # ,
       tabItems(
         tabItem(tabName = "condiciones",
                 fluidRow(
@@ -489,7 +501,7 @@ ui <-
                                     inputId = "ano_selector", 
                                     label = "Selecciona el Año:",
                                     choices = unique(datos$Año),
-                                    selected = "2025"
+                                    selected = "2026"
                                   )
                            ),
                            column(6,
@@ -655,9 +667,16 @@ ui <-
                      div(style = "background-color: #3A7CA560; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
                          h5(HTML("<strong>Heladas agrometeorológicas</strong>")),
                          p("Ocurre cuando la temperatura medida en el abrigo meteorológico es igual o inferior a 3 °C, 
-                           equivalente a 0 °C o menos a la intemperie en superficie.")
-                     )
-              )
+                           equivalente a 0 °C o menos a la intemperie en superficie."),
+                         p(
+                           HTML("Podés descargar el informe de heladas haciendo clic "),
+                           tags$a(
+                             href = "Heladas.pdf",   
+                             "aquí",
+                             target = "Heladas"
+                         )
+                         )
+              ))
             ),
             
             fluidRow(
@@ -684,6 +703,7 @@ ui <-
                                    type = 5, 
                                    color = "#0dc5c1",  
                                    size = 0.5),
+                       
                        width = 12
                      )
               )
@@ -700,7 +720,7 @@ ui <-
                                column(4,
                                       selectInput("periodo_prim_helada_3",
                                                   label = "Período:",
-                                                  choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                                  choices = c("1971-2000", "1981-2010", "1991-2020", "2016-2025"),
                                                   selected = "1971-2000")
                                ),
                                column(4,
@@ -735,7 +755,7 @@ ui <-
                                column(4,
                                       selectInput("periodo_ult_helada_3",
                                                   label = "Período:",
-                                                  choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                                  choices = c("1971-2000", "1981-2010", "1991-2020", "2016-2025"),
                                                   selected = "1971-2000")
                                ),
                                column(4,
@@ -813,7 +833,7 @@ ui <-
                          column(4,
                                 selectInput("periodo_prim_helada_0",
                                             label = "Período:",
-                                            choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                            choices = c("1971-2000", "1981-2010", "1991-2020", "2016-2025"),
                                             selected = "1971-2000")
                          ),
                          column(4,
@@ -848,7 +868,7 @@ ui <-
                          column(4,
                                 selectInput("periodo_ult_helada_0",
                                             label = "Período:",
-                                            choices = c("1971-2000", "1981-2010", "1991-2020", "2014-2024"),
+                                            choices = c("1971-2000", "1981-2010", "1991-2020", "2016-2025"),
                                             selected = "1971-2000")
                          ),
                          column(4,
@@ -1238,7 +1258,7 @@ ui <-
                 column(3, 
                        dateInput("fecha_siembra_balcarce",
                                  label = strong("Ingrese la fecha de siembra:"),
-                                 value = "2024-01-01")
+                                 value = "2025-10-01")
                 )
                 
               ),
@@ -1620,41 +1640,41 @@ ui <-
         #   downloadButton("downloadMap", "Descargar mapa")
         #   ),
         
-        tabItem(
-          tabName = "pronosticos",
-          br(),
-          h4(HTML("<strong>Pronósticos meteorológicos del área de influencia de EEA Balcarce</strong>")),
-          h6(HTML("Elaborados por el SMN y el Instituto de Clima y Agua - INTA Castelar.")),
-          br(),
-          br(),
-          
-          fluidRow( 
-            box(title = "Pronóstico semanal"
-                ,status = "navy"
-                ,solidHeader = FALSE
-                ,div(
-                  style = "text-align: center;",
-                  tags$img(
-                    src = "pronostico_lluvia.png",
-                    style = "max-width: 80%; height: auto;",
-                    alt = "Pronóstico semanal de lluvia"
-                  )
-                )
-            ),
-            box(title = "Pronóstico trimestral"
-                ,status = "navy"
-                ,solidHeader = FALSE
-                ,div(
-                  style = "text-align: center;",
-                  tags$img(
-                    src = "pronostico_tri.png",
-                    style = "max-width: 80%; height: auto;",
-                    alt = "Pronóstico trimestral"
-                  )
-                )
-            ),
-          )
-        ),
+        # tabItem(
+        #   tabName = "pronosticos",
+        #   br(),
+        #   h4(HTML("<strong>Pronósticos meteorológicos del área de influencia de EEA Balcarce</strong>")),
+        #   h6(HTML("Elaborados por el SMN y el Instituto de Clima y Agua - INTA Castelar.")),
+        #   br(),
+        #   br(),
+        #   
+        #   fluidRow( 
+        #     box(title = "Pronóstico semanal"
+        #         ,status = "navy"
+        #         ,solidHeader = FALSE
+        #         ,div(
+        #           style = "text-align: center;",
+        #           tags$img(
+        #             src = "pronostico_lluvia.png",
+        #             style = "max-width: 80%; height: auto;",
+        #             alt = "Pronóstico semanal de lluvia"
+        #           )
+        #         )
+        #     ),
+        #     box(title = "Pronóstico trimestral"
+        #         ,status = "navy"
+        #         ,solidHeader = FALSE
+        #         ,div(
+        #           style = "text-align: center;",
+        #           tags$img(
+        #             src = "pronostico_tri.png",
+        #             style = "max-width: 80%; height: auto;",
+        #             alt = "Pronóstico trimestral"
+        #           )
+        #         )
+        #     ),
+        #   )
+        # ),
         
         tabItem(
           tabName = "informes",
@@ -1666,14 +1686,14 @@ ui <-
               div(
                 style = "margin-left: 100px; margin-top: 50px;",  
                 tags$img(
-                  src = "IMA.jpg",
-                  width = 300,
-                  height = 420,
+                  src = "IMA.jpeg",
+                  width = 250,
+                  height = 300,
                   alt = "Informe Mensual Agropecuario"
                 ),
                 tags$br(),
                 tags$a(
-                  "Descarga el informe completo aquí", href= "https://bit.ly/IMA-MAR25")
+                  "Descarga el informe completo aquí", href= "https://bit.ly/IMA-NOV25")
               )),
             column(
               width = 3,
@@ -1681,8 +1701,8 @@ ui <-
                 style = "margin-left: 100px; margin-top: 50px;",  
                 tags$img(
                   src = "chicharrita.jpg",
-                  width = 300,
-                  height = 420,
+                  width = 250,
+                  height = 300,
                   alt = "Achaparramiento del Maíz"
                 ),
                 tags$br(),
@@ -1696,18 +1716,37 @@ ui <-
                 style = "margin-left: 100px; margin-top: 50px;",  
                 tags$img(
                   src = "ENSO.jpg",
-                  width = 300,
-                  height = 420,
+                  width = 250,
+                  height = 300,
                   alt = "ENSO y precipitaciones"
                 ),
                 tags$br(),
-                downloadLink(
-                  outputId = "downloadReport", 
-                  label = "Descarga el informe completo aquí"
+                tags$a(
+                  href = "ENSO.pdf",   
+                  "Descarga el informe completo",
+                  target = "ENSO"
                 ),
               )
+            ),
+            column(
+              width = 3,
+              div(
+                style = "margin-left: 100px; margin-top: 50px;",  
+                tags$img(
+                  src = "Heladas.png",
+                  width = 250,
+                  height = 300,
+                  alt = "Caracterización del régimen de heladas agrometeorológicas en Balcarce desde 1971 a 2025"
+                ),
+                tags$br(),
+                tags$a(
+                  href = "Heladas.pdf",   
+                  "Descarga el informe completo",
+                  target = "Heladas"
+                ),
             )
-          )),
+          ))
+          ),
         
         tabItem(
           tabName = "descarga",
@@ -1783,140 +1822,11 @@ ui <-
 # Define server logic ----
 server <- function(input, output, session) {
   
-  # ### tiempo SMN ###
-  # clima <- reactive({
-  #   get_clima_balcarce()
-  # })
-  # 
-  # output$icono_clima <- renderUI({
-  #   datos <- clima()
-  #   icon_name <- NULL
-  # 
-  #   # Íconos basados en las condiciones
-  #   if (!is.null(datos$weather$description)) {
-  #     description <- datos$weather$description[1]
-  #     if (grepl("despejado", description, ignore.case = TRUE)) {
-  #       icon_name <- "fa-solid fa-sun"  
-  #     } else if (grepl("neblina", description, ignore.case = TRUE)) {
-  #       icon_name <- "fa-solid fa-cloud"  
-  #     } else if (grepl("lluvia", description, ignore.case = TRUE)) {
-  #       icon_name <- "fa-solid fa-cloud-showers-heavy"  
-  #     }
-  #   }
-  # 
-  #   if (!is.null(icon_name)) {
-  #     tags$div(style = "text-align: center;", 
-  #              tags$i(class = icon_name, style = "font-size: 40px; color: #007BFF;")
-  #     )
-  #   }
-  # })
-  # 
-  # # Mostrar la descripción del clima
-  # output$clima_actual <- renderText({
-  #   datos <- clima()
-  #   
-  #   if (is.null(datos) || nrow(datos) == 0) {
-  #     return("No se han encontrado datos para Balcarce.")
-  #   }
-  #   
-  #   if (!is.null(datos$weather$description) && length(datos$weather$description) > 0) {
-  #     condiciones <- paste("Condiciones actuales:", datos$weather$description[1])
-  #   } else {
-  #     condiciones <- "No se encontraron descripciones del clima."
-  #   }
-  #   
-  #   return(condiciones)
-  # })
-  # 
-  # # Mostrar la temperatura actual
-  # output$temperatura <- renderText({
-  #   datos <- clima()
-  #   
-  #   if (is.null(datos) || nrow(datos) == 0) {
-  #     return("")
-  #   }
-  #   if (!is.null(datos$weather$temp) && length(datos$weather$temp) > 0) {
-  #     paste("Temperatura actual:", datos$weather$temp[1], "°C")
-  #   } else {
-  #     return("No se encontró la temperatura.")
-  #   }
-  # })
-  # 
-  # # Mostrar la humedad actual
-  # output$humedad <- renderText({
-  #   datos <- clima()
-  #   
-  #   if (is.null(datos) || nrow(datos) == 0) {
-  #     return("")
-  #   }
-  #   
-  #   # Acceder a la humedad
-  #   if (!is.null(datos$weather$humidity) && length(datos$weather$humidity) > 0) {
-  #     paste("Humedad actual:", datos$weather$humidity[1], "%")
-  #   } else {
-  #     return("No se encontró la humedad.")
-  #   }
-  # })
-  # 
-  # # Mostrar la velocidad del viento actual
-  # output$viento <- renderText({
-  #   datos <- clima()
-  #   
-  #   if (is.null(datos) || nrow(datos) == 0) {
-  #     return("")
-  #   }
-  #   
-  #   # Acceder a la velocidad del viento
-  #   if (!is.null(datos$weather$wind_speed) && length(datos$weather$wind_speed) > 0) {
-  #     paste("Velocidad del viento:", datos$weather$wind_speed[1], "km/h")
-  #   } else {
-  #     return("No se encontró la velocidad del viento.")
-  #   }
-  # })
-  
-  ################## REGISTRO DE USUARIO ##############
-  
-  
-  ##############################################################################
-  
-  ####### Contador de usuario ###########
-  
-  # Mostrar el contador de usuarios
-  output$counter <- renderText({
-    
-    counter_file <- "counter.Rdata"
-    
-    if (!file.exists(counter_file)) {
-      counter_data <- list(counter = 0, users = character())
-      save(counter_data, file = counter_file)
-    } else {
-      # Cargar los datos del contador
-      load(counter_file)
+  observe({
+    query <- parseQueryString(session$clientData$url_search)
+    if (!is.null(query$tab)) {
+      updateTabItems(session, "siderbarID", selected = query$tab)
     }
-    
-    # Verificar que counter_data esté definido
-    if (!exists("counter_data")) {
-      counter_data <- list(counter = 0, users = character())
-    }
-    
-    # Identificador único de usuario por sesión
-    user_id <- session$token
-    
-    # Actualizar el contador solo si el usuario es nuevo
-    if (!user_id %in% counter_data$users) {
-      counter_data$counter <- counter_data$counter + 1
-      counter_data$users <- c(counter_data$users, user_id)
-      save(counter_data, file = counter_file)
-    }
-    
-    # Mostrar el contador
-    paste0("Usuarios: ", counter_data$counter)
-  })
-  
-  # Mostrar el país del usuario
-  output$user_country <- renderText({
-    country <- get_user_country()
-    paste("Estás conectado desde:", country)
   })
   
   ######### Info EMC Balcarce ###########
@@ -2248,7 +2158,7 @@ server <- function(input, output, session) {
   output$grafico_heladas <- renderPlotly({
     
     promedio_heladas <- datasetInput() %>%
-      filter(Temperatura_Abrigo_150cm_Minima < 3) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
       group_by(Mes) %>%
       summarise(Dias_Temperatura_Minima_Menor_3C = n()) %>%
       mutate(Mes = factor(substr(Mes, 1, 3), levels = c("ene", "feb", "mar", "abr", 
@@ -2262,7 +2172,7 @@ server <- function(input, output, session) {
       geom_bar(stat = "identity", fill = "#FFBA08", color = "#FF9F1C") +  
       labs(title = "",
            x = "",
-           y = "Número de días con\nTemperatura mínimas < 3ºC") +
+           y = "Número de días con\nTemperatura mínimas < ó = 3ºC") +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 0, hjust = 1),
             panel.grid.major = element_blank(),  
@@ -2542,7 +2452,7 @@ server <- function(input, output, session) {
     datos_filtrados_climatico <- datasetInput_climatico()
     
     dias_extremos <- datos_filtrados_climatico %>%
-      mutate(dia_bajo = Temperatura_Abrigo_150cm_Minima < 3,
+      mutate(dia_bajo = Temperatura_Abrigo_150cm_Minima <= 3,
              dia_alto = Temperatura_Abrigo_150cm_Maxima > 25) %>%
       group_by(Año) %>%
       summarise(
@@ -2625,19 +2535,23 @@ server <- function(input, output, session) {
   ##### HELADAS ######
   ## Prob de al menos 1 helada ##
   
+  
   heladas_periodo_3 <- function(df, start_year, end_year) {
     df %>%
       filter(Año >= start_year, Año <= end_year,
              !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       mutate(
         fecha = as.Date(Fecha),
-        dia_juliano = yday(fecha)
+        dia_juliano = yday(fecha),
+        dia_norm = if_else(leap_year(Año) & dia_juliano >= 60,
+                           dia_juliano + 1,
+                           dia_juliano)
       ) %>%
       filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
       group_by(Año) %>%
       summarise(
-        primera = min(dia_juliano),
-        ultima  = max(dia_juliano),
+        primera = min(dia_norm),
+        ultima  = max(dia_norm),
         .groups = "drop"
       ) %>%
       summarise(
@@ -2646,10 +2560,9 @@ server <- function(input, output, session) {
         ultima_media  = mean(ultima, na.rm = TRUE),
         .groups = "drop"
       ) %>%
-      # convertir de día juliano a fecha usando un año ficticio (2000)
       mutate(
-        fecha_primera_media = as.Date(primera_media, origin = "1999-12-31"),
-        fecha_ultima_media  = as.Date(ultima_media, origin = "1999-12-31")
+        fecha_primera_media = as.Date(primera_media, origin = "1800-12-31"),
+        fecha_ultima_media  = as.Date(ultima_media, origin = "1800-12-31")
       )
   }
   
@@ -2657,6 +2570,7 @@ server <- function(input, output, session) {
   h1 <- heladas_periodo_3(balcarce_EMC, 1971, 2000)
   h2 <- heladas_periodo_3(balcarce_EMC, 1981, 2010)
   h3 <- heladas_periodo_3(balcarce_EMC, 1991, 2020)
+  h4 <- heladas_periodo_3(balcarce_EMC, 2016, 2025)
   
   
   fechas_helada_3 <- bind_rows(h1, h2, h3)
@@ -2678,7 +2592,7 @@ server <- function(input, output, session) {
   p1_3 <- prob_mes_helada_3(balcarce_EMC, 1971, 2000)
   p2_3 <- prob_mes_helada_3(balcarce_EMC, 1981, 2010)
   p3_3 <- prob_mes_helada_3(balcarce_EMC, 1991, 2020)
-  # p4_3 <- prob_mes_helada_3(balcarce_EMC, 2014, 2024)
+  # p4_3 <- prob_mes_helada_3(balcarce_EMC, 2016, 2024)
   
   # Unir todo
   p_todos_3 <- bind_rows(p1_3, p2_3, p3_3)
@@ -2700,7 +2614,7 @@ server <- function(input, output, session) {
     "1971-2000" = "#1b9e77",
     "1981-2010" = "#d95f02",
     "1991-2020" = "#7570b3",
-    "2014-2024" = "#e7298a"
+    "2016-2025" = "#e7298a"
   )
   
   output$prob_helada_ene_dic_3 <- renderPlotly({
@@ -2722,15 +2636,13 @@ server <- function(input, output, session) {
     p_base <- ggplot(datos_filtrados, aes(x = dia_juliano, y = prob_helada, color = periodo, group = periodo)) +
       geom_smooth(se = FALSE, method = "loess", span = 0.5, linewidth = 1) +
       
-      # líneas verticales de primera helada
-      geom_vline(data = fechas_filtradas, 
+       geom_vline(data = fechas_filtradas, 
                  aes(xintercept = primera_media, color = periodo),
                  linetype = "dashed", inherit.aes = FALSE) +
       geom_vline(data = fechas_filtradas, 
                  aes(xintercept = ultima_media, color = periodo), 
                  linetype = "dashed", inherit.aes = FALSE) +
       
-      # etiquetas sobre líneas
       geom_text(data = fechas_filtradas,
                 aes(x = primera_media,
                     y = max(datos_filtrados$prob_helada, na.rm=TRUE) + y_offset,
@@ -2763,10 +2675,22 @@ server <- function(input, output, session) {
                                    "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada))),
                  size = 0, alpha = 0)
     
-    ggplotly(p_base, tooltip = "text")
+    ggplotly(p_base, tooltip = "text") %>%
+      layout(
+        annotations = list(
+          x = 0.57, y = 1.0, 
+          xref = "paper", yref = "paper",
+          text = "Fecha media de primera y última helada",
+          showarrow = FALSE,
+          font = list(size = 10, style = "italic"),
+          xanchor = "center", yanchor = "bottom"
+        )
+      )
     
     
   })
+  
+  
 
   ## frec acum primera helada ##
   
@@ -2776,12 +2700,15 @@ server <- function(input, output, session) {
              !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       mutate(
         fecha = as.Date(Fecha),
-        dia_juliano = yday(fecha)
+        dia_juliano = yday(fecha),
+        dia_norm = if_else(leap_year(Año) & dia_juliano >= 60,
+                           dia_juliano + 1,
+                           dia_juliano)
       ) %>%
       filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
       group_by(Año) %>%
       summarise(
-        primera = min(dia_juliano),
+        primera = min(dia_norm),
         .groups = "drop"
       ) %>%
       # convertir día juliano a fecha usando un año ficticio (2000)
@@ -2794,12 +2721,12 @@ server <- function(input, output, session) {
   h_ano1 <- heladas_prim_anuales_3(balcarce_EMC, 1971, 2000)
   h_ano2 <- heladas_prim_anuales_3(balcarce_EMC, 1981, 2010)
   h_ano3 <- heladas_prim_anuales_3(balcarce_EMC, 1991, 2020)
-  h_ano4 <- heladas_prim_anuales_3(balcarce_EMC, 2014, 2024)
+  h_ano4 <- heladas_prim_anuales_3(balcarce_EMC, 2016, 2025)
   
   h_ano1 <- h_ano1 %>% mutate(periodo = "1971-2000")
   h_ano2 <- h_ano2 %>% mutate(periodo = "1981-2010")
   h_ano3 <- h_ano3 %>% mutate(periodo = "1991-2020")
-  h_ano4 <- h_ano4 %>% mutate(periodo = "2014-2024")
+  h_ano4 <- h_ano4 %>% mutate(periodo = "2016-2025")
   
   # Unimos todos
   h_todos <- bind_rows(h_ano1, h_ano2, h_ano3, h_ano4)
@@ -2884,7 +2811,7 @@ server <- function(input, output, session) {
       "1971-2000" = "#1b9e77",
       "1981-2010" = "#d95f02",
       "1991-2020" = "#7570b3",
-      "2014-2024" = "#e7298a"
+      "2016-2025" = "#e7298a"
     )
     color_sel <- colores_periodo[input$periodo_prim_helada_3]
     
@@ -2957,12 +2884,15 @@ server <- function(input, output, session) {
              !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       mutate(
         fecha = as.Date(Fecha),
-        dia_juliano = yday(fecha)
+        dia_juliano = yday(fecha),
+        dia_norm = if_else(leap_year(Año) & dia_juliano >= 60,
+                           dia_juliano + 1,
+                           dia_juliano)
       ) %>%
       filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
       group_by(Año) %>%
       summarise(
-        ultima = max(dia_juliano),
+        ultima = max(dia_norm),
         .groups = "drop"
       ) %>%
       mutate(
@@ -2974,7 +2904,7 @@ server <- function(input, output, session) {
   h_ano1_ult <- heladas_ult_anuales_3(balcarce_EMC, 1971, 2000) %>% mutate(periodo = "1971-2000")
   h_ano2_ult <- heladas_ult_anuales_3(balcarce_EMC, 1981, 2010) %>% mutate(periodo = "1981-2010")
   h_ano3_ult <- heladas_ult_anuales_3(balcarce_EMC, 1991, 2020) %>% mutate(periodo = "1991-2020")
-  h_ano4_ult <- heladas_ult_anuales_3(balcarce_EMC, 2014, 2024) %>% mutate(periodo = "2014-2024")
+  h_ano4_ult <- heladas_ult_anuales_3(balcarce_EMC, 2016, 2025) %>% mutate(periodo = "2016-2025")
   
   h_todos_ult <- bind_rows(h_ano1_ult, h_ano2_ult, h_ano3_ult, h_ano4_ult)
   
@@ -3060,7 +2990,7 @@ server <- function(input, output, session) {
       "1971-2000" = "#1b9e77",
       "1981-2010" = "#d95f02",
       "1991-2020" = "#7570b3",
-      "2014-2024" = "#e7298a"
+      "2016-2025" = "#e7298a"
     )
     color_sel_ult <- colores_periodo[input$periodo_ult_helada_3]
     
@@ -3132,13 +3062,16 @@ server <- function(input, output, session) {
              !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       mutate(
         fecha = as.Date(Fecha),
-        dia_juliano = yday(fecha)
+        dia_juliano = yday(fecha),
+        dia_norm = if_else(leap_year(Año) & dia_juliano >= 60,
+                           dia_juliano + 1,
+                           dia_juliano)
       ) %>%
       filter(Temperatura_Abrigo_150cm_Minima <= 0) %>%
       group_by(Año) %>%
       summarise(
-        primera = min(dia_juliano),
-        ultima  = max(dia_juliano),
+        primera = min(dia_norm),
+        ultima  = max(dia_norm),
         .groups = "drop"
       ) %>%
       summarise(
@@ -3163,19 +3096,24 @@ server <- function(input, output, session) {
   fechas_helada_0 <- bind_rows(h1, h2, h3)
   
   prob_mes_helada_0 <- function(df, start_year, end_year) {
-    df %>% filter(Año >= start_year, Año <= end_year, !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
+    df %>% filter(Año >= start_year, 
+                  Año <= end_year, !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       group_by(Año, Mes) %>%
-      summarise( hubo_helada = any(Temperatura_Abrigo_150cm_Minima <= 0), .groups = "drop" ) %>%
+      summarise( hubo_helada = any(Temperatura_Abrigo_150cm_Minima <= 0), 
+                 .groups = "drop" ) %>%
       group_by(Mes) %>%
-      summarise( meses_con_helada = sum(hubo_helada), total_meses = n(), .groups = "drop" ) %>%
-      mutate( periodo = paste0(start_year, "-", end_year), prob_helada = meses_con_helada / total_meses * 100 )
+      summarise( meses_con_helada = sum(hubo_helada), 
+                 total_meses = n(), 
+                 .groups = "drop" ) %>%
+      mutate( periodo = paste0(start_year, "-", end_year), 
+              prob_helada = meses_con_helada / total_meses * 100 )
   }
   
   # Probabilidad por periodo
   p1_0 <- prob_mes_helada_0(balcarce_EMC, 1971, 2000)
   p2_0 <- prob_mes_helada_0(balcarce_EMC, 1981, 2010)
   p3_0 <- prob_mes_helada_0(balcarce_EMC, 1991, 2020)
-  # p4_0 <- prob_mes_helada_0(balcarce_EMC, 2014, 2024)
+  # p4_0 <- prob_mes_helada_0(balcarce_EMC, 2016, 2025)
   # Unir todo
   p_todos_0 <- bind_rows(p1_0, p2_0, p3_0)
   
@@ -3195,7 +3133,7 @@ server <- function(input, output, session) {
     "1971-2000" = "#1b9e77",
     "1981-2010" = "#d95f02",
     "1991-2020" = "#7570b3",
-    "2014-2024" = "#e7298a"
+    "2016-2025" = "#e7298a"
   )
   
   output$prob_helada_ene_dic_0 <- renderPlotly({
@@ -3217,15 +3155,13 @@ server <- function(input, output, session) {
     p_base <- ggplot(datos_filtrados, aes(x = dia_juliano, y = prob_helada, color = periodo, group = periodo)) +
       geom_smooth(se = FALSE, method = "loess", span = 0.5, linewidth = 1) +
       
-      # líneas verticales de primera helada
       geom_vline(data = fechas_filtradas, 
                  aes(xintercept = primera_media, color = periodo),
                  linetype = "dashed", inherit.aes = FALSE) +
       geom_vline(data = fechas_filtradas, 
                  aes(xintercept = ultima_media, color = periodo), 
                  linetype = "dashed", inherit.aes = FALSE) +
-      
-      # etiquetas sobre líneas
+
       geom_text(data = fechas_filtradas,
                 aes(x = primera_media,
                     y = max(datos_filtrados$prob_helada, na.rm=TRUE) + y_offset,
@@ -3251,14 +3187,23 @@ server <- function(input, output, session) {
       theme(axis.text.x = element_text(angle = 45, hjust = 1),
             legend.position = "right")
     
-    # Puntos invisibles para tooltip
     p_base <- p_base +
       geom_point(aes(text = paste0("Periodo: ", periodo,
                                    "<br>Mes: ", Mes,
                                    "<br>Probabilidad: ", sprintf("%.2f%%", prob_helada))),
                  size = 0, alpha = 0)
     
-    ggplotly(p_base, tooltip = "text")
+    ggplotly(p_base, tooltip = "text") %>%
+      layout(
+        annotations = list(
+          x = 0.57, y = 1.0, 
+          xref = "paper", yref = "paper",
+          text = "Fecha media de primera y última helada",
+          showarrow = FALSE,
+          font = list(size = 10, style = "italic"),
+          xanchor = "center", yanchor = "bottom"
+        )
+      )
   })
  
   # ## frec acum primera helada ##
@@ -3268,12 +3213,15 @@ server <- function(input, output, session) {
              !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       mutate(
         fecha = as.Date(Fecha),
-        dia_juliano = yday(fecha)
+        dia_juliano = yday(fecha),
+        dia_norm = if_else(leap_year(Año) & dia_juliano >= 60,
+                           dia_juliano + 1,
+                           dia_juliano)
       ) %>%
       filter(Temperatura_Abrigo_150cm_Minima <= 0) %>%
       group_by(Año) %>%
       summarise(
-        primera = min(dia_juliano),
+        primera = min(dia_norm),
         .groups = "drop"
       ) %>%
       # convertir día juliano a fecha usando un año ficticio (2000)
@@ -3286,12 +3234,12 @@ server <- function(input, output, session) {
   h_ano1_0 <- heladas_prim_anuales_0(balcarce_EMC, 1971, 2000)
   h_ano2_0 <- heladas_prim_anuales_0(balcarce_EMC, 1981, 2010)
   h_ano3_0 <- heladas_prim_anuales_0(balcarce_EMC, 1991, 2020)
-  h_ano4_0 <- heladas_prim_anuales_0(balcarce_EMC, 2014, 2024)
+  h_ano4_0 <- heladas_prim_anuales_0(balcarce_EMC, 2016, 2025)
   
   h_ano1_0 <- h_ano1_0 %>% mutate(periodo = "1971-2000")
   h_ano2_0 <- h_ano2_0 %>% mutate(periodo = "1981-2010")
   h_ano3_0 <- h_ano3_0 %>% mutate(periodo = "1991-2020")
-  h_ano4_0 <- h_ano4_0 %>% mutate(periodo = "2014-2024")
+  h_ano4_0 <- h_ano4_0 %>% mutate(periodo = "2016-2025")
   
   # Unimos todos
   h_todos_0 <- bind_rows(h_ano1_0, h_ano2_0, h_ano3_0, h_ano4_0)
@@ -3356,17 +3304,14 @@ server <- function(input, output, session) {
     fecha_sel_0 <- as.Date(sprintf("2000-%02d-%02d", mes_0, dia_0))
     dia_jul_sel <- yday(fecha_sel_0)
     
-    # Filtrar parámetros para el período elegido
     params <- h_pred_0 %>% filter(periodo == input$periodo_prim_helada_0) %>% slice(1)
     if (nrow(params) == 0) return(NULL)
     
     a <- params$a
     b <- params$b
     
-    # Frecuencia acumulada exacta usando la función logística
     frec_sel_0 <- 1 / (1 + exp(-(a + b * dia_jul_sel)))
     
-    # Dataframe del punto seleccionado
     punto_sel_0 <- tibble(
       fecha_sin_anio = fecha_sel_0,
       frec_acum = frec_sel_0
@@ -3376,11 +3321,10 @@ server <- function(input, output, session) {
       "1971-2000" = "#1b9e77",
       "1981-2010" = "#d95f02",
       "1991-2020" = "#7570b3",
-      "2014-2024" = "#e7298a"
+      "2016-2025" = "#e7298a"
     )
     color_sel <- colores_periodo[input$periodo_prim_helada_0]
     
-    # Graficar base
     plot_prim_helada_0 <- ggplot() +
       geom_point(data = h_frec_0, 
                  aes(x = fecha_sin_anio, 
@@ -3406,7 +3350,6 @@ server <- function(input, output, session) {
                                    "<br>Frecuencia: ", sprintf("%.2f%%", frec_acum*100))
                  ),
                  size = 0, alpha = 0) +
-      # Punto seleccionado (mismo color)
       geom_point(data = punto_sel_0,
                  aes(x = fecha_sin_anio, 
                      y = frec_acum),
@@ -3414,7 +3357,6 @@ server <- function(input, output, session) {
                  fill = color_sel, 
                  shape = 21, 
                  stroke = 1.5) +
-      # Línea punteada hacia el eje Y
       geom_segment(data = punto_sel_0,
                    aes(x = min(h_frec_0$fecha_sin_anio), 
                        xend = fecha_sin_anio,
@@ -3450,12 +3392,15 @@ server <- function(input, output, session) {
              !is.na(Temperatura_Abrigo_150cm_Minima)) %>%
       mutate(
         fecha = as.Date(Fecha),
-        dia_juliano = yday(fecha)
+        dia_juliano = yday(fecha),
+        dia_norm = if_else(leap_year(Año) & dia_juliano >= 60,
+                           dia_juliano + 1,
+                           dia_juliano)
       ) %>%
       filter(Temperatura_Abrigo_150cm_Minima <= 0) %>%
       group_by(Año) %>%
       summarise(
-        ultima = max(dia_juliano),
+        ultima = max(dia_norm),
         .groups = "drop"
       ) %>%
       mutate(
@@ -3467,7 +3412,7 @@ server <- function(input, output, session) {
   h_ano1_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 1971, 2000) %>% mutate(periodo = "1971-2000")
   h_ano2_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 1981, 2010) %>% mutate(periodo = "1981-2010")
   h_ano3_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 1991, 2020) %>% mutate(periodo = "1991-2020")
-  h_ano4_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 2014, 2024) %>% mutate(periodo = "2014-2024")
+  h_ano4_ult_0 <- heladas_ult_anuales_0(balcarce_EMC, 2016, 2025) %>% mutate(periodo = "2016-2025")
   
   h_todos_ult_0 <- bind_rows(h_ano1_ult_0, h_ano2_ult_0, h_ano3_ult_0, h_ano4_ult_0)
   
@@ -3553,7 +3498,7 @@ server <- function(input, output, session) {
       "1971-2000" = "#1b9e77",
       "1981-2010" = "#d95f02",
       "1991-2020" = "#7570b3",
-      "2014-2024" = "#e7298a"
+      "2016-2025" = "#e7298a"
     )
     color_sel_ult_0 <- colores_periodo[input$periodo_ult_helada_0]
     
@@ -6524,15 +6469,7 @@ server <- function(input, output, session) {
   
   
   
-  ## Descarga de informes ##
-  output$downloadReport <- downloadHandler(
-    filename = function() {
-      "ENSO.pdf"
-    },
-    content = function(file) {
-      file.copy("www/ENSO.pdf", file)
-    }
-  )
+  
   
   ## Descarga de datos ##
   output$datos <- renderDT (
