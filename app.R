@@ -23,6 +23,9 @@ library(broom)
 library(purrr)
 library(minpack.lm)
 # library(patchwork)
+library(gitcreds)
+gitcreds::gitcreds_set()
+
 
 # con <- dbConnect(SQLite(), "datos_diarios.sqlite")
 # #
