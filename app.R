@@ -22,9 +22,32 @@ library(jsonlite)
 library(broom)
 library(purrr)
 library(minpack.lm)
-# library(patchwork)
-library(gitcreds)
-gitcreds::gitcreds_set()
+library(httr2)
+library(usethis)
+
+usethis::use_git_ignore(".Renviron")
+
+source("config.R", local = TRUE)
+message("After config.R - option length = ", nchar(getOption("METEORED_API_KEY")))
+
+get_meteored_key <- function() {
+  key <- Sys.getenv("METEORED_API_KEY")
+  if (!nzchar(key)) key <- getOption("METEORED_API_KEY")
+  if (!nzchar(key)) stop("METEORED_API_KEY is missing (env var and option are empty).")
+  key
+}
+
+assert_meteored_key <- function() {
+  key <- get_meteored_key()
+  message("Using METEORED key length = ", nchar(key))
+  invisible(key)
+}
+
+
+message("METEORED_API_KEY length = ", nchar(Sys.getenv("METEORED_API_KEY")))
+message("METEORED_API_KEY (option) length = ", nchar(getOption("METEORED_API_KEY")))
+
+
 
 
 # con <- dbConnect(SQLite(), "datos_diarios.sqlite")
@@ -141,6 +164,148 @@ gitcreds::gitcreds_set()
 #     
 #   )
 # 
+
+## Forecast de Meteored ##
+
+`%||%` <- function(a, b) if (!is.null(a)) a else b
+
+get_meteored_key <- function() {
+  key <- Sys.getenv("METEORED_API_KEY")
+  if (!nzchar(key)) key <- getOption("METEORED_API_KEY")
+  if (!nzchar(key)) stop("METEORED_API_KEY falta (env y option vacías).")
+  key
+}
+
+# (opcional) para logs
+assert_meteored_key <- function() {
+  key <- get_meteored_key()
+  message("Using METEORED key length = ", nchar(key))
+  invisible(key)
+}
+
+search_locations_txt <- function(text, base_url = "https://api.meteored.com") {
+  api_key <- get_meteored_key()
+  
+  req <- httr2::request(paste0(base_url, "/api/location/v1/search/txt/",
+                               URLencode(text, reserved = TRUE))) |>
+    httr2::req_headers(`x-api-key` = api_key) |>
+    httr2::req_timeout(20)
+  
+  j <- httr2::req_perform(req) |> httr2::resp_body_json()
+  stopifnot(isTRUE(j$ok))
+  
+  locs <- j$data$locations
+  if (length(locs) == 0) return(tibble::tibble())
+  
+  dplyr::bind_rows(lapply(locs, function(x) {
+    tibble::tibble(
+      hash = x$hash,
+      name = x$name,
+      description = x$description,
+      country_name = x$country_name
+    )
+  }))
+}
+
+get_forecast_daily5_full <- function(hash, base_url = "https://api.meteored.com") {
+  api_key <- get_meteored_key()
+  
+  if (length(hash) != 1 || !nzchar(hash) || is.na(hash)) {
+    stop("Hash inválido para forecast: ", paste(hash, collapse = ","))
+  }
+  
+  url <- paste0(base_url, "/api/forecast/v1/daily/", hash)
+  
+  req <- httr2::request(url) |>
+    httr2::req_headers(`x-api-key` = api_key) |>
+    httr2::req_timeout(20)
+  
+  resp <- httr2::req_perform(req)
+  status <- httr2::resp_status(resp)
+  
+  if (status >= 400) {
+    body_txt <- tryCatch(httr2::resp_body_string(resp), error = function(e) "<no body>")
+    stop("Meteored HTTP ", status, " | ", substr(body_txt, 1, 400))
+  }
+  
+  j <- httr2::resp_body_json(resp)
+  if (!isTRUE(j$ok)) stop("Meteored: ok != TRUE")
+  
+  d <- j$data
+  days <- NULL
+  if (is.list(d) && length(d) > 0 && is.list(d[[1]]) && !is.null(d[[1]]$start)) days <- d
+  if (is.null(days) && is.list(d) && !is.null(d$days)) days <- d$days
+  if (is.null(days) && is.list(d) && !is.null(d$forecast)) days <- d$forecast
+  
+  if (is.null(days) || length(days) == 0) {
+    return(tibble::tibble(
+      Fecha = as.Date(character()),
+      Tmin = numeric(),
+      Tmax = numeric(),
+      Precipitacion_Pluviometrica = numeric(),
+      Riego = numeric(),
+      Temperatura_Abrigo_150cm = numeric(),
+      Temperatura_Abrigo_150cm_Minima = numeric()
+    ))
+  }
+  
+  dplyr::bind_rows(lapply(days, function(x) {
+    tmin <- as.numeric(x$temperature_min %||% x$temperature$min %||% NA_real_)
+    tmax <- as.numeric(x$temperature_max %||% x$temperature$max %||% NA_real_)
+    start_ms <- x$start %||% x$utime$start %||% NA_real_
+    
+    tibble::tibble(
+      Fecha = as.Date(as.POSIXct(start_ms/1000, origin = "1970-01-01", tz = "America/Argentina/Buenos_Aires")),
+      Tmin  = tmin,
+      Tmax  = tmax,
+      Precipitacion_Pluviometrica = as.numeric(x$rain %||% 0),
+      Riego = 0
+    )
+  })) |>
+    dplyr::arrange(Fecha) |>
+    dplyr::distinct(Fecha, .keep_all = TRUE) |>
+    dplyr::mutate(
+      Temperatura_Abrigo_150cm = (Tmin + Tmax) / 2,
+      Temperatura_Abrigo_150cm_Minima = Tmin
+    )
+}
+
+message("Loaded get_forecast_daily5_full version: ", as.character(environmentName(environment(get_forecast_daily5_full))))
+message("Loaded get_forecast_daily5_full (tag): V2026-01-28-1125")
+
+# Constantes (sin pegarle a la API)
+HASH_BALCARCE <- "157d85bea5cc30774a422ca476dd1b73"
+LAT_BALCARCE  <- -37.83
+
+
+ra_mj_m2_day <- function(lat_deg, doy) {
+  Gsc <- 0.0820
+  phi <- lat_deg * pi/180
+  dr  <- 1 + 0.033 * cos(2*pi/365 * doy)
+  delta <- 0.409 * sin(2*pi/365 * doy - 1.39)
+  ws <- acos(pmax(-1, pmin(1, -tan(phi) * tan(delta))))
+  (24*60/pi) * Gsc * dr * (ws*sin(phi)*sin(delta) + cos(phi)*cos(delta)*sin(ws))
+}
+
+et0_hargreaves <- function(tmax, tmin, tmean, ra) {
+  0.0023 * ra * (tmean + 17.8) * sqrt(pmax(0, tmax - tmin))
+}
+
+add_et0_hargreaves_fc <- function(df_fc, lat_deg) {
+  # reconstruyo Tmax aproximada desde Tmean y Tmin si no la guardaste
+  # Mejor: guardarla explícita si la necesitás
+  df_fc |>
+    mutate(
+      doy = yday(Fecha),
+      # Aproximación de Tmax: si no la guardaste, esta es una forma simple.
+      # Ideal: modificar get_meteored_daily5 para conservar Tmax/Tmin.
+      Tmin = Temperatura_Abrigo_150cm_Minima,
+      Tmax = 2*Temperatura_Abrigo_150cm - Tmin,
+      Ra = ra_mj_m2_day(lat_deg, doy),
+      Evapotranspiracion_Potencial = et0_hargreaves(Tmax, Tmin, Temperatura_Abrigo_150cm, Ra)
+    ) |>
+    select(-doy, -Tmin, -Tmax, -Ra)
+}
 
 
 
@@ -1375,7 +1540,11 @@ ui <-
                        h6(HTML(("<strong>ETM: </strong>MÁXIMO consumo de agua, si no hubiera deficiencias de agua."))),
                        h6(HTML(("<strong>ETR: </strong>Consumo de agua REAL."))),
                        br(),
-                       uiOutput("mensaje_cultivo_balcarce2")
+                       uiOutput("mensaje_cultivo_balcarce2"),
+                       br(),
+                       h6(HTML(("<strong>Aviso:</strong> Los valores de <em>T<sub>max</sub>, T<sub>min</sub> y precipitación</em> 
+                        a partir de la fecha actual corresponden a <u>estimaciones basadas en pronósticos de Meteored (5 días)</u>, 
+                        utilizadas para proyectar el consumo de agua y el balance hídrico."))),
                 )
               ),
               
@@ -4812,7 +4981,7 @@ server <- function(input, output, session) {
     content = function(file) {
       # Crear un dataframe modelo
       modelo <- data.frame(
-        Fecha = as.Date(c("2024-01-01", "2024-02-01")),
+        Fecha = as.Date(c("2025-09-01", "2026-04-30")),
         Lluvia = c(0, 2),
         Riego = c(10, 0)
       )
@@ -5068,6 +5237,104 @@ server <- function(input, output, session) {
     updateNumericInput(session, "fraccion_inicial_balcarce", value = valor_default)
   })
   
+  fc_cache <- reactiveVal(NULL)
+  fc_cache_time <- reactiveVal(as.POSIXct(NA))
+  
+  get_fc_cached <- function() {
+    
+    message(">>> ENTER get_fc_cached() at ", as.character(Sys.time()))
+    
+    t <- fc_cache_time()
+    message("cache_time = ", as.character(t))
+    
+    if (!is.na(t) && difftime(Sys.time(), t, units = "mins") < 60) {
+      message(">>> RETURN cached forecast (still fresh)")
+      return(fc_cache())
+    }
+    
+    message(">>> Calling Meteored forecast...")
+    fc_raw <- tryCatch(
+      get_forecast_daily5_full(hash = HASH_BALCARCE),
+      error = function(e) {
+        message(">>> Meteored ERROR: ", conditionMessage(e))
+        return(NULL)
+      }
+    )
+    
+    if (is.null(fc_raw)) {
+      message(">>> fc_raw is NULL, returning NULL")
+      return(NULL)
+    }
+    
+    message(">>> Forecast rows = ", nrow(fc_raw),
+            " | min=", as.character(min(fc_raw$Fecha, na.rm = TRUE)),
+            " | max=", as.character(max(fc_raw$Fecha, na.rm = TRUE)))
+    
+    fc <- add_et0_hargreaves_fc(fc_raw, lat_deg = LAT_BALCARCE) |>
+      dplyr::mutate(
+        Riego = 0,
+        Precipitacion_Pluviometrica = dplyr::coalesce(as.numeric(Precipitacion_Pluviometrica), 0)
+      )
+    
+    fc_cache(fc)
+    fc_cache_time(Sys.time())
+    
+    message(">>> EXIT get_fc_cached() OK")
+    fc
+  }
+  
+  serie_balance_balcarce <- reactive({
+    message("### serie_balance_balcarce recalculated at ", as.character(Sys.time()))
+    
+    # OBSERVADO
+    obs_raw <- datos_actualizados()
+    shiny::validate(shiny::need(is.data.frame(obs_raw), "datos_actualizados() no devolvió un data.frame/tibble"))
+    
+    obs <- tibble::as_tibble(obs_raw) %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      select(
+        Fecha,
+        Temperatura_Abrigo_150cm,
+        Temperatura_Abrigo_150cm_Minima,
+        Riego,
+        Precipitacion_Pluviometrica,
+        Evapotranspiracion_Potencial
+      ) %>%
+      arrange(Fecha)
+    
+    
+    
+    fc_raw <- get_fc_cached()
+    if (is.null(fc_raw) || !is.data.frame(fc_raw)) {
+      # si Meteored falla, devolvemos solo observados (app sigue andando)
+      return(obs)
+    }
+    
+    fc <- tibble::as_tibble(fc_raw) %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        Riego = 0,
+        Precipitacion_Pluviometrica = dplyr::coalesce(as.numeric(Precipitacion_Pluviometrica), 0)
+      )
+    showNotification(paste("Obs max:", max(obs$Fecha, na.rm=TRUE),
+                           "| Fc min:", min(fc$Fecha, na.rm=TRUE),
+                           "| Fc > corte:", sum(fc$Fecha > max(obs$Fecha, na.rm=TRUE))),
+                     type = "message", duration = 10)
+    
+    corte <- max(obs$Fecha, na.rm = TRUE)
+    
+    bind_rows(
+      obs,
+      fc %>% filter(Fecha > corte)
+    ) %>%
+      arrange(Fecha) %>%
+      distinct(Fecha, .keep_all = TRUE)
+  })
+  
+  observe({
+    message("### forcing forecast check")
+    get_fc_cached()
+  })
   
   balance_agua_balcarce <- reactive({
     
@@ -5079,12 +5346,12 @@ server <- function(input, output, session) {
     fecha_siembra <- as.Date(input$fecha_siembra_balcarce)
     
     # Verificar si datos_actualizados() no es NULL
-    if (is.null(datos_actualizados())) {
+    if (is.null(serie_balance_balcarce())) {
       showNotification("Los datos no están disponibles.", type = "error")
       return(NULL)
     }
     
-    datos_filtrados <- datos_actualizados() %>%
+    datos_filtrados <- serie_balance_balcarce() %>%
       filter(Fecha >= input$fecha_siembra_balcarce) %>%
       select(Fecha, Temperatura_Abrigo_150cm, Temperatura_Abrigo_150cm_Minima, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
     
@@ -5276,6 +5543,13 @@ server <- function(input, output, session) {
     )
   })
   
+  
+
+  
+  
+  
+  
+  
   ## Gráficos balance de agua ##
   output$agua_util_balcarce <- renderPlotly({
     GD_balcarce <- GD_balcarce()
@@ -5377,7 +5651,8 @@ server <- function(input, output, session) {
     }
     
     ggplotly(agua_util_balcarce)  %>% 
-      plotly::style(name = "Fracción de Agua Útil", traces = 1) 
+      plotly::style(name = "Periodo crítico", traces = 1)  %>% 
+      plotly::style(name = "Fracción de Agua Útil", traces = 2) 
   })
   
   output$consumo_agua_balcarce <- renderPlotly({
@@ -5459,14 +5734,14 @@ server <- function(input, output, session) {
     
     
     cons_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_line(aes(y = ETM_balcarce, color = "ETM")) +
-      geom_line(aes(y = ETR_balcarce, color = "ETR")) +
       geom_rect(aes(xmin = fecha_min,
                     xmax = fecha_max,
                     ymin = 0, ymax = ymax_ETM_balcarce),
                 fill = color_rect,
                 alpha = 0.2,
                 color = NA) +
+      geom_line(aes(y = ETM_balcarce, color = "ETM")) +
+      geom_line(aes(y = ETR_balcarce, color = "ETR")) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
       scale_color_manual(values = c("#E76F51", "#2A9D8F")) +
@@ -5484,8 +5759,9 @@ server <- function(input, output, session) {
     
     ggplotly(cons_agua_balcarce) %>% 
       layout(legend = list(orientation = "h", x = 0.3, y = 1.1)) %>%  
-      plotly::style(name = "ETM", traces = 1)  %>% 
-      plotly::style(name = "ETR", traces = 2) 
+      plotly::style(name = "Periodo crítico", traces = 1)  %>% 
+      plotly::style(name = "ETM", traces = 2)  %>% 
+      plotly::style(name = "ETR", traces = 3) 
   })
   
   
@@ -5567,18 +5843,18 @@ server <- function(input, output, session) {
                    na.rm = TRUE)
     
     def_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
-               stat = "identity", position = "dodge") +
-      geom_bar(aes(y = deficiencia_balcarce, fill = "deficiencia"),
-               stat = "identity", position = "dodge") +
-      geom_bar(aes(y = Riego, fill = "Riego"),
-               stat = "identity", position = "dodge") +
       geom_rect(aes(xmin = fecha_min,
                     xmax = fecha_max,
                     ymin = 0, ymax = ymax_pp),
                 fill = color_rect,
                 alpha = 0.2,
                 color = NA) +
+      geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
+               stat = "identity", position = "dodge") +
+      geom_bar(aes(y = deficiencia_balcarce, fill = "deficiencia"),
+               stat = "identity", position = "dodge") +
+      geom_bar(aes(y = Riego, fill = "Riego"),
+               stat = "identity", position = "dodge") +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
       scale_fill_manual(values = c("#BC4749", "#007EA7", "#BDE0FE")) +
@@ -5596,9 +5872,10 @@ server <- function(input, output, session) {
     
     ggplotly(def_agua_balcarce) %>% 
       layout(legend = list(orientation = "h", x = 0.1, y = 1.2)) %>% 
-      plotly::style(name = "Precipitación", traces = 1) %>% 
-      plotly::style(name = "Déficit hídrico", traces = 2)%>% 
-      plotly::style(name = "Riego", traces = 3)
+      plotly::style(name = "Período crítico", traces = 1) %>% 
+      plotly::style(name = "Precipitaciones", traces = 2) %>% 
+      plotly::style(name = "Déficit hídrico", traces = 3)%>% 
+      plotly::style(name = "Riego", traces = 4)
     
     
   })
@@ -6517,14 +6794,12 @@ server <- function(input, output, session) {
   )
 }
 
-
+message("METEORED_API_KEY length: ", nchar(Sys.getenv("METEORED_API_KEY")))
 # Run the app ----
 shinyApp(ui = ui, server = server)
 
 # renv::snapshot() #para capturar todas las dependencias 
 # renv::status() #para ver si hay paquetes no instalados
-
-
 
 # rsconnect::forgetDeployment(appPath = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo")
 
@@ -6533,7 +6808,6 @@ shinyApp(ui = ui, server = server)
 #                           secret='u8vt3UUrp8R9AfAnasDLAwmQilGTd4LctZy9ebnj')
 # rsconnect::deployApp(appDir = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo", appPrimaryDoc = "app.R",
 #                      appName = "Agromet", account = 'intabalcarce', server = 'shinyapps.io')
-
 
 # Conectar a la base de datos
 # con <- dbConnect(SQLite(), "datos_diarios.sqlite")
