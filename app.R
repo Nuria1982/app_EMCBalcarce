@@ -308,27 +308,7 @@ add_et0_hargreaves_fc <- function(df_fc, lat_deg) {
 }
 
 
-####### Para evitarerrores en los gráfico con flechas en fechas 
-min_safe_date <- function(x) {
-  x <- as.Date(x)
-  x <- x[!is.na(x)]
-  if (length(x) == 0) return(as.Date(NA))
-  min(x)
-}
 
-max_safe_date <- function(x) {
-  x <- as.Date(x)
-  x <- x[!is.na(x)]
-  if (length(x) == 0) return(as.Date(NA))
-  max(x)
-}
-
-max_safe_num <- function(x) {
-  x <- as.numeric(x)
-  x <- x[is.finite(x)]
-  if (length(x) == 0) return(NA_real_)
-  max(x)
-}
 
 ###############################################################################
 balcarce_EMC <- read_excel("balcarce_EMC.xlsx", 
@@ -401,6 +381,26 @@ datos <- datos_EMC %>%
 #dalbulus <- dalbulus
 
 
+min_safe_date <- function(x, na.rm = TRUE) {
+  x <- as.Date(x)
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(as.Date(NA))
+  min(x)
+}
+
+max_safe_date <- function(x, na.rm = TRUE) {
+  x <- as.Date(x)
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(as.Date(NA))
+  max(x)
+}
+
+max_safe_num <- function(x, na.rm = TRUE) {
+  x <- as.numeric(x)
+  x <- x[is.finite(x)]
+  if (length(x) == 0) return(NA_real_)
+  max(x, na.rm = na.rm)
+}
 
 
 #################
@@ -5581,12 +5581,6 @@ server <- function(input, output, session) {
   })
   
   
-
-  
-  
-  
-  
-  
   ## Gráficos balance de agua ##
   output$agua_util_balcarce <- renderPlotly({
     GD_balcarce <- GD_balcarce()
@@ -5662,21 +5656,48 @@ server <- function(input, output, session) {
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
+    has_obs <- any(df_siembra$fuente == "Observado")
+    has_fc  <- any(df_siembra$fuente == "Pronóstico")
     
     agua_util_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_rect(aes(xmin = fecha_min, 
-                    xmax = fecha_max, 
-                    ymin = 0, ymax = 1),
-                fill = color_rect, 
-                alpha = 0.2, 
-                color = NA) +
-      geom_line(aes(y = Fr_agua_util_balcarce , 
-                    color = "Fr_agua_util_balcarce")) +
-      labs(title = "", x = "", 
-           y = "Fracción de Agua Útil (0 - 1)") +
+      labs(
+        title = "",
+        x = "",
+        y = "Fracción de Agua Útil (0 – 1)"
+      ) +
       theme_minimal() +
-      scale_color_manual(values = c("#E9C46A")) +
-      guides(color = "none") 
+      scale_color_manual(values = c("Fr_agua_util_balcarce" = "#E9C46A")) +
+      guides(color = "none")
+    
+    if (!is.na(fecha_min) && !is.na(fecha_max) && fecha_max >= fecha_min) {
+      agua_util_balcarce <- agua_util_balcarce +
+        geom_rect(
+          aes(xmin = fecha_min, xmax = fecha_max, ymin = 0, ymax = 1),
+          fill = color_rect,
+          alpha = 0.2,
+          color = NA
+        )
+    }
+    
+    if (has_obs) {
+      agua_util_balcarce <- agua_util_balcarce +
+        geom_line(
+          data = df_siembra %>% dplyr::filter(fuente == "Observado"),
+          aes(y = Fr_agua_util_balcarce, color = "Fr_agua_util_balcarce"),
+          linewidth = 0.9,
+          linetype = "solid"
+        )
+    }
+    
+    if (has_fc) {
+      agua_util_balcarce <- agua_util_balcarce +
+        geom_line(
+          data = df_siembra %>% dplyr::filter(fuente == "Pronóstico"),
+          aes(y = Fr_agua_util_balcarce, color = "Fr_agua_util_balcarce"),
+          linewidth = 0.8,
+          linetype = "dotted"
+        )
+    }
     
     if (is.finite(fecha_vertical_roja)) {
       agua_util_balcarce <- agua_util_balcarce + 
@@ -5698,6 +5719,16 @@ server <- function(input, output, session) {
     df_siembra <- balance_agua_balcarce()
     df_siembra <- df_siembra %>% filter(GD_acum_balcarce <= GD_balcarce)
     
+    shiny::validate(
+      shiny::need(is.data.frame(df_siembra), "balance_agua_balcarce() no devolvió un data.frame."),
+      shiny::need(nrow(df_siembra) > 1, "No hay suficientes filas para graficar."),
+      shiny::need(is.finite(GD_balcarce), "GD del cultivo no disponible.")
+    )
+    
+    shiny::validate(shiny::need(nrow(df_siembra) > 1, "No se alcanzó el GD necesario para graficar."))
+    
+    req(input$fecha_siembra_balcarce)
+    
     dia_juliano <- yday(input$fecha_siembra_balcarce)
     
     # Ajustar el día juliano si es menor de 60
@@ -5712,8 +5743,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
       GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -5724,8 +5755,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
       GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -5736,8 +5767,8 @@ server <- function(input, output, session) {
       GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
       GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
       
       GD_umbral <- 70
       
@@ -5748,79 +5779,66 @@ server <- function(input, output, session) {
       fecha_max <- NA
     }
     
-    ymax_ETM_balcarce <- max(df_siembra$ETM_balcarce,
-                             na.rm = TRUE)
+    ymax_ETM_balcarce <- max_safe_num(df_siembra$ETM_balcarce)
     
     # Calcular la fecha de inicio de abril
-    if (month(input$fecha_siembra_balcarce) >= 5) {
-      # Si la siembra es en octubre o más tarde, ajustar al próximo abril
-      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce) + 1, "-04-01"))
+    if (lubridate::month(input$fecha_siembra_balcarce) >= 5) {
+      fecha_inicio_abril <- as.Date(paste0(lubridate::year(input$fecha_siembra_balcarce) + 1, "-04-01"))
     } else {
-      # Si es antes de octubre, simplemente avanzar al mismo año en abril
-      fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce), "-04-01"))
+      fecha_inicio_abril <- as.Date(paste0(lubridate::year(input$fecha_siembra_balcarce), "-04-01"))
     }
     
-    fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum_balcarce >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_roja <- min_safe_date(
+      df_siembra$Fecha[df_siembra$GD_acum_balcarce >= GD_umbral &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
+    fecha_vertical_azul <- min_safe_date(
+      df_siembra$Fecha[df_siembra$Fecha >= fecha_inicio_abril &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
-    fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
     
     cons_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_rect(aes(xmin = fecha_min, 
-                    xmax = fecha_max, 
-                    ymin = 0, ymax = ymax_ETM_balcarce),
-                fill = color_rect, 
-                alpha = 0.2, 
-                color = NA) +
-      geom_line(
-        data = df_siembra %>% filter(fuente == "Observado"),
-        aes(y = ETM_balcarce, 
-            color = "ETM"),
-        linewidth = 0.9,
-        linetype = "solid"
-      ) +
-      geom_line(
-        data = df_siembra %>% filter(fuente == "Pronóstico"),
-        aes(y = ETM_balcarce),
-        color = "#2A9D8F80",
-        linewidth = 0.7,
-        linetype = "dotted"
-      ) +
-      geom_line(
-        data = df_siembra %>% filter(fuente == "Observado"),
-        aes(y = ETR_balcarce,
-            color = "ETR"),   
-        linewidth = 0.9,
-        linetype = "solid"
-      ) +
-      geom_line(
-        data = df_siembra %>% filter(fuente == "Pronóstico"),
-        aes(y = ETR_balcarce),
-        color = "#E76F5180",
-        linewidth = 0.7,
-        linetype = "dotted"
-      ) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_color_manual(
-        values = c(
-          "ETM" = "#2A9D8F",
-          "ETR" = "#E76F51"
-        )) +
-      guides(color = guide_legend(title = NULL)) 
+      scale_color_manual(values = c("ETM" = "#2A9D8F", "ETR" = "#E76F51")) +
+      guides(color = guide_legend(title = NULL))
     
-    if (is.finite(fecha_vertical_roja)) {
-      cons_agua_balcarce <- cons_agua_balcarce + 
-        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    # Rect only if valid
+    if (!is.na(fecha_min) && !is.na(fecha_max) &&
+        fecha_max >= fecha_min &&
+        !is.na(ymax_ETM_balcarce) && ymax_ETM_balcarce > 0) {
+      cons_agua_balcarce <- cons_agua_balcarce +
+        geom_rect(aes(xmin = fecha_min, xmax = fecha_max, ymin = 0, ymax = ymax_ETM_balcarce),
+                  fill = color_rect, alpha = 0.2, color = NA)
     }
     
-    if (is.finite(fecha_vertical_azul)) {
-      cons_agua_balcarce <- cons_agua_balcarce + 
+    has_obs <- any(df_siembra$fuente == "Observado")
+    has_fc  <- any(df_siembra$fuente == "Pronóstico")
+    
+    if (has_obs) {
+      cons_agua_balcarce <- cons_agua_balcarce +
+        geom_line(data = df_siembra %>% dplyr::filter(fuente == "Observado"),
+                  aes(y = ETM_balcarce, color = "ETM"), linewidth = 0.9) +
+        geom_line(data = df_siembra %>% dplyr::filter(fuente == "Observado"),
+                  aes(y = ETR_balcarce, color = "ETR"), linewidth = 0.9)
+    }
+    
+    if (has_fc) {
+      cons_agua_balcarce <- cons_agua_balcarce +
+        geom_line(data = df_siembra %>% dplyr::filter(fuente == "Pronóstico"),
+                  aes(y = ETM_balcarce), color = "#2A9D8F80", linewidth = 0.7, linetype = "dotted") +
+        geom_line(data = df_siembra %>% dplyr::filter(fuente == "Pronóstico"),
+                  aes(y = ETR_balcarce), color = "#E76F5180", linewidth = 0.7, linetype = "dotted")
+    }
+    
+    # Vlines on the correct plot object
+    if (!is.na(fecha_vertical_roja)) {
+      cons_agua_balcarce <- cons_agua_balcarce +
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    }
+    if (!is.na(fecha_vertical_azul)) {
+      cons_agua_balcarce <- cons_agua_balcarce +
         geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
     }
     
@@ -5914,61 +5932,77 @@ server <- function(input, output, session) {
                    na.rm = TRUE)
     
     
+    has_obs <- any(df_siembra$fuente_barra == "Observado")
+    has_fc  <- any(df_siembra$fuente_barra == "Pronóstico")
     
     def_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_rect(aes(xmin = fecha_min,
-                    xmax = fecha_max,
-                    ymin = 0, ymax = ymax_pp),
-                fill = color_rect,
-                alpha = 0.2,
-                color = NA) +
-      geom_col(
-        data = df_siembra %>% filter(fuente_barra == "Observado"),
-        aes(y = Precipitacion_Pluviometrica, fill = "Precipitaciones"),
-        alpha = 1, width = 0.9
-      ) +
-      geom_col(
-        data = df_siembra %>% filter(fuente_barra == "Pronóstico"),
-        aes(y = Precipitacion_Pluviometrica, fill = "Precipitaciones"),
-        alpha = 0.5, width = 0.9, linewidth = 0.2
-      ) +
-      geom_col(
-        data = df_siembra %>% filter(fuente_barra == "Observado"),
-        aes(y = deficiencia_balcarce, fill = "Déficit hídrico"),
-        alpha = 1, width = 0.9
-      ) +
-
-      geom_col(
-        data = df_siembra %>% filter(fuente_barra == "Pronóstico"),
-        aes(y = deficiencia_balcarce, fill = "Déficit hídrico"),
-        alpha = 0.5, width = 0.9, linewidth = 0.2
-      ) +
-      geom_col(
-        data = df_siembra %>% filter(fuente_barra == "Observado"),
-        aes(y = Riego, fill = "Riego"),
-        alpha = 1, width = 0.9
-      ) +
-      geom_col(
-        data = df_siembra %>% filter(fuente_barra == "Pronóstico"),
-        aes(y = Riego, fill = "Riego"),
-        alpha = 0.5, width = 0.9, linewidth = 0.2
-      ) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_fill_manual(values = c("#C51E3A", "#0047AB", "#43B3AE")) +
-      guides(fill = guide_legend(title = NULL)) 
+      scale_fill_manual(values = c("Déficit hídrico" = "#C51E3A",
+                                   "Precipitaciones" = "#0047AB",
+                                   "Riego" = "#43B3AE")) +
+      guides(fill = guide_legend(title = NULL))
     
-    if (is.finite(fecha_vertical_roja)) {
-      def_agua_balcarce <- def_agua_balcarce + 
-        geom_vline(xintercept = as.numeric(fecha_vertical_roja), color = "red", linetype = "dashed")
+    # Rectángulo SOLO si es válido
+    if (!is.na(fecha_min) && !is.na(fecha_max) && fecha_max >= fecha_min && is.finite(ymax_pp) && ymax_pp > 0) {
+      def_agua_balcarce <- def_agua_balcarce +
+        geom_rect(aes(xmin = fecha_min, xmax = fecha_max, ymin = 0, ymax = ymax_pp),
+                  fill = color_rect, alpha = 0.2, color = NA)
     }
     
-    if (is.finite(fecha_vertical_azul)) {
-      def_agua_balcarce <- def_agua_balcarce + 
-        geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
+    # OBSERVADO (si existe)
+    if (has_obs) {
+      def_agua_balcarce <- def_agua_balcarce +
+        geom_col(
+          data = df_siembra %>% dplyr::filter(fuente_barra == "Observado"),
+          aes(y = Precipitacion_Pluviometrica, fill = "Precipitaciones"),
+          alpha = 1, width = 0.9
+        ) +
+        geom_col(
+          data = df_siembra %>% dplyr::filter(fuente_barra == "Observado"),
+          aes(y = deficiencia_balcarce, fill = "Déficit hídrico"),
+          alpha = 1, width = 0.9
+        ) +
+        geom_col(
+          data = df_siembra %>% dplyr::filter(fuente_barra == "Observado"),
+          aes(y = Riego, fill = "Riego"),
+          alpha = 1, width = 0.9
+        )
     }
     
-    ggplotly(def_agua_balcarce) %>% 
+    # PRONÓSTICO (solo si existe)
+    if (has_fc) {
+      def_agua_balcarce <- def_agua_balcarce +
+        geom_col(
+          data = df_siembra %>% dplyr::filter(fuente_barra == "Pronóstico"),
+          aes(y = Precipitacion_Pluviometrica, fill = "Precipitaciones"),
+          alpha = 0.5, width = 0.9, linewidth = 0.2
+        ) +
+        geom_col(
+          data = df_siembra %>% dplyr::filter(fuente_barra == "Pronóstico"),
+          aes(y = deficiencia_balcarce, fill = "Déficit hídrico"),
+          alpha = 0.5, width = 0.9, linewidth = 0.2
+        ) +
+        geom_col(
+          data = df_siembra %>% dplyr::filter(fuente_barra == "Pronóstico"),
+          aes(y = Riego, fill = "Riego"),
+          alpha = 0.5, width = 0.9, linewidth = 0.2
+        )
+    }
+    
+    # Líneas verticales SOLO si existen (Date -> usar !is.na)
+    if (!is.na(fecha_vertical_roja)) {
+      def_agua_balcarce <- def_agua_balcarce +
+        geom_vline(xintercept = as.numeric(fecha_vertical_roja),
+                   color = "red", linetype = "dashed")
+    }
+    if (!is.na(fecha_vertical_azul)) {
+      def_agua_balcarce <- def_agua_balcarce +
+        geom_vline(xintercept = as.numeric(fecha_vertical_azul),
+                   color = "blue", linetype = "dashed")
+    }
+    
+    ggplotly(def_agua_balcarce) %>%
       layout(legend = list(orientation = "h", x = 0.1, y = 1.2)) %>% 
       plotly::style(name = "Período crítico", traces = 1) %>% 
       plotly::style(name = "Precipitaciones", traces = 2) %>% 
