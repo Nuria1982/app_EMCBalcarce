@@ -28,7 +28,7 @@ library(usethis)
 usethis::use_git_ignore(".Renviron")
 
 source("config.R", local = TRUE)
-message("After config.R - option length = ", nchar(getOption("METEORED_API_KEY")))
+# message("After config.R - option length = ", nchar(getOption("METEORED_API_KEY")))
 
 get_meteored_key <- function() {
   key <- Sys.getenv("METEORED_API_KEY")
@@ -39,13 +39,13 @@ get_meteored_key <- function() {
 
 assert_meteored_key <- function() {
   key <- get_meteored_key()
-  message("Using METEORED key length = ", nchar(key))
+  # message("Using METEORED key length = ", nchar(key))
   invisible(key)
 }
 
 
-message("METEORED_API_KEY length = ", nchar(Sys.getenv("METEORED_API_KEY")))
-message("METEORED_API_KEY (option) length = ", nchar(getOption("METEORED_API_KEY")))
+# message("METEORED_API_KEY length = ", nchar(Sys.getenv("METEORED_API_KEY")))
+# message("METEORED_API_KEY (option) length = ", nchar(getOption("METEORED_API_KEY")))
 
 
 
@@ -245,7 +245,8 @@ get_forecast_daily5_full <- function(hash, base_url = "https://api.meteored.com"
       Precipitacion_Pluviometrica = numeric(),
       Riego = numeric(),
       Temperatura_Abrigo_150cm = numeric(),
-      Temperatura_Abrigo_150cm_Minima = numeric()
+      Temperatura_Abrigo_150cm_Minima = numeric(),
+      Temperatura_Abrigo_150cm_Maxima = numeric()
     ))
   }
   
@@ -266,16 +267,17 @@ get_forecast_daily5_full <- function(hash, base_url = "https://api.meteored.com"
     dplyr::distinct(Fecha, .keep_all = TRUE) |>
     dplyr::mutate(
       Temperatura_Abrigo_150cm = (Tmin + Tmax) / 2,
-      Temperatura_Abrigo_150cm_Minima = Tmin
+      Temperatura_Abrigo_150cm_Minima = Tmin,
+      Temperatura_Abrigo_150cm_Maxima = Tmax
     )
 }
 
-message("Loaded get_forecast_daily5_full version: ", as.character(environmentName(environment(get_forecast_daily5_full))))
-message("Loaded get_forecast_daily5_full (tag): V2026-01-28-1125")
+# message("Loaded get_forecast_daily5_full version: ", as.character(environmentName(environment(get_forecast_daily5_full))))
+# message("Loaded get_forecast_daily5_full (tag): V2026-01-28-1125")
 
 # Constantes (sin pegarle a la API)
 HASH_BALCARCE <- "157d85bea5cc30774a422ca476dd1b73"
-LAT_BALCARCE  <- -37.83
+LAT_BALCARCE  <- -37.8462
 
 
 ra_mj_m2_day <- function(lat_deg, doy) {
@@ -288,19 +290,17 @@ ra_mj_m2_day <- function(lat_deg, doy) {
 }
 
 et0_hargreaves <- function(tmax, tmin, tmean, ra) {
-  0.0023 * ra * (tmean + 17.8) * sqrt(pmax(0, tmax - tmin))
+
+  td <- pmax(0, tmax - tmin)  # avoid negative due to bad data
+  0.00115 * (tmean + 5.15) * sqrt(td) * ra
 }
 
 add_et0_hargreaves_fc <- function(df_fc, lat_deg) {
-  # reconstruyo Tmax aproximada desde Tmean y Tmin si no la guardaste
-  # Mejor: guardarla explícita si la necesitás
   df_fc |>
     mutate(
       doy = yday(Fecha),
-      # Aproximación de Tmax: si no la guardaste, esta es una forma simple.
-      # Ideal: modificar get_meteored_daily5 para conservar Tmax/Tmin.
       Tmin = Temperatura_Abrigo_150cm_Minima,
-      Tmax = 2*Temperatura_Abrigo_150cm - Tmin,
+      Tmax = Temperatura_Abrigo_150cm_Maxima,
       Ra = ra_mj_m2_day(lat_deg, doy),
       Evapotranspiracion_Potencial = et0_hargreaves(Tmax, Tmin, Temperatura_Abrigo_150cm, Ra)
     ) |>
@@ -308,6 +308,27 @@ add_et0_hargreaves_fc <- function(df_fc, lat_deg) {
 }
 
 
+####### Para evitarerrores en los gráfico con flechas en fechas 
+min_safe_date <- function(x) {
+  x <- as.Date(x)
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(as.Date(NA))
+  min(x)
+}
+
+max_safe_date <- function(x) {
+  x <- as.Date(x)
+  x <- x[!is.na(x)]
+  if (length(x) == 0) return(as.Date(NA))
+  max(x)
+}
+
+max_safe_num <- function(x) {
+  x <- as.numeric(x)
+  x <- x[is.finite(x)]
+  if (length(x) == 0) return(NA_real_)
+  max(x)
+}
 
 ###############################################################################
 balcarce_EMC <- read_excel("balcarce_EMC.xlsx", 
@@ -1486,10 +1507,11 @@ ui <-
                 
                 column(3,
                        div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                           h4(strong("Datos ambientales propios")),
                            downloadButton("descarga_modelo_balcarce", "Descargar modelo de archivo para completar"),
                            br(),
                            br(),
-                           fileInput("clima_balcarce", "Ingresar datos propios (opcional)",
+                           fileInput("clima_balcarce", "Subir tabla con datos (.csv ó .xlsx) (opcional)",
                                      accept = c(".csv", ".xlsx"))
                            ,
                            helpText("El archivo debe contener datos diarios (sin datos faltantes) y las columnas: Fecha, Lluvia, Riego (primera letra mayúscula)")
@@ -1542,9 +1564,13 @@ ui <-
                        br(),
                        uiOutput("mensaje_cultivo_balcarce2"),
                        br(),
-                       h6(HTML(("<strong>Aviso:</strong> Los valores de <em>T<sub>max</sub>, T<sub>min</sub> y precipitación</em> 
-                        a partir de la fecha actual corresponden a <u>estimaciones basadas en pronósticos de Meteored (5 días)</u>, 
-                        utilizadas para proyectar el consumo de agua y el balance hídrico."))),
+                       h6(HTML(("<strong>Aviso:</strong> 
+                        A partir del <strong>último día con datos observados</strong>, los valores de 
+                        <em>T<sub>max</sub>, T<sub>min</sub> y precipitaciones</em> corresponden a 
+                        <u>estimaciones basadas en pronósticos de Meteored (5 días)</u>. 
+                        En los gráficos, estos datos pronosticados se representan mediante 
+                        <strong>líneas discontinuas</strong> y <strong>barras semitransparentes</strong>, 
+                        y se utilizan únicamente para proyectar el consumo de agua y el balance hídrico."))),
                 )
               ),
               
@@ -1682,10 +1708,11 @@ ui <-
                 ),
                 column(3,
                        div(style = "background-color: #E0E1DD80; padding: 10px; border-radius: 10px;",
+                           h4(strong("Datos ambientales")),
                            downloadButton("descarga_modelo", "Descargar modelo de archivo para completar"),
                            br(),
                            br(),
-                           fileInput("otros_clima", "Ingresar datos ambientales propios",
+                           fileInput("otros_clima", "Subir tabla con datos (.csv ó .xlsx)",
                                      accept = c(".csv", ".xlsx"))
                            ,
                            helpText("El archivo debe contener datos diarios y las columnas (sin datos faltantes): Fecha, Lluvia, Riego, Temperatura_Media, Temperatura_Minima y ET0 (primera letra mayúscula)")
@@ -5266,9 +5293,9 @@ server <- function(input, output, session) {
       return(NULL)
     }
     
-    message(">>> Forecast rows = ", nrow(fc_raw),
-            " | min=", as.character(min(fc_raw$Fecha, na.rm = TRUE)),
-            " | max=", as.character(max(fc_raw$Fecha, na.rm = TRUE)))
+    # message(">>> Forecast rows = ", nrow(fc_raw),
+    #         " | min=", as.character(min(fc_raw$Fecha, na.rm = TRUE)),
+    #         " | max=", as.character(max(fc_raw$Fecha, na.rm = TRUE)))
     
     fc <- add_et0_hargreaves_fc(fc_raw, lat_deg = LAT_BALCARCE) |>
       dplyr::mutate(
@@ -5279,26 +5306,28 @@ server <- function(input, output, session) {
     fc_cache(fc)
     fc_cache_time(Sys.time())
     
-    message(">>> EXIT get_fc_cached() OK")
+    # message(">>> EXIT get_fc_cached() OK")
     fc
   }
   
   serie_balance_balcarce <- reactive({
-    message("### serie_balance_balcarce recalculated at ", as.character(Sys.time()))
+    # message("### serie_balance_balcarce recalculated at ", as.character(Sys.time()))
     
     # OBSERVADO
     obs_raw <- datos_actualizados()
     shiny::validate(shiny::need(is.data.frame(obs_raw), "datos_actualizados() no devolvió un data.frame/tibble"))
     
     obs <- tibble::as_tibble(obs_raw) %>%
-      mutate(Fecha = as.Date(Fecha)) %>%
+      mutate(Fecha = as.Date(Fecha),
+             fuente = "Observado") %>%
       select(
         Fecha,
         Temperatura_Abrigo_150cm,
         Temperatura_Abrigo_150cm_Minima,
         Riego,
         Precipitacion_Pluviometrica,
-        Evapotranspiracion_Potencial
+        Evapotranspiracion_Potencial,
+        fuente
       ) %>%
       arrange(Fecha)
     
@@ -5306,7 +5335,7 @@ server <- function(input, output, session) {
     
     fc_raw <- get_fc_cached()
     if (is.null(fc_raw) || !is.data.frame(fc_raw)) {
-      # si Meteored falla, devolvemos solo observados (app sigue andando)
+      
       return(obs)
     }
     
@@ -5314,12 +5343,13 @@ server <- function(input, output, session) {
       mutate(
         Fecha = as.Date(Fecha),
         Riego = 0,
-        Precipitacion_Pluviometrica = dplyr::coalesce(as.numeric(Precipitacion_Pluviometrica), 0)
+        Precipitacion_Pluviometrica = dplyr::coalesce(as.numeric(Precipitacion_Pluviometrica), 0),
+        fuente = "Pronóstico"
       )
-    showNotification(paste("Obs max:", max(obs$Fecha, na.rm=TRUE),
-                           "| Fc min:", min(fc$Fecha, na.rm=TRUE),
-                           "| Fc > corte:", sum(fc$Fecha > max(obs$Fecha, na.rm=TRUE))),
-                     type = "message", duration = 10)
+    # showNotification(paste("Obs max:", max(obs$Fecha, na.rm=TRUE),
+    #                        "| Fc min:", min(fc$Fecha, na.rm=TRUE),
+    #                        "| Fc > corte:", sum(fc$Fecha > max(obs$Fecha, na.rm=TRUE))),
+    #                  type = "message", duration = 10)
     
     corte <- max(obs$Fecha, na.rm = TRUE)
     
@@ -5332,7 +5362,7 @@ server <- function(input, output, session) {
   })
   
   observe({
-    message("### forcing forecast check")
+    # message("### forcing forecast check")
     get_fc_cached()
   })
   
@@ -5353,7 +5383,13 @@ server <- function(input, output, session) {
     
     datos_filtrados <- serie_balance_balcarce() %>%
       filter(Fecha >= input$fecha_siembra_balcarce) %>%
-      select(Fecha, Temperatura_Abrigo_150cm, Temperatura_Abrigo_150cm_Minima, Riego, Precipitacion_Pluviometrica, Evapotranspiracion_Potencial)
+      select(Fecha, 
+             Temperatura_Abrigo_150cm, 
+             Temperatura_Abrigo_150cm_Minima, 
+             Riego, 
+             Precipitacion_Pluviometrica, 
+             Evapotranspiracion_Potencial,
+             fuente)
     
     datos_filtrados <- datos_filtrados %>%
       mutate(Dia_Mes = format(Fecha, "%m-%d"))
@@ -5476,6 +5512,7 @@ server <- function(input, output, session) {
   
   etm_etr_acum_balcarce <- reactive({
     GD_balcarce <- GD_balcarce()
+    shiny::validate(shiny::need(is.finite(GD_balcarce), "GD del cultivo no disponible (GD_balcarce es NA)."))
     df_siembra_balcarce <- balance_agua_balcarce()
     df_siembra_balcarce <- df_siembra_balcarce %>% filter(GD_acum_balcarce <= GD_balcarce)
     
@@ -5732,19 +5769,48 @@ server <- function(input, output, session) {
       summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
       pull(fecha_vertical)
     
-    
     cons_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
-      geom_rect(aes(xmin = fecha_min,
-                    xmax = fecha_max,
-                    ymin = 0, ymax = ymax_ETM_balcarce),
-                fill = color_rect,
-                alpha = 0.2,
+      geom_rect(aes(xmin = fecha_min, 
+                    xmax = fecha_max, 
+                    ymin = 0, ymax = 1),
+                fill = color_rect, 
+                alpha = 0.2, 
                 color = NA) +
-      geom_line(aes(y = ETM_balcarce, color = "ETM")) +
-      geom_line(aes(y = ETR_balcarce, color = "ETR")) +
+      geom_line(
+        data = df_siembra %>% filter(fuente == "Observado"),
+        aes(y = ETM_balcarce, 
+            color = "ETM"),
+        linewidth = 0.9,
+        linetype = "solid"
+      ) +
+      geom_line(
+        data = df_siembra %>% filter(fuente == "Pronóstico"),
+        aes(y = ETM_balcarce),
+        color = "#2A9D8F80",
+        linewidth = 0.7,
+        linetype = "dotted"
+      ) +
+      geom_line(
+        data = df_siembra %>% filter(fuente == "Observado"),
+        aes(y = ETR_balcarce,
+            color = "ETR"),   
+        linewidth = 0.9,
+        linetype = "solid"
+      ) +
+      geom_line(
+        data = df_siembra %>% filter(fuente == "Pronóstico"),
+        aes(y = ETR_balcarce),
+        color = "#E76F5180",
+        linewidth = 0.7,
+        linetype = "dotted"
+      ) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_color_manual(values = c("#E76F51", "#2A9D8F")) +
+      scale_color_manual(
+        values = c(
+          "ETM" = "#2A9D8F",
+          "ETR" = "#E76F51"
+        )) +
       guides(color = guide_legend(title = NULL)) 
     
     if (is.finite(fecha_vertical_roja)) {
@@ -5757,11 +5823,8 @@ server <- function(input, output, session) {
         geom_vline(xintercept = as.numeric(fecha_vertical_azul), color = "blue", linetype = "dashed")
     }
     
-    ggplotly(cons_agua_balcarce) %>% 
-      layout(legend = list(orientation = "h", x = 0.3, y = 1.1)) %>%  
-      plotly::style(name = "Periodo crítico", traces = 1)  %>% 
-      plotly::style(name = "ETM", traces = 2)  %>% 
-      plotly::style(name = "ETR", traces = 3) 
+    ggplotly(cons_agua_balcarce) %>%
+      layout(legend = list(orientation = "h", x = 0.3, y = 1.1))
   })
   
   
@@ -5769,6 +5832,13 @@ server <- function(input, output, session) {
     GD_balcarce <- GD_balcarce()
     df_siembra <- balance_agua_balcarce()
     df_siembra <- df_siembra %>% filter(GD_acum_balcarce <= GD_balcarce)
+    
+    obs_raw <- datos_actualizados()
+    req(obs_raw)
+    corte_obs <- max(as.Date(obs_raw$Fecha), na.rm = TRUE)
+    
+    df_siembra <- df_siembra %>%
+      mutate(fuente_barra = if_else(Fecha <= corte_obs, "Observado", "Pronóstico"))
     
     dia_juliano <- yday(input$fecha_siembra_balcarce)
     
@@ -5842,6 +5912,8 @@ server <- function(input, output, session) {
     ymax_pp <- max(df_siembra$Precipitacion_Pluviometrica,
                    na.rm = TRUE)
     
+    
+    
     def_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_rect(aes(xmin = fecha_min,
                     xmax = fecha_max,
@@ -5849,15 +5921,40 @@ server <- function(input, output, session) {
                 fill = color_rect,
                 alpha = 0.2,
                 color = NA) +
-      geom_bar(aes(y = Precipitacion_Pluviometrica, fill = "Precipitacion_Pluviometrica"),
-               stat = "identity", position = "dodge") +
-      geom_bar(aes(y = deficiencia_balcarce, fill = "deficiencia"),
-               stat = "identity", position = "dodge") +
-      geom_bar(aes(y = Riego, fill = "Riego"),
-               stat = "identity", position = "dodge") +
+      geom_col(
+        data = df_siembra %>% filter(fuente_barra == "Observado"),
+        aes(y = Precipitacion_Pluviometrica, fill = "Precipitaciones"),
+        alpha = 1, width = 0.9
+      ) +
+      geom_col(
+        data = df_siembra %>% filter(fuente_barra == "Pronóstico"),
+        aes(y = Precipitacion_Pluviometrica, fill = "Precipitaciones"),
+        alpha = 0.5, width = 0.9, linewidth = 0.2
+      ) +
+      geom_col(
+        data = df_siembra %>% filter(fuente_barra == "Observado"),
+        aes(y = deficiencia_balcarce, fill = "Déficit hídrico"),
+        alpha = 1, width = 0.9
+      ) +
+
+      geom_col(
+        data = df_siembra %>% filter(fuente_barra == "Pronóstico"),
+        aes(y = deficiencia_balcarce, fill = "Déficit hídrico"),
+        alpha = 0.5, width = 0.9, linewidth = 0.2
+      ) +
+      geom_col(
+        data = df_siembra %>% filter(fuente_barra == "Observado"),
+        aes(y = Riego, fill = "Riego"),
+        alpha = 1, width = 0.9
+      ) +
+      geom_col(
+        data = df_siembra %>% filter(fuente_barra == "Pronóstico"),
+        aes(y = Riego, fill = "Riego"),
+        alpha = 0.5, width = 0.9, linewidth = 0.2
+      ) +
       labs(title = "", x = "", y = "mm") +
       theme_minimal() +
-      scale_fill_manual(values = c("#BC4749", "#007EA7", "#BDE0FE")) +
+      scale_fill_manual(values = c("#C51E3A", "#0047AB", "#43B3AE")) +
       guides(fill = guide_legend(title = NULL)) 
     
     if (is.finite(fecha_vertical_roja)) {
