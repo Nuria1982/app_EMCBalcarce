@@ -5601,8 +5601,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
       GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -5613,8 +5613,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
       GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -5625,8 +5625,8 @@ server <- function(input, output, session) {
       GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
       GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
       
       GD_umbral <- 70
       
@@ -5646,15 +5646,15 @@ server <- function(input, output, session) {
       fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce), "-04-01"))
     }
     
-    fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum_balcarce >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_roja <- min_safe_date(
+      df_siembra$Fecha[df_siembra$GD_acum_balcarce >= GD_umbral &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
-    fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_azul <- min_safe_date(
+      df_siembra$Fecha[df_siembra$Fecha >= fecha_inicio_abril &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
     has_obs <- any(df_siembra$fuente == "Observado")
     has_fc  <- any(df_siembra$fuente == "Pronóstico")
@@ -5873,8 +5873,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
       GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -5885,8 +5885,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
       GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -5897,8 +5897,8 @@ server <- function(input, output, session) {
       GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
       GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce >= GD_R3], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum_balcarce) & df_siembra$GD_acum_balcarce <= GD_R6], na.rm = TRUE)
       
       GD_umbral <- 70
       
@@ -5918,15 +5918,15 @@ server <- function(input, output, session) {
       fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra_balcarce), "-04-01"))
     }
     
-    fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum_balcarce >= GD_umbral, Temperatura_Abrigo_150cm_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_roja <- min_safe_date(
+      df_siembra$Fecha[df_siembra$GD_acum_balcarce >= GD_umbral &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
-    fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Abrigo_150cm_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_azul <- min_safe_date(
+      df_siembra$Fecha[df_siembra$Fecha >= fecha_inicio_abril &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
     ymax_pp <- max(df_siembra$Precipitacion_Pluviometrica,
                    na.rm = TRUE)
@@ -6003,12 +6003,7 @@ server <- function(input, output, session) {
     }
     
     ggplotly(def_agua_balcarce) %>%
-      layout(legend = list(orientation = "h", x = 0.1, y = 1.2)) %>% 
-      plotly::style(name = "Período crítico", traces = 1) %>% 
-      plotly::style(name = "Precipitaciones", traces = 2) %>% 
-      plotly::style(name = "Déficit hídrico", traces = 3)%>% 
-      plotly::style(name = "Riego", traces = 4)
-    
+      layout(legend = list(orientation = "h", x = 0.1, y = 1.2)) 
     
   })
   
@@ -6431,8 +6426,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
       GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -6443,8 +6438,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
       GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -6455,8 +6450,8 @@ server <- function(input, output, session) {
       GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
       GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
       
       GD_umbral <- 70
       
@@ -6476,15 +6471,15 @@ server <- function(input, output, session) {
       fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra), "-04-01"))
     }
     
-    fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum >= GD_umbral, Temperatura_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_roja <- min_safe_date(
+      df_siembra$Fecha[df_siembra$GD_acum_balcarce >= GD_umbral &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
-    fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_azul <- min_safe_date(
+      df_siembra$Fecha[df_siembra$Fecha >= fecha_inicio_abril &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
     
     agua_util <- ggplot(df_siembra, aes(x = Fecha)) +
@@ -6534,8 +6529,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
       GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -6546,8 +6541,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
       GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -6558,8 +6553,8 @@ server <- function(input, output, session) {
       GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
       GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
       
       GD_umbral <- 70
       
@@ -6582,15 +6577,15 @@ server <- function(input, output, session) {
       fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra), "-04-01"))
     }
     
-    fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum >= GD_umbral, Temperatura_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_roja <- min_safe_date(
+      df_siembra$Fecha[df_siembra$GD_acum_balcarce >= GD_umbral &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
-    fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_azul <- min_safe_date(
+      df_siembra$Fecha[df_siembra$Fecha >= fecha_inicio_abril &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
     
     cons_agua <- ggplot(df_siembra, aes(x = Fecha)) +
@@ -6643,8 +6638,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3295.9), 0)
       GD_fpc <- round(((0.0217 * (dia_juliano^2)) - (14.967 * dia_juliano) + 3745.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -6655,8 +6650,8 @@ server <- function(input, output, session) {
       GD_ipc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2339.9), 0)
       GD_fpc <- round(((0.0134 * (dia_juliano^2)) - (9.8499 * dia_juliano) + 2789.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_ipc], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_fpc], na.rm = TRUE)
       
       GD_umbral <- 340
       
@@ -6667,8 +6662,8 @@ server <- function(input, output, session) {
       GD_R3 <- round(((-0.0476 * (dia_juliano^2)) + (30.212 * dia_juliano) - 4047.4), 0)
       GD_R6 <- round(((-0.0447 * (dia_juliano^2)) + (26.268 * dia_juliano) - 2764.9), 0)
       
-      fecha_min <- min(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
-      fecha_max <- max(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
+      fecha_min <- min_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum >= GD_R3], na.rm = TRUE)
+      fecha_max <- max_safe_date(df_siembra$Fecha[!is.na(df_siembra$GD_acum) & df_siembra$GD_acum <= GD_R6], na.rm = TRUE)
       
       GD_umbral <- 70
       
@@ -6688,15 +6683,15 @@ server <- function(input, output, session) {
       fecha_inicio_abril <- as.Date(paste0(year(input$fecha_siembra), "-04-01"))
     }
     
-    fecha_vertical_roja <- df_siembra %>%
-      filter(GD_acum >= GD_umbral, Temperatura_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_roja <- min_safe_date(
+      df_siembra$Fecha[df_siembra$GD_acum_balcarce >= GD_umbral &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
-    fecha_vertical_azul <- df_siembra %>%
-      filter(Fecha >= fecha_inicio_abril, Temperatura_Minima <= 2) %>%
-      summarize(fecha_vertical = min(Fecha, na.rm = TRUE)) %>%
-      pull(fecha_vertical)
+    fecha_vertical_azul <- min_safe_date(
+      df_siembra$Fecha[df_siembra$Fecha >= fecha_inicio_abril &
+                         df_siembra$Temperatura_Abrigo_150cm_Minima <= 2]
+    )
     
     ymax_pp <- max(df_siembra$Precipitacion_Pluviometrica,
                    na.rm = TRUE)
