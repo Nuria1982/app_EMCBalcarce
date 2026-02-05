@@ -5670,7 +5670,8 @@ server <- function(input, output, session) {
                 fill = color_rect, 
                 alpha = 0.2, 
                 color = NA) +
-      geom_line(aes(y = Fr_agua_util_balcarce , color = "Fr_agua_util_balcarce")) +
+      geom_line(aes(y = Fr_agua_util_balcarce , 
+                    color = "Fr_agua_util_balcarce")) +
       labs(title = "", x = "", 
            y = "Fracción de Agua Útil (0 - 1)") +
       theme_minimal() +
@@ -5772,7 +5773,7 @@ server <- function(input, output, session) {
     cons_agua_balcarce <- ggplot(df_siembra, aes(x = Fecha)) +
       geom_rect(aes(xmin = fecha_min, 
                     xmax = fecha_max, 
-                    ymin = 0, ymax = 1),
+                    ymin = 0, ymax = ymax_ETM_balcarce),
                 fill = color_rect, 
                 alpha = 0.2, 
                 color = NA) +
