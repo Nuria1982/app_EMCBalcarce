@@ -5564,17 +5564,32 @@ server <- function(input, output, session) {
   
   #Balance hidrico
   output$huella_hidrica_balcarce <- renderInfoBox({
+    
     acumulados <- etm_etr_acum_balcarce()
+    
+    valor_huella <- if (is.na(acumulados$huella_hidrica_balcarce) || !is.finite(acumulados$huella_hidrica_balcarce)) {
+      "–"
+    } else {
+      paste0(round(acumulados$huella_hidrica_balcarce, 0), " l / kg")
+    }
+    
     infoBox(
       title = "",
       subtitle = div(
-        HTML("<div style='text-align: center; font-size: 20px; font-weight: bold;'>Huella hídrica </div>
-            <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>"),
+        HTML(
+          "<div style='text-align: center; font-size: 24px; font-weight: bold;'>Huella hídrica</div>
+         <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>
+         <div style='text-align: center; font-size: 11px; margin-top: 4px; opacity: 0.7;'>
+           Agua necesaria para producir 1 kg de cultivo
+         </div>"
+        ),
         style = "margin-bottom: 0px;"
       ),
-      value = div(paste(round(acumulados$huella_hidrica_balcarce, 0), "(l / kg)"),
-                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
-      icon = tags$i(class = "fa fa-water", style = "font-size: 60px; opacity: 0.6;"),
+      value = div(
+        valor_huella,
+        style = "text-align: center; font-size: 24px; font-weight: bold;"
+      ),
+      icon = tags$i(class = "fa fa-water", style = "font-size: 50px; opacity: 0.6;"),
       color = "lightblue",
       fill = TRUE
     )
@@ -6349,7 +6364,13 @@ server <- function(input, output, session) {
     ETR_acum <- cumsum(ifelse(is.na(df_siembra$ETR), 0, df_siembra$ETR))
     ultimo_etr_acum <- tail(ETR_acum, 1)
     
-    huella_hidrica <- ultimo_etr_acum * 10000 / input$rendimiento
+    rend <- suppressWarnings(as.numeric(input$rendimiento))
+    
+    huella_hidrica <- if (is.null(input$rendimiento) || is.na(rend) || rend <= 0) {
+      NA_real_
+    } else {
+      ultimo_etr_acum * 10000 / rend
+    }
     
     # Retornar los valores calculados
     list(
@@ -6391,15 +6412,29 @@ server <- function(input, output, session) {
   #Balance hidrico
   output$huella_hidrica <- renderInfoBox({
     acumulados <- etm_etr_acum()
+    
+    valor_huella <- if (is.na(acumulados$huella_hidrica) || !is.finite(acumulados$huella_hidrica)) {
+      "–"
+    } else {
+      paste0(round(acumulados$huella_hidrica, 1), " l / kg")
+    }
+    
     infoBox(
       title = "",
       subtitle = div(
-        HTML("<div style='text-align: center; font-size: 20px; font-weight: bold;'>Huella hídrica</div>
-            <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>"),
+        HTML(
+          "<div style='text-align: center; font-size: 20px; font-weight: bold;'>Huella hídrica</div>
+         <div style='text-align: center; font-size: 12px; margin-top: 0px;'>l / kg = m<sup>3</sup> / tn</div>
+         <div style='text-align: center; font-size: 11px; margin-top: 4px; opacity: 0.7;'>
+           Agua necesaria para producir 1 kg de cultivo
+         </div>"
+        ),
         style = "margin-bottom: 0px;"
       ),
-      value = div(paste(round(acumulados$huella_hidrica, 1), "l / kg"),
-                  style = "text-align: center; font-size: 24px; font-weight: bold;"),
+      value = div(
+        valor_huella,
+        style = "text-align: center; font-size: 24px; font-weight: bold;"
+      ),
       icon = tags$i(class = "fa fa-water", style = "font-size: 50px; opacity: 0.6;"),
       color = "lightblue",
       fill = TRUE
@@ -6731,47 +6766,7 @@ server <- function(input, output, session) {
       plotly::style(name = "Riego", traces = 3)
   })
   
-  ## Huella hídrica
   
-  huella_hidrica <- reactive({
-    rendimiento <- input$yield
-    if (rendimiento > 0) {
-      # Suponiendo un valor de referencia
-      huella <- 5000 / rendimiento # Ejemplo: 5000 L por kg total
-      return(huella)
-    }
-    return(NA)
-  })
-  
-  # Mostrar en el valueBox
-  output$calcular_huella_hidrica <- renderValueBox({
-    
-    valueBox(
-      value = paste0(round(huella_hidrica, 2), " L/kg"),
-      subtitle = "Huella Hídrica",
-      color = "blue"
-    )
-  })
-  
-  # Mostrar gráfico
-  output$grafico_huella <- renderPlotly({
-    plot_ly(
-      x = c("Tu cultivo", "Promedio"),
-      y = c(huella_hidrica, 2500), # Compara con un promedio
-      type = "bar",
-      marker = list(color = c("blue", "grey"))
-    )
-  })
-  
-  # Texto adicional
-  output$info_huella <- renderText({
-    acumulados <- etm_etr_acum()
-    paste(
-      "La huella hídrica de tu cultivo es de",
-      round(huella_hidrica, 2), "L/kg.",
-      "Esto representa el agua necesaria para producir 1 kg de cultivo."
-    )
-  })
   
   
   ## Dalbulus ##
