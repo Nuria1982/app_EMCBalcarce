@@ -642,6 +642,38 @@ ui <-
           font-weight: bold;
           text-align: center;
         }
+        
+        info-box {
+    min-height: 110px;
+    white-space: normal !important;
+  }
+
+  .info-box .info-box-content {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+
+  .info-box .info-box-text,
+  .info-box .info-box-number {
+    white-space: normal !important;
+    overflow-wrap: break-word;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 768px) {
+    .info-box {
+      min-height: 130px;
+    }
+
+    .info-box .info-box-text {
+      font-size: 13px;
+    }
+
+    .info-box .info-box-number {
+      font-size: 18px;
+    }
+  }
         "))
       ),
       
@@ -750,7 +782,10 @@ ui <-
                                  color = "#0dc5c1",  
                                  size = 0.5)
                   ) 
-                )
+                ),
+              h6(HTML("<strong>Cita:</strong><br>
+              Lewczuk, N.  & Echarte, L. (", format(Sys.Date(), "%Y"), "). <i>Monitoreo de condiciones meteorológicas en Balcarce</i> [Aplicación web]. 
+              Laboratorio de Agrometeorología, IPADS CONICET-INTA.")),
         ),
         
         tabItem(
@@ -772,6 +807,7 @@ ui <-
                              p("Se refiere a las variaciones en el estado del clima, identificables por cambios en el valor medio o la variabilidad de sus componentes, como la temperatura, que deben ser persistentes durante décadas o más. Estos cambios pueden ser resultado de procesos naturales internos o de forzamientos externos, como las fluctuaciones de los ciclos solares, erupciones volcánicas o alteraciones antropogénicas en la composición atmosférica y el uso del suelo.")
                          )
                   )
+              
                 ),
                 br(),
                 fluidRow(
@@ -845,7 +881,74 @@ ui <-
                            width = 12
                          )
                   )
-                )
+                ),
+          
+          br(),
+          br(),
+          
+          fluidRow(
+            column(12,
+                   div(style = "background-color: #00AFB9; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
+                       h5(HTML("<strong>Fechas de ocurrencia de heladas por año</strong>")),
+                       p("Visualizá para cada año cuándo comienza y termina el período con riesgo de heladas, 
+               diferenciando eventos agrometeorológicos y meteorológicos.")
+                   )
+            )
+          ),
+          
+          fluidRow(
+            column(3),  
+            
+            column(6,
+                   box(
+                     width = 12,  
+                     title = "Primera y última helada",
+                     status = "primary",
+                     solidHeader = TRUE,
+                     
+                     selectInput(
+                       inputId = "anio_heladas",
+                       label = "Seleccionar año",
+                       choices = 1970:max(datos$Año, na.rm = TRUE),
+                       selected = max(datos$Año, na.rm = TRUE)
+                     ),
+                     
+                     fluidRow(
+                       column(
+                         width = 6,
+                         class = "col-sm-12 col-md-6",
+                         infoBoxOutput("box_primera_agro", width = 12)
+                       ),
+                       column(
+                         width = 6,
+                         class = "col-sm-12 col-md-6",
+                         infoBoxOutput("box_primera_meteo", width = 12)
+                       )
+                     ),
+                     
+                     fluidRow(
+                       column(
+                         width = 6,
+                         class = "col-sm-12 col-md-6",
+                         infoBoxOutput("box_ultima_agro", width = 12)
+                       ),
+                       column(
+                         width = 6,
+                         class = "col-sm-12 col-md-6",
+                         infoBoxOutput("box_ultima_meteo", width = 12)
+                       )
+                     )
+            ),
+            
+            column(3)  
+          )
+          ),
+          
+          br(),
+          
+          h6(HTML("<strong>Cita:</strong><br>
+          Lewczuk, N.  & Echarte, L. (", format(Sys.Date(), "%Y"), "). <i>Análisis de variabilidad y cambio climático en Balcarce</i> [Aplicación web]. 
+          Laboratorio de Agrometeorología, IPADS CONICET-INTA.")),
         ),
         
           tabItem(
@@ -1085,8 +1188,14 @@ ui <-
                      )
               )
               
-            )
             ),
+            h6(HTML(paste0(
+              "<strong>Cita:</strong><br>
+              Lewczuk, N., & Echarte, L. (", format(Sys.Date(), "%Y"), "). 
+              <i>Climatología de heladas agrometeorológicas</i> [Aplicación web]. 
+              Laboratorio de Agrometeorología, IPADS CONICET-INTA."
+            )))
+          ),
         
         # tabItem(
         #   tabName = "mapas",
@@ -1401,7 +1510,11 @@ ui <-
                      width = 12
                    )
             ),
-          )
+          ),
+          h6(HTML("<strong>Cita:</strong><br>
+              Lewczuk, N. & Echarte, L.(2025). <i>Ambiente en cultivos extensivos de Balcarce</i> [Aplicación web]. 
+              Laboratorio de Agrometeorología, IPADS CONICET-INTA. 
+              https://doi.org/10.5281/zenodo.18926557")),
         ),
         
         tabItem(
@@ -1453,9 +1566,9 @@ ui <-
               ),
                 fluidRow(  
                   column(12,
-                         div(uiOutput("mensaje_cultivo_balcarce1"),
+                         div(uiOutput("mensaje_cultivo_balcarce1")
                          )
-                  ),
+                  )
                 ),
                 br(),
               fluidRow(
@@ -1521,9 +1634,9 @@ ui <-
               fluidRow(  
                 column(12,
                        br(),
-                       div(uiOutput("mensaje_cultivo_balcarce3"),
+                       div(uiOutput("mensaje_cultivo_balcarce3")
                        )
-                ),
+                )
               ),
               br(),
               
@@ -1603,8 +1716,13 @@ ui <-
                            )
                        )
                 )
-              )
+              ),
+              h6(HTML("<strong>Cita:</strong><br>
+              Echarte, L. & Lewczuk, N. (2025). <i>Balance hídrico en cultivos extensivos de Balcarce</i> [Aplicación web]. 
+              Laboratorio de Agrometeorología, IPADS CONICET-INTA. 
+              https://doi.org/10.5281/zenodo.18925301"))
             ),
+            
             tabPanel(
               title = "Otros sitios",
               br(),
@@ -1798,7 +1916,11 @@ ui <-
                        )
                 )
               )
-            )
+            ),
+            
+            h6(HTML("<strong>Cita:</strong><br>
+              Echarte, L. & Lewczuk, N. (2025). <i>Balance hídrico en cultivos extensivos</i> [Aplicación web]. 
+              Laboratorio de Agrometeorología, IPADS CONICET-INTA."))
           )
         ),
         
@@ -1983,7 +2105,11 @@ ui <-
             selected = "Temperatura_Abrigo_150cm",
             multiple = TRUE
           ),
-          downloadButton("Datos_meteo_Balcarce", "Descargar (.xlsx)")
+          downloadButton("Datos_meteo_Balcarce", "Descargar (.xlsx)"),
+          br(),
+          h6(HTML("<strong>Cita:</strong><br>
+              Lewczuk, N. & Echarte, L.(2025). <i>Base de datos meteorológicos de la Estación Meteorológica Convencional Balcarce</i> [Aplicación web]. 
+              Laboratorio de Agrometeorología, IPADS CONICET-INTA")),
         ),
         
         tabItem(
@@ -2679,7 +2805,7 @@ server <- function(input, output, session) {
       
       tt_dias_extremos <- ggplot(dias_extremos_long, 
                                  aes(x = Año, y = Numero_de_dias, color = Tipo, group = Tipo)) +
-        geom_line(size = 1) +
+        geom_line(linewidth = 1) +
         geom_point(size = 2) +
         geom_smooth(method = "lm", aes(group = Tipo), se = TRUE, linetype = "dashed", size = 0.8) +
         labs(x = "", y = "Días", 
@@ -2714,7 +2840,7 @@ server <- function(input, output, session) {
       
       tt_dias_extremos <- ggplot(dias_extremos_long_mes, 
                                  aes(x = Año, y = Numero_de_dias, color = Tipo, group = Tipo)) +
-        geom_line(size = 1) +
+        geom_line(linewidth = 1) +
         geom_point(size = 2) +
         geom_smooth(method = "lm", aes(group = Tipo), se = TRUE, linetype = "dashed", size = 0.8) +
         labs(x = "", y = "Número de Días", 
@@ -2729,6 +2855,116 @@ server <- function(input, output, session) {
     ggplotly(tt_dias_extremos) %>% 
       layout(legend = list(orientation = "h", 
                            x = 0.0, y = 1.2))
+  })
+  
+  
+  heladas_anio <- reactive({
+    
+    req(input$anio_heladas)
+    
+    datos %>%
+      filter(Año == input$anio_heladas) %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        helada_agro = Temperatura_Abrigo_150cm_Minima <= 3,
+        helada_meteo = Temperatura_Abrigo_150cm_Minima <= 0
+      )
+  })
+  
+  output$box_primera_agro <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_agro)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_min(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Primera helada agrometeorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("snowflake"),
+      color = "info",
+      fill = TRUE
+    )
+  })
+  
+  output$box_primera_meteo <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_meteo)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_min(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Primera helada meteorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("temperature-low"),
+      color = "primary",
+      fill = TRUE
+    )
+  })
+  
+  output$box_ultima_agro <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_agro)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_max(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Última helada agrometeorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("calendar-check"),
+      color = "info",
+      fill = TRUE
+    )
+  })
+  
+  output$box_ultima_meteo <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_meteo)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_max(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Última helada meteorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("calendar-times"),
+      color = "primary",
+      fill = TRUE
+    )
   })
   
   ##### HELADAS ######
