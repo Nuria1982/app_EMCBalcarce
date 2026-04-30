@@ -891,69 +891,44 @@ ui <-
                          )
                   )
                 ),
-          
-          br(),
-          br(),
-          
           fluidRow(
-            column(12,
-                   div(style = "background-color: #00AFB9; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
-                       h5(HTML("<strong>Fechas de ocurrencia de heladas por año</strong>")),
-                       p("Visualizá para cada año cuándo comienza y termina el período con riesgo de heladas, 
-               diferenciando eventos agrometeorológicos y meteorológicos.")
+            column(4, 
+                   box(
+                     title = "Fechas de primera helada agrometeorológica",
+                     status = "orange",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("grafico_primera_helada_agro", 
+                                              height = "300px", 
+                                              width = "100%"),
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
+                   )
+            ),
+            column(4, 
+                   box(
+                     title = "Fechas de última helada agrometeorológica",
+                     status = "orange",
+                     solidHeader = TRUE,
+                     collapsible = TRUE,
+                     withSpinner(plotlyOutput("grafico_ultima_helada_agro", 
+                                              height = "300px", 
+                                              width = "100%"),
+                                 type = 5, 
+                                 color = "#0dc5c1",  
+                                 size = 0.5),
+                     width = 12
                    )
             )
-          ),
-          
-          fluidRow(
-            column(3),  
-            
-            column(6,
-                   box(
-                     width = 12,  
-                     title = "Primera y última helada",
-                     status = "primary",
-                     solidHeader = TRUE,
-                     
-                     selectInput(
-                       inputId = "anio_heladas",
-                       label = "Seleccionar año",
-                       choices = 1970:max(datos$Año, na.rm = TRUE),
-                       selected = max(datos$Año, na.rm = TRUE)
-                     ),
-                     
-                     fluidRow(
-                       column(
-                         width = 6,
-                         class = "col-sm-12 col-md-6",
-                         infoBoxOutput("box_primera_agro", width = 12)
-                       ),
-                       column(
-                         width = 6,
-                         class = "col-sm-12 col-md-6",
-                         infoBoxOutput("box_primera_meteo", width = 12)
-                       )
-                     ),
-                     
-                     fluidRow(
-                       column(
-                         width = 6,
-                         class = "col-sm-12 col-md-6",
-                         infoBoxOutput("box_ultima_agro", width = 12)
-                       ),
-                       column(
-                         width = 6,
-                         class = "col-sm-12 col-md-6",
-                         infoBoxOutput("box_ultima_meteo", width = 12)
-                       )
-                     )
             ),
-            
-            column(3)  
-          )
-          ),
           
+
           br(),
+          br(),
+  
+
           
           h6(HTML("<strong>Cita:</strong><br>
           Lewczuk, N.  & Echarte, L. (", format(Sys.Date(), "%Y"), "). <i>Análisis de variabilidad y cambio climático en Balcarce</i> [Aplicación web]. 
@@ -1198,10 +1173,70 @@ ui <-
               )
               
             ),
+            br(),
+            
+            fluidRow(
+              column(12,
+                     div(style = "background-color: #00AFB9; padding: 15px; border-radius: 10px; margin-bottom: 20px;",
+                         h5(HTML("<strong>Fechas de ocurrencia de heladas por año</strong>")),
+                         p("Visualizá para cada año cuándo comienza y termina el período con riesgo de heladas, 
+               diferenciando eventos agrometeorológicos y meteorológicos.")
+                     )
+              )
+            ),
+            
+            fluidRow(
+              column(3),  
+              
+              column(6,
+                     box(
+                       width = 12,  
+                       title = "Primera y última helada",
+                       status = "primary",
+                       solidHeader = TRUE,
+                       
+                       selectInput(
+                         inputId = "anio_heladas",
+                         label = "Seleccionar año",
+                         choices = 1970:max(datos$Año, na.rm = TRUE),
+                         selected = max(datos$Año, na.rm = TRUE)
+                       ),
+                       
+                       fluidRow(
+                         column(
+                           width = 6,
+                           class = "col-sm-12 col-md-6",
+                           infoBoxOutput("box_primera_agro", width = 12)
+                         ),
+                         column(
+                           width = 6,
+                           class = "col-sm-12 col-md-6",
+                           infoBoxOutput("box_primera_meteo", width = 12)
+                         )
+                       ),
+                       
+                       fluidRow(
+                         column(
+                           width = 6,
+                           class = "col-sm-12 col-md-6",
+                           infoBoxOutput("box_ultima_agro", width = 12)
+                         ),
+                         column(
+                           width = 6,
+                           class = "col-sm-12 col-md-6",
+                           infoBoxOutput("box_ultima_meteo", width = 12)
+                         )
+                       )
+                     ),
+                     
+                     column(3)  
+              )
+            ),
+            br(),
+            
             h6(HTML(paste0(
               "<strong>Cita:</strong><br>
-              Lewczuk, N., & Echarte, L. (", format(Sys.Date(), "%Y"), "). 
-              <i>Climatología de heladas agrometeorológicas</i> [Aplicación web]. 
+              Lewczuk, N., & Echarte, L. (", format(Sys.Date(), "%Y"), "). <i>Climatología de heladas agrometeorológicas</i> [Aplicación web]. 
               Laboratorio de Agrometeorología, IPADS CONICET-INTA."
             )))
           ),
@@ -2870,115 +2905,109 @@ server <- function(input, output, session) {
                            x = 0.0, y = 1.2))
   })
   
+
+  ### Cambio de fecha de helada ##
   
-  heladas_anio <- reactive({
+  output$grafico_primera_helada_agro <- renderPlotly({
     
-    req(input$anio_heladas)
-    
-    datos %>%
-      filter(Año == input$anio_heladas) %>%
+    df_primera_agro <- datos %>%
       mutate(
         Fecha = as.Date(Fecha),
-        helada_agro = Temperatura_Abrigo_150cm_Minima <= 3,
-        helada_meteo = Temperatura_Abrigo_150cm_Minima <= 0
+        Año = year(Fecha),
+        doy = yday(Fecha),
+        helada_agro = Temperatura_Abrigo_150cm_Minima <= 3
+      ) %>%
+      filter(helada_agro) %>%
+      group_by(Año) %>%
+      slice_min(Fecha, n = 1, with_ties = FALSE) %>%
+      ungroup() %>%
+      mutate(
+        doy_primera = yday(Fecha),
+        fecha_txt = format(Fecha, "%d/%m/%Y"),
+        tooltip = paste0(
+          "Año: ", Año,
+          "<br>Primera helada: ", fecha_txt,
+          "<br>Tmin: ", round(Temperatura_Abrigo_150cm_Minima, 1), " °C"
+        )
       )
+    
+    p <- ggplot(df_primera_agro, aes(x = Año, y = doy_primera)) +
+      
+      geom_line(color = "#00AFB9", linewidth = 1) +
+      geom_point(aes(text = tooltip), color = "#00AFB9", size = 2) +
+
+      geom_smooth(
+        aes(x = Año, y = doy_primera),
+        method = "lm",
+        se = TRUE,
+        color = "grey",
+        linewidth = 0.7
+      ) +
+      
+      scale_y_continuous(
+        name = "Fecha de primera helada",
+        labels = function(x) format(as.Date(x - 1, origin = "2001-01-01"), "%d/%m")
+      ) +
+      
+      labs(x = "") +
+      theme_minimal()
+    
+    ggplotly(p, tooltip = "text")
   })
   
-  output$box_primera_agro <- renderInfoBox({
+  output$grafico_ultima_helada_agro <- renderPlotly({
     
-    df <- heladas_anio() %>%
-      filter(helada_agro)
+    df_ultima_agro <- datos %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        Año = lubridate::year(Fecha),
+        helada_agro = Temperatura_Abrigo_150cm_Minima <= 3
+      ) %>%
+      filter(helada_agro) %>%
+      group_by(Año) %>%
+      slice_max(Fecha, n = 1, with_ties = FALSE) %>%
+      ungroup() %>%
+      mutate(
+        doy_ultima = lubridate::yday(Fecha),
+        fecha_txt = format(Fecha, "%d/%m/%Y"),
+        tooltip = paste0(
+          "Año: ", Año,
+          "<br>Última helada: ", fecha_txt,
+          "<br>Tmin: ", round(Temperatura_Abrigo_150cm_Minima, 1), " °C"
+        )
+      )
     
-    if (nrow(df) == 0) {
-      fecha_txt <- "Sin registro"
-      valor_txt <- ""
-    } else {
-      fila <- df %>% slice_min(Fecha, n = 1)
-      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
-      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
-    }
+    modelo <- lm(doy_ultima ~ Año, data = df_ultima_agro)
+    df_ultima_agro$trend <- predict(modelo)
     
-    infoBox(
-      title = "Primera helada agrometeorológica",
-      value = fecha_txt,
-      subtitle = paste("Tº mínima:", valor_txt),
-      icon = icon("snowflake"),
-      color = "info",
-      fill = TRUE
-    )
+    p <- ggplot(df_ultima_agro, aes(x = Año, y = doy_ultima)) +
+      geom_line(color = "#00AFB9", linewidth = 1) +
+      
+      geom_point(aes(text = tooltip), color = "#00AFB9", size = 2) +
+      
+      geom_smooth(
+        aes(x = Año, y = doy_ultima),
+        method = "lm",
+        se = TRUE,
+        color = "grey",
+        linewidth = 0.7
+      ) +
+      
+      scale_y_continuous(
+        name = "Fecha de última helada",
+        labels = function(x) format(as.Date(x - 1, origin = "2001-01-01"), "%d/%m")
+      ) +
+      labs(
+        x = ""
+      ) +
+      theme_minimal() +
+      theme(
+        axis.text.x = element_text(angle = 60, hjust = 1)
+      )
+
+    ggplotly(p, tooltip = "text")
   })
   
-  output$box_primera_meteo <- renderInfoBox({
-    
-    df <- heladas_anio() %>%
-      filter(helada_meteo)
-    
-    if (nrow(df) == 0) {
-      fecha_txt <- "Sin registro"
-      valor_txt <- ""
-    } else {
-      fila <- df %>% slice_min(Fecha, n = 1)
-      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
-      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
-    }
-    
-    infoBox(
-      title = "Primera helada meteorológica",
-      value = fecha_txt,
-      subtitle = paste("Tº mínima:", valor_txt),
-      icon = icon("temperature-low"),
-      color = "primary",
-      fill = TRUE
-    )
-  })
-  
-  output$box_ultima_agro <- renderInfoBox({
-    
-    df <- heladas_anio() %>%
-      filter(helada_agro)
-    
-    if (nrow(df) == 0) {
-      fecha_txt <- "Sin registro"
-      valor_txt <- ""
-    } else {
-      fila <- df %>% slice_max(Fecha, n = 1)
-      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
-      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
-    }
-    
-    infoBox(
-      title = "Última helada agrometeorológica",
-      value = fecha_txt,
-      subtitle = paste("Tº mínima:", valor_txt),
-      icon = icon("calendar-check"),
-      color = "info",
-      fill = TRUE
-    )
-  })
-  
-  output$box_ultima_meteo <- renderInfoBox({
-    
-    df <- heladas_anio() %>%
-      filter(helada_meteo)
-    
-    if (nrow(df) == 0) {
-      fecha_txt <- "Sin registro"
-      valor_txt <- ""
-    } else {
-      fila <- df %>% slice_max(Fecha, n = 1)
-      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
-      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
-    }
-    
-    infoBox(
-      title = "Última helada meteorológica",
-      value = fecha_txt,
-      subtitle = paste("Tº mínima:", valor_txt),
-      icon = icon("calendar-times"),
-      color = "primary",
-      fill = TRUE
-    )
-  })
   
   ##### HELADAS ######
   ## Prob de al menos 1 helada ##
@@ -4007,6 +4036,117 @@ server <- function(input, output, session) {
         axis.text.x = element_text(angle = 45, hjust = 1) 
       )
     ggplotly(plot_ult_helada_0, tooltip = "text")
+  })
+  
+  
+  
+  heladas_anio <- reactive({
+    
+    req(input$anio_heladas)
+    
+    datos %>%
+      filter(Año == input$anio_heladas) %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        helada_agro = Temperatura_Abrigo_150cm_Minima <= 3,
+        helada_meteo = Temperatura_Abrigo_150cm_Minima <= 0
+      )
+  })
+  
+  output$box_primera_agro <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_agro)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_min(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Primera helada agrometeorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("snowflake"),
+      color = "info",
+      fill = TRUE
+    )
+  })
+  
+  output$box_primera_meteo <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_meteo)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_min(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Primera helada meteorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("temperature-low"),
+      color = "primary",
+      fill = TRUE
+    )
+  })
+  
+  output$box_ultima_agro <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_agro)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_max(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Última helada agrometeorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("calendar-check"),
+      color = "info",
+      fill = TRUE
+    )
+  })
+  
+  output$box_ultima_meteo <- renderInfoBox({
+    
+    df <- heladas_anio() %>%
+      filter(helada_meteo)
+    
+    if (nrow(df) == 0) {
+      fecha_txt <- "Sin registro"
+      valor_txt <- ""
+    } else {
+      fila <- df %>% slice_max(Fecha, n = 1)
+      fecha_txt <- format(fila$Fecha, "%d/%m/%Y")
+      valor_txt <- paste0(round(fila$Temperatura_Abrigo_150cm_Minima, 1), " °C")
+    }
+    
+    infoBox(
+      title = "Última helada meteorológica",
+      value = fecha_txt,
+      subtitle = paste("Tº mínima:", valor_txt),
+      icon = icon("calendar-times"),
+      color = "primary",
+      fill = TRUE
+    )
   })
   
   ##### AMBIENTE #####
