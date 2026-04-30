@@ -318,13 +318,13 @@
     },
     "curl": {
       "Package": "curl",
-      "Version": "6.2.3",
+      "Version": "7.1.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R"
       ],
-      "Hash": "f15795aaa507bf90088346a1eff6534e"
+      "Hash": "2e004ed19964915a8faf48a574439be9"
     },
     "data.table": {
       "Package": "data.table",
@@ -1184,17 +1184,16 @@
     },
     "rsconnect": {
       "Package": "rsconnect",
-      "Version": "1.4.1",
+      "Version": "1.8.0",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "PKI",
         "R",
-        "RcppTOML",
         "cli",
         "curl",
         "digest",
-        "jose",
+        "httr2",
         "jsonlite",
         "lifecycle",
         "openssl",
@@ -1202,18 +1201,19 @@
         "renv",
         "rlang",
         "rstudioapi",
+        "snowflakeauth",
         "tools",
         "utils",
         "yaml"
       ],
-      "Hash": "bc305cd4d06c292c84c3081bd3b9a992"
+      "Hash": "4e531f62ba72657712f59383e58209c9"
     },
     "rstudioapi": {
       "Package": "rstudioapi",
-      "Version": "0.17.1",
+      "Version": "0.18.0",
       "Source": "Repository",
       "Repository": "CRAN",
-      "Hash": "5f90cd73946d706cfe26024294236113"
+      "Hash": "d6e1ecf8e39b6d53c8acde372b2f92d1"
     },
     "sass": {
       "Package": "sass",
@@ -1337,6 +1337,22 @@
         "shiny"
       ],
       "Hash": "30f0ebc41feba25691073626ff5e2cf4"
+    },
+    "snowflakeauth": {
+      "Package": "snowflakeauth",
+      "Version": "0.2.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "RcppTOML",
+        "cli",
+        "curl",
+        "jose",
+        "jsonlite",
+        "openssl",
+        "rlang"
+      ],
+      "Hash": "84561ae3fe96a5f8c7ee81db5492304d"
     },
     "sourcetools": {
       "Package": "sourcetools",

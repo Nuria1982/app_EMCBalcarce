@@ -25,7 +25,16 @@ library(minpack.lm)
 library(httr2)
 library(usethis)
 
+
 usethis::use_git_ignore(".Renviron")
+
+#Cuando actualizamos Rstudio##
+# renv::install("rsconnect")
+# renv::install("rstudioapi")
+# renv::snapshot()
+# 
+# .rs.restartR()
+
 
 source("config.R", local = TRUE)
 # message("After config.R - option length = ", nchar(getOption("METEORED_API_KEY")))
@@ -2513,10 +2522,14 @@ server <- function(input, output, session) {
   
   datasetInput_climatico <- reactive({
     
-    datos_filtrados_climatico <- datos
+    año_actual <- lubridate::year(Sys.Date())
+    
+    datos_filtrados_climatico <- datos %>%
+      filter(Año < año_actual)
     
     if (!is.null(input$mes_climatico) && !"Anual" %in% input$mes_climatico) {
-      datos_filtrados_climatico <- subset(datos_filtrados_climatico, Mes == input$mes_climatico)
+      datos_filtrados_climatico <- datos_filtrados_climatico %>%
+        filter(Mes == input$mes_climatico)
     }
     
     return(datos_filtrados_climatico)
@@ -2526,24 +2539,24 @@ server <- function(input, output, session) {
   output$grafico_temp_climatico <- renderPlotly({
     
     datos_filtrados_climatico <- datasetInput_climatico()
-    
-    datos_historicos_avg_1991_2020 <- datos %>%
-      filter(Año >= 1991 & Año <= 2020) %>%
-      summarise(Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE))
-    
-    datos_historicos_avg_1981_2010 <- datos %>%
-      filter(Año >= 1981 & Año <= 2010) %>%
-      summarise(Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE))
-    
-    datos_historicos_avg_1971_2000 <- datos %>%
-      filter(Año >= 1971 & Año <= 2000) %>%
-      summarise(Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE))
-    
+
+    # datos_historicos_avg_1991_2020 <- datos %>%
+    #   filter(Año >= 1991 & Año <= 2020) %>%
+    #   summarise(Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE))
+    # 
+    # datos_historicos_avg_1981_2010 <- datos %>%
+    #   filter(Año >= 1981 & Año <= 2010) %>%
+    #   summarise(Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE))
+    # 
+    # datos_historicos_avg_1971_2000 <- datos %>%
+    #   filter(Año >= 1971 & Año <= 2000) %>%
+    #   summarise(Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE))
+    # 
     
     
     if (input$mes_climatico == "Anual") {
       # Mostrar el promedio anual de temperaturas
-      tt_media <- datos %>%
+      tt_media <- datos_filtrados_climatico %>%
         group_by(Año) %>%
         summarise(Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE))
       
@@ -2605,29 +2618,29 @@ server <- function(input, output, session) {
     
     datos_filtrados_climatico <- datasetInput_climatico()
     
-    # Calcular promedios históricos
-    datos_historicos_avg_1991_2020 <- datos %>%
-      filter(Año >= 1991 & Año <= 2020) %>%
-      group_by(Año) %>%
-      summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE)) %>%
-      summarise(Precipitacion_media = mean(Precipitacion_Acumulada, na.rm = TRUE))
-    
-    datos_historicos_avg_1981_2010 <- datos %>%
-      filter(Año >= 1981 & Año <= 2010) %>%
-      group_by(Año) %>%
-      summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE)) %>%
-      summarise(Precipitacion_media = mean(Precipitacion_Acumulada, na.rm = TRUE))
-    
-    datos_historicos_avg_1971_2000 <- datos %>%
-      filter(Año >= 1971 & Año <= 2000) %>%
-      group_by(Año) %>%
-      summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE)) %>%
-      summarise(Precipitacion_media = mean(Precipitacion_Acumulada, na.rm = TRUE))
+    # # Calcular promedios históricos
+    # datos_historicos_avg_1991_2020 <- datos %>%
+    #   filter(Año >= 1991 & Año <= 2020) %>%
+    #   group_by(Año) %>%
+    #   summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE)) %>%
+    #   summarise(Precipitacion_media = mean(Precipitacion_Acumulada, na.rm = TRUE))
+    # 
+    # datos_historicos_avg_1981_2010 <- datos %>%
+    #   filter(Año >= 1981 & Año <= 2010) %>%
+    #   group_by(Año) %>%
+    #   summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE)) %>%
+    #   summarise(Precipitacion_media = mean(Precipitacion_Acumulada, na.rm = TRUE))
+    # 
+    # datos_historicos_avg_1971_2000 <- datos %>%
+    #   filter(Año >= 1971 & Año <= 2000) %>%
+    #   group_by(Año) %>%
+    #   summarise(Precipitacion_Acumulada = sum(Precipitacion_Pluviometrica, na.rm = TRUE)) %>%
+    #   summarise(Precipitacion_media = mean(Precipitacion_Acumulada, na.rm = TRUE))
     
     if (input$mes_climatico == "Anual") {
       
       # Acumulado por año
-      pp_acum <- datos %>%
+      pp_acum <- datos_filtrados_climatico %>%
         # filter(Mes %in% c("abril", "mayo", "junio", "julio", "agosto", "septiembre")) %>% 
         #filter(Mes %in% c("octubre", "noviembre", "diciembre", "enero", "febrero", "marzo")) %>%
         group_by(Año) %>%
