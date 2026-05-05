@@ -4708,6 +4708,9 @@ server <- function(input, output, session) {
 
     df <- heladas_anio()
 
+    anio_actual <- year(Sys.Date())
+    es_anio_actual <- input$anio_heladas == anio_actual
+
     resumen_tipo <- function(variable_helada) {
       df_h <- df %>% filter({{ variable_helada }})
 
@@ -4716,7 +4719,8 @@ server <- function(input, output, session) {
           primera = NA_Date_,
           ultima = NA_Date_,
           n = 0,
-          dias_libres = NA_real_
+          dias_libres = NA_real_,
+          es_anio_actual = es_anio_actual
         ))
       }
 
@@ -4727,7 +4731,12 @@ server <- function(input, output, session) {
         primera = primera,
         ultima = ultima,
         n = nrow(df_h),
-        dias_libres = as.numeric(primera - ultima) + 365
+        dias_libres = ifelse(
+          es_anio_actual,
+          NA_real_,
+          as.numeric(primera - ultima) + 365
+        ),
+        es_anio_actual = es_anio_actual
       )
     }
 
@@ -4744,17 +4753,25 @@ server <- function(input, output, session) {
       valor <- "Sin registros"
       subtitulo <- "No se registraron heladas agrometeorológicas"
     } else {
+      if (r$es_anio_actual) {
+        subtitulo <- HTML(paste0(
+          "<b>Primera:</b> ",
+          format(r$primera, "%d/%m/%Y")
+        ))
+      } else {
+        subtitulo <- HTML(paste0(
+          "<b>Primera:</b> ",
+          format(r$primera, "%d/%m/%Y"),
+          "<br>",
+          "<b>Última:</b> ",
+          format(r$ultima, "%d/%m/%Y"),
+          "<br>",
+          "<b>Días libres de heladas:</b> ",
+          round(r$dias_libres)
+        ))
+      }
+
       valor <- paste0(r$n, " heladas")
-      subtitulo <- HTML(paste0(
-        "<b>Primera:</b> ",
-        format(r$primera, "%d/%m/%Y"),
-        "<br>",
-        "<b>Última:</b> ",
-        format(r$ultima, "%d/%m/%Y"),
-        "<br>",
-        "<b>Días libres de heladas:</b> ",
-        round(r$dias_libres)
-      ))
     }
 
     infoBox(
@@ -4774,17 +4791,25 @@ server <- function(input, output, session) {
       valor <- "Sin registros"
       subtitulo <- "No se registraron heladas meteorológicas"
     } else {
+      if (r$es_anio_actual) {
+        subtitulo <- HTML(paste0(
+          "<b>Primera:</b> ",
+          format(r$primera, "%d/%m/%Y")
+        ))
+      } else {
+        subtitulo <- HTML(paste0(
+          "<b>Primera:</b> ",
+          format(r$primera, "%d/%m/%Y"),
+          "<br>",
+          "<b>Última:</b> ",
+          format(r$ultima, "%d/%m/%Y"),
+          "<br>",
+          "<b>Días libres de heladas:</b> ",
+          round(r$dias_libres)
+        ))
+      }
+
       valor <- paste0(r$n, " heladas")
-      subtitulo <- HTML(paste0(
-        "<b>Primera:</b> ",
-        format(r$primera, "%d/%m/%Y"),
-        "<br>",
-        "<b>Última:</b> ",
-        format(r$ultima, "%d/%m/%Y"),
-        "<br>",
-        "<b>Días libres de heladas:</b> ",
-        round(r$dias_libres)
-      ))
     }
 
     infoBox(
