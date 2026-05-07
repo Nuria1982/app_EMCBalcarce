@@ -24,6 +24,7 @@ library(purrr)
 library(minpack.lm)
 library(httr2)
 library(usethis)
+library(zoo)
 
 
 usethis::use_git_ignore(".Renviron")
@@ -309,8 +310,11 @@ datos_historicos_avg <- datos_historicos %>%
   group_by(Dia_Mes) %>%
   reframe(
     Temperatura_media = mean(Temperatura_Abrigo_150cm, na.rm = TRUE),
-    Evapotranspiracion_media = mean(Evapotranspiracion_Potencial, na.rm = TRUE),
-    Precipitacion_media = mean(Precipitacion_Pluviometrica, na.rm = TRUE),
+    Evapotranspiracion_media = median(
+      Evapotranspiracion_Potencial,
+      na.rm = TRUE
+    ),
+    Precipitacion_media = median(Precipitacion_Pluviometrica, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -420,8 +424,8 @@ ui <-
         id = "siderbarID",
 
         menuItem(
-          "Condiciones actuales",
-          tabName = "condiciones",
+          "Tiempo y Clima",
+          tabName = "tiempo",
           icon = icon("calendar")
         ),
 
@@ -576,7 +580,7 @@ ui <-
 
       tabItems(
         tabItem(
-          tabName = "condiciones",
+          tabName = "tiempo",
           fluidRow(
             infoBoxOutput(width = 3, "value1"),
             infoBoxOutput(width = 3, "value2"),
@@ -602,30 +606,6 @@ ui <-
                     choices = unique(datos$Año),
                     selected = "2026"
                   )
-                ),
-                column(
-                  6,
-                  selectInput(
-                    inputId = "mes_selector",
-                    label = "Selecciona los meses:",
-                    choices = c(
-                      "Mostrar todos los meses",
-                      "enero",
-                      "febrero",
-                      "marzo",
-                      "abril",
-                      "mayo",
-                      "junio",
-                      "julio",
-                      "agosto",
-                      "septiembre",
-                      "octubre",
-                      "noviembre",
-                      "diciembre"
-                    ),
-                    selected = "Mostrar todos los meses",
-                    multiple = TRUE
-                  )
                 )
               )
             )
@@ -634,6 +614,7 @@ ui <-
           br(),
 
           fluidRow(
+            
             box(
               title = "Precipitaciones acumuladas mensuales (mm)",
               status = "gray",
@@ -646,6 +627,7 @@ ui <-
                 size = 0.5
               )
             ),
+            
             box(
               title = "Precipitaciones y ETo acumuladas mensuales (mm)",
               status = "gray",
@@ -658,6 +640,37 @@ ui <-
                 size = 0.5
               )
             ),
+            
+            box(
+              title = "Temperaturas máximas diarias (ºC)",
+              status = "gray",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              withSpinner(
+                plotlyOutput("tempmax_diaria", height = "300px"),
+                type = 5,
+                color = "#0dc5c1",
+                size = 0.5
+              )
+            ),
+            
+            box(
+              title = "Temperaturas mínimas diarias (ºC)",
+              status = "gray",
+              solidHeader = TRUE,
+              collapsible = TRUE,
+              withSpinner(
+                plotlyOutput("tempmin_diaria", height = "300px"),
+                type = 5,
+                color = "#0dc5c1",
+                size = 0.5
+              )
+            )
+          ),
+          
+          br(),
+          
+          fluidRow(
             box(
               title = "Temperaturas medias mensuales (ºC)",
               status = "gray",
@@ -670,8 +683,9 @@ ui <-
                 size = 0.5
               )
             ),
+            
             box(
-              title = "Número de días mensuales con heladas",
+              title = "Número de días mensuales con heladas agrometeorológicas (< 3ºC)",
               status = "gray",
               solidHeader = TRUE,
               collapsible = TRUE,
@@ -2592,23 +2606,6 @@ server <- function(input, output, session) {
   Tmax_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Maxima
   Tmin_ultimo_dia <- ultimos_datos$Temperatura_Abrigo_150cm_Minima
 
-  datasetInput <- reactive({
-    if (input$ano_selector == "Todos los años") {
-      datos_filtrados <- datos_actuales
-    } else {
-      datos_filtrados <- subset(datos_actuales, Año == input$ano_selector)
-    }
-
-    if (!"Mostrar todos los meses" %in% input$mes_selector) {
-      meses_seleccionados <- input$mes_selector
-      datos_filtrados <- subset(datos_filtrados, Mes %in% meses_seleccionados)
-    } else {
-      datos_filtrados <- datos_filtrados
-    }
-
-    return(datos_filtrados)
-  })
-
   output$value1 <- renderInfoBox({
     infoBox(
       title = div(
@@ -2697,20 +2694,71 @@ server <- function(input, output, session) {
     )
   })
 
+  ultima_fecha <- max(datos_actuales$Fecha)
+
+  mes_ultimo <- lubridate::month(ultima_fecha)
+  dia_ultimo <- lubridate::day(ultima_fecha)
+
+  datos_historicos_hasta_fecha <- datos_historicos %>%
+    mutate(
+      Fecha = as.Date(Fecha),
+      mes = lubridate::month(Fecha),
+      dia = lubridate::day(Fecha)
+    ) %>%
+    filter(
+      mes < mes_ultimo |
+        (mes == mes_ultimo & dia <= dia_ultimo)
+    )
+
+  promedio_historico_hasta_fecha <- median(
+    aggregate(
+      Precipitacion_Pluviometrica ~ Año,
+      data = datos_historicos_hasta_fecha,
+      FUN = sum
+    )$Precipitacion_Pluviometrica,
+    na.rm = TRUE
+  )
+
+  promedio_historico_ttmax_hasta_fecha <- mean(
+    aggregate(
+      Temperatura_Abrigo_150cm_Maxima ~ Año,
+      data = datos_historicos_hasta_fecha,
+      FUN = mean
+    )$Temperatura_Abrigo_150cm_Maxima,
+    na.rm = TRUE
+  )
+
+  promedio_historico_ttmin_hasta_fecha <- mean(
+    aggregate(
+      Temperatura_Abrigo_150cm_Minima ~ Año,
+      data = datos_historicos_hasta_fecha,
+      FUN = mean
+    )$Temperatura_Abrigo_150cm_Minima,
+    na.rm = TRUE
+  )
+
   output$precipitation_info_box <- renderInfoBox({
     infoBox(
       title = "Precipitaciones Acumuladas",
       value = paste(
-        "Acumulado Año ",
-        current_year,
+        "Acumulado hasta el ",
+        format(ultima_fecha, "%d/%m"),
         ": ",
         round(pp_acum, 0),
         "mm"
       ),
-      subtitle = paste(
-        "Promedio Histórico anual (1991-2020): ",
-        round(promedio_historico, 0),
-        "mm"
+      subtitle = HTML(
+        paste(
+          "Acumulada mediana histórica hasta el ",
+          format(ultima_fecha, "%d/%m"),
+          " : ",
+          round(promedio_historico_hasta_fecha, 0),
+          " mm ",
+          "<br>",
+          "Acumulada mediana anual (1991-2020): ",
+          round(promedio_historico, 0),
+          " mm"
+        )
       ),
       icon = icon("tint"),
       color = "info"
@@ -2721,17 +2769,23 @@ server <- function(input, output, session) {
     infoBox(
       title = "Temperaturas Máximas",
       value = paste(
-        "Promedio Año ",
-        current_year,
+        "Media hasta el ",
+        format(ultima_fecha, "%d/%m"),
         ": ",
         round(ttmax_anual, 2),
         "ºC"
       ),
-      subtitle = paste(
-        "Promedio Histórico anual (1991-2020): ",
+      subtitle = HTML(paste(
+        "Media histórica hasta el ",
+        format(ultima_fecha, "%d/%m"),
+        " : ",
+        round(promedio_historico_ttmax_hasta_fecha, 2),
+        " ºC ",
+        "<br>",
+        "Media anual (1991-2020): ",
         round(promedio_historico_ttmax, 2),
-        "ºC"
-      ),
+        " ºC"
+      )),
       icon = icon("sun"),
       color = "danger"
     )
@@ -2741,45 +2795,100 @@ server <- function(input, output, session) {
     infoBox(
       title = "Temperaturas Mínimas",
       value = paste(
-        "Promedio Año ",
-        current_year,
+        "Media hasta el ",
+        format(ultima_fecha, "%d/%m"),
         ": ",
         round(ttmin_anual, 2),
         "ºC"
       ),
-      subtitle = paste(
-        "Promedio Histórico anual (1991-2020): ",
-        round(promedio_historico_ttmin, 2),
-        "ºC"
+      subtitle = HTML(
+        paste0(
+          "Media histórica hasta el ",
+          format(ultima_fecha, "%d/%m"),
+          " : ",
+          round(promedio_historico_ttmin_hasta_fecha, 2),
+          " ºC",
+          "<br>",
+          "Media anual (1991-2020): ",
+          round(promedio_historico_ttmin, 2),
+          " ºC"
+        )
       ),
       icon = icon("snowflake"),
       color = "warning"
     )
   })
 
+  datasetInput <- reactive({
+    if (input$ano_selector == "Todos los años") {
+      datos_filtrados <- datos_actuales
+    } else {
+      datos_filtrados <- subset(datos_actuales, Año == input$ano_selector)
+    }
+
+    return(datos_filtrados)
+  })
+
   output$grafico_lluvia <- renderPlotly({
-    #
+    niveles_meses <- c(
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic"
+    )
+
     dataset_acumulado <- datasetInput() %>%
-      mutate(Mes = month(Fecha, label = TRUE)) %>%
+      mutate(
+        Mes = factor(
+          niveles_meses[month(Fecha)],
+          levels = niveles_meses
+        )
+      ) %>%
       group_by(Mes) %>%
       summarise(
         Precipitacion_Acumulada = round(
           sum(Precipitacion_Pluviometrica, na.rm = TRUE),
           1
+        ),
+        .groups = "drop"
+      )
+
+    dataset_acumulado <- tibble(
+      Mes = factor(
+        niveles_meses,
+        levels = niveles_meses
+      )
+    ) %>%
+      left_join(dataset_acumulado, by = "Mes") %>%
+      mutate(
+        Precipitacion_Acumulada = replace_na(
+          Precipitacion_Acumulada,
+          0
+        )
+      )
+
+    historical_precipitation <- datos_historicos %>%
+      mutate(
+        Mes = factor(
+          niveles_meses[month(Fecha)],
+          levels = niveles_meses
         )
       ) %>%
-      ungroup()
-
-    #
-    historical_precipitation <- datos_historicos %>%
-      mutate(Mes = month(Fecha, label = TRUE)) %>%
       group_by(Año, Mes) %>%
       summarise(
         Precipitacion_Historica = sum(
           Precipitacion_Pluviometrica,
           na.rm = TRUE
         ),
-        .groups = 'drop'
+        .groups = "drop"
       )
 
     historical_precipitation_mensual <- historical_precipitation %>%
@@ -2789,252 +2898,764 @@ server <- function(input, output, session) {
           mean(Precipitacion_Historica, na.rm = TRUE),
           1
         ),
-        .groups = 'drop'
+        .groups = "drop"
       )
 
-    #
+    historical_precipitation_mensual <- tibble(
+      Mes = factor(niveles_meses, levels = niveles_meses)
+    ) %>%
+      left_join(historical_precipitation_mensual, by = "Mes")
+
     dataset_completo <- dataset_acumulado %>%
       left_join(historical_precipitation_mensual, by = "Mes")
 
-    #
     anio_seleccionado_label <- input$ano_selector
 
-    #
-    dataset_completo_long <- dataset_completo %>%
-      pivot_longer(
-        cols = c(Precipitacion_Historica_Mensual, Precipitacion_Acumulada),
-        names_to = "Tipo_Precipitacion",
-        values_to = "Precipitacion"
-      ) %>%
-      mutate(
-        Tipo_Precipitacion = factor(
-          Tipo_Precipitacion,
-          levels = c(
-            "Precipitacion_Historica_Mensual",
-            "Precipitacion_Acumulada"
-          ),
-          labels = c(
-            "Histórico (1991 - 2020)",
-            paste("Año", anio_seleccionado_label)
-          )
-        )
-      )
+    lluvia <- ggplot(dataset_completo, aes(x = Mes)) +
 
-    ll <- ggplot(dataset_completo, aes(x = Mes)) +
       geom_bar(
-        aes(y = Precipitacion_Historica_Mensual),
+        aes(
+          y = Precipitacion_Historica_Mensual,
+          text = paste0(
+            "Mes: ",
+            Mes,
+            "<br>Histórico: ",
+            round(Precipitacion_Historica_Mensual, 0),
+            " mm"
+          )
+        ),
         stat = "identity",
         fill = "#6C757D",
         color = "#495057",
-        alpha = 0.5
+        alpha = 0.4
       ) +
+
       geom_bar(
-        aes(y = Precipitacion_Acumulada),
+        aes(
+          y = Precipitacion_Acumulada,
+          text = paste0(
+            "Mes: ",
+            Mes,
+            "<br>",
+            anio_seleccionado_label,
+            ": ",
+            round(Precipitacion_Acumulada, 0),
+            " mm"
+          )
+        ),
         stat = "identity",
         fill = "#007EA7",
         color = "#003459",
         alpha = 0.5
       ) +
-      labs(x = "", y = "Precipitación acumulada \nmensual (mm)", fill = "") +
-      ggtitle("") +
+
+      labs(
+        x = "",
+        y = "Precipitación acumulada\nmensual (mm)"
+      ) +
+
       theme_minimal() +
+
       theme(
-        axis.text.x = element_text(angle = 0, hjust = 1),
+        axis.text.x = element_text(
+          angle = 0,
+          hjust = 0.5,
+          face = "bold",
+          color = "black"
+        ),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.ticks = element_blank(),
         axis.line = element_line(color = "black")
       )
 
-    ggplotly(ll) %>%
-      layout(legend = list(orientation = "h", x = 0.3, y = 1.2))
+    ggplotly(lluvia, tooltip = "text") %>%
+      layout(
+        legend = list(
+          orientation = "h",
+          x = 0.3,
+          y = 1.15
+        )
+      )
   })
 
   output$grafico_lluvia_etp_acum <- renderPlotly({
+    niveles_meses <- c(
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic"
+    )
+
     dataset_acumulado <- datasetInput() %>%
-      mutate(Mes = month(Fecha, label = TRUE)) %>%
+      mutate(
+        Mes = factor(
+          niveles_meses[month(Fecha)],
+          levels = niveles_meses
+        )
+      ) %>%
       group_by(Mes) %>%
       summarise(
         Precipitacion_Acumulada = round(
           sum(Precipitacion_Pluviometrica, na.rm = TRUE),
           1
         ),
-        Evapotranspiracion_Acumulada = round(sum(
-          Evapotranspiracion_Potencial,
-          na.rm = TRUE
-        )),
-        1
+        Evapotranspiracion_Acumulada = round(
+          sum(Evapotranspiracion_Potencial, na.rm = TRUE),
+          1
+        ),
+        .groups = "drop"
       )
 
-    acum <- ggplot(dataset_acumulado, aes(x = Mes)) +
+    dataset_acumulado <- tibble(
+      Mes = factor(
+        niveles_meses,
+        levels = niveles_meses
+      )
+    ) %>%
+      left_join(dataset_acumulado, by = "Mes") %>%
+      mutate(
+        Precipitacion_Acumulada = replace_na(
+          Precipitacion_Acumulada,
+          0
+        ),
+        Evapotranspiracion_Acumulada = replace_na(
+          Evapotranspiracion_Acumulada,
+          0
+        )
+      )
+
+    acum_pp_etp <- ggplot(dataset_acumulado, aes(x = Mes)) +
+
       geom_bar(
-        aes(y = Precipitacion_Acumulada),
+        aes(
+          y = Precipitacion_Acumulada,
+          text = paste0(
+            "Mes: ",
+            Mes,
+            "<br>Precipitación: ",
+            round(Precipitacion_Acumulada, 0),
+            " mm"
+          )
+        ),
         stat = "identity",
         fill = "#007EA7",
         color = "#003459",
         alpha = 0.5
       ) +
+
       geom_bar(
-        aes(y = Evapotranspiracion_Acumulada),
+        aes(
+          y = Evapotranspiracion_Acumulada,
+          text = paste0(
+            "Mes: ",
+            Mes,
+            "<br>ETP: ",
+            round(Evapotranspiracion_Acumulada, 0),
+            " mm"
+          )
+        ),
         stat = "identity",
         fill = "#BF4342",
         color = "#8C1C13",
         alpha = 0.5
       ) +
-      scale_fill_manual(name = "") +
-      labs(x = "", y = "Acumulado mensual (mm)", fill = "") +
-      ggtitle("") +
-      theme_minimal() +
-      theme(
-        axis.text.x = element_text(angle = 0, hjust = 1),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.ticks = element_blank(),
-        axis.line = element_line(color = "black")
-      )
 
-    ggplotly(acum) %>%
-      layout(legend = list(orientation = "h", x = 0.1, y = 1.2))
-  })
-
-  output$grafico_temperatura <- renderPlotly({
-    temperaturas_mensuales <- datasetInput() %>%
-      mutate(Mes = month(Fecha, label = TRUE)) %>%
-      group_by(Mes) %>%
-      summarise(
-        Temperatura_Maxima = round(
-          mean(Temperatura_Abrigo_150cm_Maxima, na.rm = TRUE),
-          1
-        ),
-        Temperatura_Minima = round(
-          mean(Temperatura_Abrigo_150cm_Minima, na.rm = TRUE),
-          1
-        )
-      )
-
-    historico_temperaturas_mensual <- datos_historicos %>%
-      mutate(Mes = month(Fecha, label = TRUE)) %>%
-      group_by(Mes) %>%
-      summarise(
-        Temp_Max_Historica = round(
-          mean(Temperatura_Abrigo_150cm_Maxima, na.rm = TRUE),
-          1
-        ),
-        Temp_Min_Historica = round(
-          mean(Temperatura_Abrigo_150cm_Minima, na.rm = TRUE),
-          1
-        )
-      ) %>%
-      ungroup()
-
-    dataset_completo_temperatura <- temperaturas_mensuales %>%
-      left_join(historico_temperaturas_mensual, by = "Mes")
-
-    dataset_completo_temperatura_long <- dataset_completo_temperatura %>%
-      pivot_longer(
-        cols = c(
-          Temp_Max_Historica,
-          Temp_Min_Historica,
-          Temperatura_Maxima,
-          Temperatura_Minima
-        ),
-        names_to = "Temperatura",
-        values_to = "temperatura"
-      ) %>%
-      mutate(
-        Temperatura = factor(
-          Temperatura,
-          levels = c(
-            "Temperatura_Maxima",
-            "Temp_Max_Historica",
-            "Temperatura_Minima",
-            "Temp_Min_Historica"
-          ),
-          labels = c(
-            "Máxima Año Seleccionado",
-            "Máxima (1991 - 2020)",
-            "Mínima Año Seleccionado",
-            "Mínima (1991 - 2020)"
-          )
-        )
-      )
-
-    temp_plot <- ggplot(
-      dataset_completo_temperatura_long,
-      aes(x = Mes, y = temperatura, color = Temperatura, group = Temperatura)
-    ) +
-      geom_line(linewidth = 1) +
-      geom_point(size = 1) +
-      scale_color_manual(
-        values = c(
-          "Máxima Año Seleccionado" = "#D00000",
-          "Máxima (1991 - 2020)" = "#FCB9B2",
-          "Mínima Año Seleccionado" = "#FFBA08",
-          "Mínima (1991 - 2020)" = "#EDDEA4"
-        )
-      ) +
-      labs(x = "", y = "Temperatura media mensual (ºC)", color = "") +
-      ggtitle("") +
-      theme_minimal() +
-      theme(
-        axis.text.x = element_text(angle = 0, hjust = 1),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        axis.ticks = element_blank(),
-        axis.line = element_line(color = "black")
-      )
-
-    ggplotly(temp_plot) %>%
-      layout(legend = list(orientation = "h", x = 0, y = 1.5))
-  })
-
-  output$grafico_heladas <- renderPlotly({
-    promedio_heladas <- datasetInput() %>%
-      filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
-      group_by(Mes) %>%
-      summarise(Dias_Temperatura_Minima_Menor_3C = n()) %>%
-      mutate(
-        Mes = factor(
-          substr(Mes, 1, 3),
-          levels = c(
-            "ene",
-            "feb",
-            "mar",
-            "abr",
-            "may",
-            "jun",
-            "jul",
-            "ago",
-            "sep",
-            "oct",
-            "nov",
-            "dic"
-          ),
-          ordered = TRUE
-        )
-      )
-
-    hh <- ggplot(
-      promedio_heladas,
-      aes(x = Mes, y = Dias_Temperatura_Minima_Menor_3C)
-    ) +
-      geom_bar(stat = "identity", fill = "#FFBA08", color = "#FF9F1C") +
       labs(
-        title = "",
         x = "",
-        y = "Número de días con\nTemperatura mínimas < ó = 3ºC"
+        y = "Acumulado mensual (mm)"
       ) +
+
       theme_minimal() +
+
       theme(
-        axis.text.x = element_text(angle = 0, hjust = 1),
+        axis.text.x = element_text(
+          angle = 0,
+          hjust = 0.5,
+          face = "bold",
+          color = "black"
+        ),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.ticks = element_blank(),
         axis.line = element_line(color = "black")
       )
 
-    ggplotly(hh) %>%
-      layout(legend = list(orientation = "h", x = 0.1, y = 1.2))
+    ggplotly(acum_pp_etp, tooltip = "text") %>%
+      layout(
+        legend = list(
+          orientation = "h",
+          x = 0.1,
+          y = 1.15
+        )
+      )
+  })
+
+
+  output$tempmax_diaria <- renderPlotly({
+    
+    req(input$ano_selector)
+    
+    anio_sel <- as.numeric(input$ano_selector)
+    
+    ultima_fecha_anio <- datos_actuales %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      filter(year(Fecha) == anio_sel) %>%
+      summarise(ultima = max(Fecha, na.rm = TRUE)) %>%
+      pull(ultima)
+    
+    doy_hoy <- yday(ultima_fecha_anio)
+    
+    meses_pos <- yday(as.Date(paste0("2021-", sprintf("%02d", 1:12), "-01")))
+    meses_lab <- c("ene", "feb", "mar", "abr", "may", "jun",
+                   "jul", "ago", "sept", "oct", "nov", "dic")
+    
+    temp_actual <- datos_actuales %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        anio = year(Fecha),
+        doy = yday(Fecha)
+      ) %>%
+      filter(anio == anio_sel) %>%
+      group_by(doy) %>%
+      summarise(
+        Tmax_actual = mean(Temperatura_Abrigo_150cm_Maxima, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      arrange(doy) %>%
+      mutate(
+        Tmax_suavizada = zoo::rollmean(
+          Tmax_actual,
+          k = 7,
+          fill = "extend",
+          align = "center"
+        )
+      )
+    
+    temp_historica <- datos_historicos %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        doy = yday(Fecha)
+      ) %>%
+      group_by(doy) %>%
+      summarise(
+        tmin = min(Temperatura_Abrigo_150cm_Maxima, na.rm = TRUE),
+        tmax = max(Temperatura_Abrigo_150cm_Maxima, na.rm = TRUE),
+        media = mean(Temperatura_Abrigo_150cm_Maxima, na.rm = TRUE),
+        .groups = "drop"
+      )
+    
+    df_plot <- tibble(doy = 1:365) %>%
+      left_join(temp_historica, by = "doy") %>%
+      left_join(temp_actual, by = "doy")
+    
+    df_plot <- df_plot %>%
+      mutate(
+        fecha = as.Date(doy - 1, origin = "2021-01-01")
+      ) 
+    
+    df_real <- df_plot %>% filter(doy <= doy_hoy)
+    df_futuro <- df_plot %>% filter(doy > doy_hoy)
+    
+    plot_ly() %>%
+      
+      add_ribbons(
+        data = df_plot,
+        x = ~doy,
+        ymin = ~tmin,
+        ymax = ~tmax,
+        name = "Rango histórico (min-max)",
+        fillcolor = "rgba(252,185,178,0.60)",
+        line = list(color = "rgba(252,185,178,0)"),
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>Mín: ", round(tmin, 1), " °C",
+          "<br>Máx: ", round(tmax, 1), " °C"
+        )
+      ) %>%
+      
+      add_lines(
+        data = df_plot,
+        x = ~doy,
+        y = ~media,
+        name = "Media histórica",
+        line = list(
+          color = "rgba(252,185,178,0.9)",
+          width = 2,
+          dash = "dash"
+        ),
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>Media histórica: ",
+          round(media, 1), " °C"
+        )
+      ) %>%
+      
+      add_lines(
+        data = df_real,
+        x = ~doy,
+        y = ~Tmax_suavizada,
+        name = as.character(anio_sel),
+        line = list(color = "#D00000", width = 3),
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>", anio_sel, ": ",
+          round(Tmax_suavizada, 1), " °C"
+        )
+      ) %>%
+      
+      add_lines(
+        data = df_futuro,
+        x = ~doy,
+        y = ~Tmax_suavizada,
+        name = paste0(anio_sel, " futuro"),
+        line = list(color = "rgba(208,0,0,0.35)", width = 3, dash = "dot"),
+        showlegend = FALSE,
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>", anio_sel, ": sin datos reales"
+        )
+      ) %>%
+      
+      layout(
+        xaxis = list(
+          title = "",
+          tickvals = meses_pos,
+          ticktext = meses_lab,
+          range = c(1, 365)
+        ),
+        yaxis = list(
+          title = "Temperatura máxima diaria (°C)"
+        ),
+        legend = list(
+          orientation = "h",
+          x = 0,
+          y = 1.15
+        )
+      )
+  })
+  
+  
+  output$tempmin_diaria <- renderPlotly({
+    
+    req(input$ano_selector)
+    
+    anio_sel <- as.numeric(input$ano_selector)
+    
+    ultima_fecha_anio <- datos_actuales %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      filter(year(Fecha) == anio_sel) %>%
+      summarise(ultima = max(Fecha, na.rm = TRUE)) %>%
+      pull(ultima)
+    
+    doy_hoy <- yday(ultima_fecha_anio)
+    
+    meses_pos <- yday(as.Date(paste0("2021-", sprintf("%02d", 1:12), "-01")))
+    meses_lab <- c("ene", "feb", "mar", "abr", "may", "jun",
+                   "jul", "ago", "sept", "oct", "nov", "dic")
+    
+    temp_actual <- datos_actuales %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        anio = year(Fecha),
+        doy = yday(Fecha)
+      ) %>%
+      filter(anio == anio_sel) %>%
+      group_by(doy) %>%
+      summarise(
+        Tmin_actual = mean(Temperatura_Abrigo_150cm_Minima, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      arrange(doy) %>%
+      mutate(
+        Tmin_suavizada = zoo::rollmean(
+          Tmin_actual,
+          k = 7,
+          fill = "extend",
+          align = "center"
+        )
+      )
+    
+    temp_historica <- datos_historicos %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        doy = yday(Fecha)
+      ) %>%
+      group_by(doy) %>%
+      summarise(
+        tmin = min(Temperatura_Abrigo_150cm_Minima, na.rm = TRUE),
+        tmax = max(Temperatura_Abrigo_150cm_Minima, na.rm = TRUE),
+        media = mean(Temperatura_Abrigo_150cm_Minima, na.rm = TRUE),
+        .groups = "drop"
+      )
+    
+    df_plot <- tibble(doy = 1:365) %>%
+      left_join(temp_historica, by = "doy") %>%
+      left_join(temp_actual, by = "doy")
+    
+    df_plot <- df_plot %>%
+      mutate(
+        fecha = as.Date(doy - 1, origin = "2021-01-01")
+      )
+    
+    df_real <- df_plot %>% filter(doy <= doy_hoy)
+    df_futuro <- df_plot %>% filter(doy > doy_hoy)
+    
+    plot_ly() %>%
+      
+      add_ribbons(
+        data = df_plot,
+        x = ~doy,
+        ymin = ~tmin,
+        ymax = ~tmax,
+        name = "Rango histórico (min-max)",
+        fillcolor = "rgba(237,222,164,0.60)",
+        line = list(color = "rgba(237,222,164,0)"),
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>Mín histórica: ", round(tmin, 1), " °C",
+          "<br>Máx histórica: ", round(tmax, 1), " °C"
+        )
+      ) %>%
+      
+      add_lines(
+        data = df_plot,
+        x = ~doy,
+        y = ~media,
+        name = "Media histórica",
+        line = list(
+          color = "rgba(237,222,164,0.90)",
+          width = 2,
+          dash = "dash"
+        ),
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>Media histórica: ",
+          round(media, 1), " °C"
+        )
+      ) %>%
+      
+      add_lines(
+        data = df_real,
+        x = ~doy,
+        y = ~Tmin_suavizada,
+        name = as.character(anio_sel),
+        line = list(color = "#FFBA08", width = 3),
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>", anio_sel, ": ",
+          round(Tmin_suavizada, 1), " °C"
+        )
+      ) %>%
+      
+      add_lines(
+        data = df_futuro,
+        x = ~doy,
+        y = ~Tmin_suavizada,
+        name = paste0(anio_sel, " futuro"),
+        line = list(color = "rgba(255,186,8,0.35)", width = 3, dash = "dot"),
+        showlegend = FALSE,
+        hoverinfo = "text",
+        text = ~paste0(
+          format(fecha, "%d/%m"),
+          "<br>", anio_sel, ": sin datos reales"
+        )
+      ) %>%
+      
+      layout(
+        xaxis = list(
+          title = "",
+          tickvals = meses_pos,
+          ticktext = meses_lab,
+          range = c(1, 365)
+        ),
+        yaxis = list(
+          title = "Temperatura mínima diaria (°C)"
+        ),
+        legend = list(
+          orientation = "h",
+          x = 0,
+          y = 1.15
+        )
+      )
+  })
+  
+  output$grafico_temperatura <- renderPlotly({
+    
+    niveles_meses <- c(
+      "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+    )
+    
+    anio_sel <- as.numeric(input$ano_selector)
+    
+    ultima_fecha_anio <- datasetInput() %>%
+      mutate(Fecha = as.Date(Fecha)) %>%
+      filter(year(Fecha) == anio_sel) %>%
+      summarise(ultima = max(Fecha, na.rm = TRUE)) %>%
+      pull(ultima)
+    
+    ultimo_dia_mes <- ceiling_date(ultima_fecha_anio, "month") - days(1)
+    
+    ultimo_mes_completo <- ifelse(
+      ultima_fecha_anio == ultimo_dia_mes,
+      month(ultima_fecha_anio),
+      month(ultima_fecha_anio) - 1
+    )
+    
+    mes_en_curso <- ultimo_mes_completo + 1
+    
+    temperatura_mensual <- datasetInput() %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        anio = year(Fecha),
+        mes_num = month(Fecha),
+        Mes = factor(niveles_meses[mes_num], levels = niveles_meses)
+      ) %>%
+      filter(
+        anio == anio_sel,
+        mes_num <= ultimo_mes_completo
+      ) %>%
+      group_by(Mes) %>%
+      summarise(
+        Temperatura_Media = round(
+          mean(Temperatura_Abrigo_150cm, na.rm = TRUE),
+          0
+        ),
+        mes_num = first(mes_num),
+        .groups = "drop"
+      ) %>%
+      mutate(
+        Temperatura_Media = ifelse(
+          mes_num >= mes_en_curso,
+          NA,
+          Temperatura_Media
+        )
+      )
+    
+    temperatura_mensual <- tibble(
+      Mes = factor(niveles_meses, levels = niveles_meses)
+    ) %>%
+      left_join(temperatura_mensual, by = "Mes")
+    
+    historico_temperatura_mensual <- datos_historicos %>%
+      mutate(
+        Mes = factor(niveles_meses[month(Fecha)], levels = niveles_meses)
+      ) %>%
+      group_by(Mes) %>%
+      summarise(
+        Temperatura_Media_Historica = round(
+          mean(Temperatura_Abrigo_150cm, na.rm = TRUE),
+          0
+        ),
+        .groups = "drop"
+      )
+    
+    historico_temperatura_mensual <- tibble(
+      Mes = factor(niveles_meses, levels = niveles_meses)
+    ) %>%
+      left_join(historico_temperatura_mensual, by = "Mes")
+    
+    dataset_completo <- temperatura_mensual %>%
+      left_join(historico_temperatura_mensual, by = "Mes")
+    
+    anio_seleccionado_label <- input$ano_selector
+    
+    temp_media <- ggplot(dataset_completo, aes(x = Mes)) +
+      
+      geom_bar(
+        aes(
+          y = Temperatura_Media_Historica,
+          text = paste0(
+            "Mes: ", Mes,
+            "<br>Histórico: ",
+            round(Temperatura_Media_Historica, 0),
+            " °C"
+          )
+        ),
+        stat = "identity",
+        fill = "#6C757D",
+        color = "#495057",
+        alpha = 0.4
+      ) +
+      
+      geom_bar(
+        aes(
+          y = Temperatura_Media,
+          text = paste0(
+            "Mes: ", Mes,
+            "<br>", anio_seleccionado_label, ": ",
+            round(Temperatura_Media, 0),
+            " °C"
+          )
+        ),
+        stat = "identity",
+        fill = "#D00000",
+        color = "#8B0000",
+        alpha = 0.5
+      ) +
+      
+      labs(
+        x = "",
+        y = "Temperatura media\nmensual (°C)"
+      ) +
+      
+      theme_minimal() +
+      
+      theme(
+        axis.text.x = element_text(
+          angle = 0,
+          hjust = 0.5,
+          face = "bold",
+          color = "black"
+        ),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_line(color = "black")
+      )
+    
+    ggplotly(temp_media, tooltip = "text") %>%
+      layout(
+        legend = list(
+          orientation = "h",
+          x = 0.3,
+          y = 1.15
+        )
+      )
+  })
+  
+  
+  output$grafico_heladas <- renderPlotly({
+    
+    niveles_meses <- c(
+      "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"
+    )
+    
+    anio_sel <- as.numeric(input$ano_selector)
+    
+    heladas_actual <- datasetInput() %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        anio = year(Fecha),
+        Mes = factor(niveles_meses[month(Fecha)], levels = niveles_meses)
+      ) %>%
+      filter(
+        anio == anio_sel,
+        Temperatura_Abrigo_150cm_Minima <= 3
+      ) %>%
+      group_by(Mes) %>%
+      summarise(
+        Dias_helada_actual = n(),
+        .groups = "drop"
+      )
+    
+    heladas_actual <- tibble(
+      Mes = factor(niveles_meses, levels = niveles_meses)
+    ) %>%
+      left_join(heladas_actual, by = "Mes") %>%
+      mutate(
+        Dias_helada_actual = replace_na(Dias_helada_actual, 0)
+      )
+    
+    heladas_historicas <- datos_historicos %>%
+      mutate(
+        Fecha = as.Date(Fecha),
+        Mes = factor(niveles_meses[month(Fecha)], levels = niveles_meses)
+      ) %>%
+      filter(Temperatura_Abrigo_150cm_Minima <= 3) %>%
+      group_by(Año, Mes) %>%
+      summarise(
+        dias_helada = n(),
+        .groups = "drop"
+      ) %>%
+      group_by(Mes) %>%
+      summarise(
+        Dias_helada_historica = round(mean(dias_helada, na.rm = TRUE), 0),
+        .groups = "drop"
+      )
+    
+    heladas_historicas <- tibble(
+      Mes = factor(niveles_meses, levels = niveles_meses)
+    ) %>%
+      left_join(heladas_historicas, by = "Mes") %>%
+      mutate(
+        Dias_helada_historica = replace_na(Dias_helada_historica, 0)
+      )
+    
+    dataset_completo <- heladas_actual %>%
+      left_join(heladas_historicas, by = "Mes")
+    
+    heladas <- ggplot(dataset_completo, aes(x = Mes)) +
+      
+      geom_bar(
+        aes(
+          y = Dias_helada_historica,
+          text = paste0(
+            "Mes: ", Mes,
+            "<br>Histórico: ",
+            Dias_helada_historica,
+            " días"
+          )
+        ),
+        stat = "identity",
+        fill = "#6C757D",
+        color = "#495057",
+        alpha = 0.4
+      ) +
+      
+      geom_bar(
+        aes(
+          y = Dias_helada_actual,
+          text = paste0(
+            "Mes: ", Mes,
+            "<br>", anio_sel, ": ",
+            Dias_helada_actual
+          )
+        ),
+        stat = "identity",
+        fill = "#FFBA08",
+        color = "#CC9500",
+        alpha = 0.5
+      ) +
+      
+      labs(
+        x = "",
+        y = "Número de días con\nTemperatura mínima ≤ 3°C"
+      ) +
+      
+      theme_minimal() +
+      theme(
+        axis.text.x = element_text(
+          angle = 0,
+          hjust = 0.5,
+          face = "bold",
+          color = "black"
+        ),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_blank(),
+        axis.line = element_line(color = "black")
+      )
+    
+    ggplotly(heladas, tooltip = "text") %>%
+      layout(showlegend = FALSE)
   })
 
   ##### CAMBIO CLIMATICO ######
@@ -6498,7 +7119,7 @@ server <- function(input, output, session) {
       )
     } else if (input$cultivo_balcarce == "soja") {
       tagList(
-        p(HTML("<b>Variedad de soja de grupo 3</b>.")),
+        p(HTML("<b>Variedad de soja de grupo 3</b>."))
       )
     }
   })
@@ -6510,7 +7131,7 @@ server <- function(input, output, session) {
           "La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo
     por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas."
         )),
-        p("Los recuadros en los gráficos indican el período crítico."),
+        p("Los recuadros en los gráficos indican el período crítico.")
       )
     } else if (input$cultivo_balcarce == "maiz_corto") {
       tagList(
@@ -6518,14 +7139,14 @@ server <- function(input, output, session) {
           "La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo
         por temperatura de helada <= 2°C, desde que el maíz tiene 6 hojas desarrolladas."
         )),
-        p("Los recuadros en los gráficos indican el período crítico."),
+        p("Los recuadros en los gráficos indican el período crítico.")
       )
     } else if (input$cultivo_balcarce == "soja") {
       tagList(
         p(
           "La línea vertical punteada indica posible corte del ciclo de crecimiento del cultivo por temperatura de helada <= 2°C, desde que la soja alcanza los 70 GD."
         ),
-        p("Los recuadros en los gráficos indican el período crítico."),
+        p("Los recuadros en los gráficos indican el período crítico.")
       )
     }
   })
