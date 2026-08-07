@@ -437,6 +437,7 @@ ui <-
 }
 
 .oni-info-box{
+margin-top: 55px;
     background:#eef7fb;
     border-left:6px solid #0b3d5c;
     border-radius:12px;
@@ -542,7 +543,7 @@ ui <-
 .nino-kpi-card span {
   display: block;
   color: #475569;
-  font-size: 0.9rem;
+  font-size: 1.7rem;
   min-height: 42px;
 }
 
@@ -556,10 +557,140 @@ ui <-
 
 .nino-kpi-card small {
   color: #64748b;
+  font-size: 1.1rem;
+}
+
+.nino-mes-detalle {
+  margin-top: 0.65rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #e2e8f0;
+}
+
+.mes-detalle-title {
+  font-weight: 800;
+  color: #0b3d5c;
+  font-size: 1.7rem;
+  margin-bottom: 0.45rem;
+}
+
+.mes-detalle-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.2fr 1.2fr;
+  gap: 0.6rem;
+}
+.nino-legend-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 0.55rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255,255,255,0.96);
+  border: 1px solid #d9e2e8;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(15,50,70,0.06);
+}
+
+.nino-legend-title {
+  max-width: 190px;
+  color: #425466;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.nino-legend-items {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.nino-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #475569;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.nino-legend-color {
+  display: inline-block;
+  width: 24px;
+  height: 17px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.mes-detalle-item {
+  background: white;
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+}
+
+.mes-detalle-item.destacado {
+  border-left: 5px solid #0b3d5c;
+}
+
+.mes-detalle-item span {
+  display: block;
+  color: #64748b;
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.mes-detalle-item strong {
+  display: block;
+  color: #0b3d5c;
+  font-size: 2.15rem;
+  margin-top: 0.15rem;
+}
+
+.mes-detalle-item small {
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.nino-sin-aumentos {
+  margin-top: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  background: #eef6fa;
+  border-left: 4px solid #0b3d5c;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.nino-section-divider {
+  margin-top: 3rem;
+  padding: 1.4rem 1.8rem;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #0b3d5c, #1d8ca3);
+  color: white;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+
+.nino-section-divider h2 {
+  margin: 0 0 0.4rem 0;
+  font-weight: 800;
+}
+
+.nino-section-divider p {
+  margin: 0;
+  opacity: 0.92;
+  font-size: 1.05rem;
+}
+
+.metodologia-box {
+  border-top: 5px solid #0b3d5c;
 }
 
 @media (max-width: 900px) {
   .nino-map-header {
+
     flex-direction: column;
   }
 
@@ -750,6 +881,180 @@ ui <-
       font-size: 18px;
     }
   }
+  
+  .nino-map-box {
+  padding: 1.1rem 1.2rem;
+}
+
+.nino-map-title-ui {
+  margin-bottom: 0.8rem;
+}
+
+.nino-map-title-ui h3 {
+  margin: 0;
+  color: #083d5b;
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+
+.nino-map-title-ui p {
+  margin: 0.3rem 0 0;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+/* Panel del trimestre */
+.nino-trimestre-panel {
+  min-height: 565px;
+  padding: 1.6rem;
+  background: linear-gradient(
+    145deg,
+    #edf7fc 0%,
+    #e4f1f8 100%
+  );
+  border: 1px solid #c9dfea;
+  border-radius: 22px;
+  box-shadow: 0 10px 26px rgba(15,50,70,0.12);
+}
+
+.nino-trimestre-panel h3 {
+  margin: 0 0 1.35rem;
+  color: #083d5b;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+/* Opciones de trimestre */
+.nino-trimestre-panel .pretty {
+  display: block;
+  position: relative;
+  width: 100%;
+  min-height: 72px;
+  margin: 0 0 0.9rem 0;
+  padding: 0;
+  background: white;
+  border: 1px solid #c7d7e0;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(15,50,70,0.05);
+}
+
+.nino-trimestre-panel .pretty .state {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 72px;
+  padding: 0.9rem 1rem 0.9rem 3.4rem;
+}
+
+.nino-trimestre-panel .pretty .state label{
+    white-space: normal !important;   /* permite salto de línea */
+    word-break: break-word;
+    line-height: 1.25;
+    padding-right: 10px;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+/* El contenedor también puede crecer en altura */
+.nino-trimestre-panel .pretty{
+    min-height: 72px;
+    height: auto;
+}
+
+.nino-trimestre-panel .pretty .state label::before,
+.nino-trimestre-panel .pretty .state label::after {
+  top: 50% !important;
+  left: 1.05rem !important;
+  transform: translateY(-50%) !important;
+}
+
+nino-trimestre-panel .pretty:has(input:checked) {
+  background: #ffffff;
+  border: 2px solid #2589d8;
+  box-shadow: 0 5px 14px rgba(37,137,216,0.12);
+}
+
+@media (max-width: 1400px){
+
+  .nino-trimestre-panel h3{
+      font-size: 1.5rem;
+  }
+
+  .nino-trimestre-panel .pretty .state label{
+      font-size: 1rem;
+  }
+
+}
+
+@media (max-width: 1200px){
+
+  .nino-trimestre-panel{
+      padding: 1.1rem;
+  }
+
+  .nino-trimestre-panel .pretty .state label{
+      font-size: .95rem;
+  }
+
+}
+
+/* Hover */
+.nino-trimestre-panel .pretty:hover {
+  background: #f7fbfe;
+  border-color: #5da8dc;
+}
+
+/* Meses del trimestre */
+.nino-trimestre-meses {
+  margin: 0.7rem 0 1.2rem;
+  padding: 0.75rem;
+  text-align: center;
+  color: #52677a;
+  font-size: 1rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.55);
+  border-radius: 10px;
+}
+
+/* Nota explicativa */
+.nino-map-ayuda {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin-top: 1.5rem;
+  padding: 1.1rem;
+  background: #eaf4fc;
+  border-radius: 15px;
+  color: #23445a;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.nino-map-ayuda i {
+  margin-top: 0.15rem;
+  color: #1675b9;
+  font-size: 1.35rem;
+}
+
+/* Leaflet */
+#mapa_nino {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* Adaptación móvil */
+@media (max-width: 991px) {
+  .nino-trimestre-panel {
+    min-height: auto;
+    margin-top: 1rem;
+  }
+}
+
+.serie-localidad{
+  font-size: 0.62em;
+  font-weight: 500;
+  color: #64748b;
+}
         "
         ))
       ),
@@ -1133,20 +1438,81 @@ ui <-
               )
             ),
             br(),
-            
+
             fluidRow(
-              
               column(
                 width = 8,
                 
                 div(
-                  class = "nino-box",
+                  class = "nino-box nino-map-box",
                   
-                  h3("Selección de años El Niño"),
+                  div(
+                    class = "nino-map-title-ui",
+                    h3("Mapa interactivo"),
+                    p("Seleccioná un partido para consultar los resultados.")
+                  ),
                   
-                  plotOutput(
-                    "grafico_oni_v1",
-                    height = "520px"
+                  leafletOutput(
+                    "mapa_nino",
+                    height = "430px"
+                  ),
+                  
+                  div(
+                    class = "nino-legend-horizontal",
+                    
+                    div(
+                      class = "nino-legend-title",
+                      "% de años Niño con aumento de precipitación"
+                    ),
+                    
+                    div(
+                      class = "nino-legend-items",
+                      
+                      div(
+                        class = "nino-legend-item",
+                        span(
+                          class = "nino-legend-color",
+                          style = "background:#ffffcc;"
+                        ),
+                        span("50–60")
+                      ),
+                      
+                      div(
+                        class = "nino-legend-item",
+                        span(
+                          class = "nino-legend-color",
+                          style = "background:#c7e9b4;"
+                        ),
+                        span("60–70")
+                      ),
+                      
+                      div(
+                        class = "nino-legend-item",
+                        span(
+                          class = "nino-legend-color",
+                          style = "background:#7fcdbb;"
+                        ),
+                        span("70–80")
+                      ),
+                      
+                      div(
+                        class = "nino-legend-item",
+                        span(
+                          class = "nino-legend-color",
+                          style = "background:#2c7fb8;"
+                        ),
+                        span("80–90")
+                      ),
+                      
+                      div(
+                        class = "nino-legend-item",
+                        span(
+                          class = "nino-legend-color",
+                          style = "background:#253494;"
+                        ),
+                        span("90–91")
+                      )
+                    )
                   )
                 )
               ),
@@ -1155,84 +1521,39 @@ ui <-
                 width = 4,
                 
                 div(
-                  class = "oni-info-box",
+                  class = "nino-trimestre-panel",
                   
-                  div(
-                    class = "oni-info-title",
-                    icon("circle-info"),
-                    " Criterio de selección"
-                  ),
+                  h3("Trimestre"),
                   
-                  p(
-                    "Se incluyeron únicamente aquellos eventos en los que la anomalía del ",
-                    tags$b("Oceanic Niño Index (ONI)"),
-                    " alcanzó un valor ",
-                    tags$b("≥ +0,5 °C"),
-                    " desde el trimestre ",
-                    tags$b("junio–julio–agosto (JJA)"),
-                    " y se mantuvo igual o superior a ese umbral en todos los trimestres móviles hasta ",
-                    tags$b("diciembre–enero–febrero (DEF)"),
-                    ", garantizando una señal persistente de El Niño durante el período analizado."
-                  ),
-                  
-                  tags$hr(),
-                  
-                  h5(icon("check-circle"), " Años seleccionados"),
-                  
-                  tags$div(
-                    class = "oni-years",
-                    span("1972"),
-                    span("1982"),
-                    span("1987"),
-                    span("1991"),
-                    span("1994"),
-                    span("1997"),
-                    span("2002"),
-                    span("2004"),
-                    span("2015"),
-                    span("2023")
-                  )
-                )
-              )
-              
-            ),
-            
-            br(),
-
-            fluidRow(
-              column(
-                12,
-                div(
-                  class = "nino-box",
-
-                  div(
-                    class = "nino-map-header",
-                    div(
-                      h3("Mapa interactivo"),
-                      p(
-                        "Seleccioná un partido en el mapa."
-                      )
+                  prettyRadioButtons(
+                    inputId = "nino_trimestre",
+                    label = NULL,
+                    choices = c(
+                      "Invierno (JJA)" = "JJA",
+                      "Primavera (SON)" = "SON",
+                      "Verano (DEF)" = "DEF"
                     ),
-                    div(
-                      class = "nino-trimestre-control",
-                      prettyRadioButtons(
-                        "nino_trimestre",
-                        "Trimestre",
-                        choices = c(
-                          "Invierno (JJA)" = "JJA",
-                          "Primavera (SON)" = "SON",
-                          "Verano (DEF)" = "DEF"
-                        ),
-                        selected = "JJA",
-                        status = "primary",
-                        animation = "pulse",
-                        shape = "round",
-                        outline = TRUE
-                      )
-                    )
+                    selected = "JJA",
+                    status = "primary",
+                    animation = "pulse",
+                    shape = "round",
+                    outline = TRUE
                   ),
-
-                  leafletOutput("mapa_nino", height = "460px")
+                  
+                  div(
+                    class = "nino-trimestre-meses",
+                    uiOutput("nino_meses_trimestre")
+                  ),
+                  
+                  div(
+                    class = "nino-map-ayuda",
+                    icon("circle-info"),
+                    div(
+                      "Los porcentajes representan la frecuencia de años El Niño ",
+                      "en los que la precipitación del trimestre seleccionado fue ",
+                      "mayor que el valor histórico de referencia."
+                    )
+                  )
                 )
               )
             ),
@@ -1251,6 +1572,17 @@ ui <-
 
             fluidRow(
               column(
+                12,
+                selectInput(
+                  "nino_periodo_grafico",
+                  "Período a graficar",
+                  choices = NULL
+                )
+              )
+            ),
+
+            fluidRow(
+              column(
                 6,
                 div(
                   class = "nino-box",
@@ -1262,12 +1594,102 @@ ui <-
                 6,
                 div(
                   class = "nino-box",
-                  h3("Anomalías por año Niño"),
-                  plotlyOutput("heatmap_nino", height = "390px")
+                  h3("Temperatura durante eventos El Niño"),
+                  plotlyOutput("bar_temp_nino", height = "390px")
                 )
               )
             ),
 
+            br(),
+            br(),
+            br(),
+            
+
+            div(
+              class = "nino-section-divider",
+              h2("Metodología de selección de años El Niño"),
+              p(
+                "El siguiente panel muestra el criterio utilizado para definir los años incluidos en el análisis."
+              )
+            ),
+            
+            br(),
+
+            fluidRow(
+              column(
+                width = 7,
+
+                div(
+                  class = "nino-box",
+
+                  plotOutput(
+                    "grafico_oni_v1",
+                    height = "500px"
+                  )
+                )
+              ),
+
+              column(
+                width = 5,
+
+                div(
+                  class = "oni-info-box",
+
+                  div(
+                    class = "oni-info-title",
+                    icon("circle-info"),
+                    " Criterio de selección"
+                  ),
+
+                  br(),
+
+                  p(
+                    "Se incluyeron únicamente aquellos años Niño en los que la anomalía del ",
+                    tags$b("Relative Oceanic Niño Index (RONI)"),
+
+                    " alcanzó un valor ",
+                    tags$b("≥ +0,5 °C"),
+                    " desde el trimestre ",
+                    tags$b("junio–julio–agosto (JJA)"),
+                    " y se mantuvo igual o superior a ese umbral en todos los trimestres móviles hasta ",
+                    tags$b("diciembre–enero–febrero (DEF)"),
+                    ", garantizando una señal persistente de El Niño durante el período analizado."
+                  ),
+
+                  tags$hr(),
+
+                  h5(icon("check-circle"), " Años seleccionados"),
+
+                  tags$div(
+                    class = "oni-years",
+                    span("1972"),
+                    span("1982"),
+                    span("1987"),
+                    span("1991"),
+                    span("1994"),
+                    span("1997"),
+                    span("2002"),
+                    span("2004"),
+                    span("2015"),
+                    span("2023")
+                  )
+                )
+              )
+            ),
+
+            br(),
+            
+            div(
+              style = "font-size:0.9rem; color:#555; line-height:1.5;",
+              
+              tags$b("Fuente de los datos: "),
+              "Los datos de Balcarce corresponden a la Estación Agrometeorológica de la EEA INTA Balcarce. ",
+              "Los datos de Necochea y Miramar corresponden a datos de Estaciones Meteorológicas Automáticas (EMA). ",
+              "Los datos de Tandil, Azul, Olavarría y General Pueyrredón (Mar del Plata) provienen del ",
+              tags$b("Servicio Meteorológico Nacional (SMN)"),
+              "."
+            ),
+            
             br(),
 
             h6(
@@ -4627,57 +5049,811 @@ server <- function(input, output, session) {
   })
 
   ##### EL NIÑO ######
+
+  partidos_pba <- sf::st_read("partidos-pba.geojson")
+
+  partidos_nino <- partidos_pba %>%
+    mutate(
+      localidad = case_when(
+        municipio_nombre == "Balcarce" ~ "Balcarce",
+        municipio_nombre == "Tandil" ~ "Tandil",
+        municipio_nombre == "Olavarría" ~ "Olavarría",
+        municipio_nombre == "General Pueyrredón" ~ "Mar del Plata",
+        municipio_nombre == "Azul" ~ "Azul",
+        municipio_nombre == "Necochea" ~ "Necochea",
+        municipio_nombre == "General Alvarado" ~ "Miramar",
+        TRUE ~ NA_character_
+      )
+    )
+
+  limpiar_num <- function(x) {
+    x <- as.character(x)
+    x <- gsub(",", ".", x)
+    x <- gsub("%", "", x)
+    x <- gsub("[^0-9.-]", "", x)
+    x[x == ""] <- NA
+    as.numeric(x)
+  }
+
+  datos_nino <- readxl::read_excel("datos_nino.xlsx") %>%
+    dplyr::rename(
+      anio = Año,
+      localidad = Localidad,
+      trimestre = Trimestre,
+      tmax_hist = `Tmax media (°C) historica`,
+      tmin_hist = `Tmin media (°C) historica`,
+      tmedia_hist = `Tmedia media (°C) historica`,
+      prec_hist = `Prec acum (mm) historica`,
+      tmax_nino = `Tmax media (°C)`,
+      tmin_nino = `Tmin media (°C)`,
+      tmedia_nino = `Tmedia media (°C)`,
+      prec_nino = `Prec acum (mm)`,
+      tmax_pct = `Tmax % cambio`,
+      tmin_pct = `Tmin % cambio`,
+      tmedia_pct = `Tmedia % cambio`,
+      prec_pct = `Prec % cambio`
+    ) %>%
+    dplyr::mutate(
+      dplyr::across(
+        c(
+          tmax_hist,
+          tmin_hist,
+          tmedia_hist,
+          prec_hist,
+          tmax_nino,
+          tmin_nino,
+          tmedia_nino,
+          prec_nino,
+          tmax_pct,
+          tmin_pct,
+          tmedia_pct,
+          prec_pct
+        ),
+        limpiar_num
+      )
+    ) %>%
+    dplyr::filter(!(localidad == "Balcarce" & anio == 1972))
+
   
-  anios_nino <- c(1972, 1982, 1987, 1991, 1994, 1997, 2002, 2004, 2015, 2023)
-  
-  orden_trimestres <- c(
-    "DJF", "JFM", "FMA", "MAM", "AMJ", "MJJ",
-    "JJA", "JAS", "ASO", "SON", "OND", "NDJ"
+  datos_nino_mensual <- readxl::read_excel("datos_nino_mensual.xlsx") %>%
+    dplyr::rename(
+      anio = Año,
+      localidad = Localidad,
+      mes = Mes,
+      tmax_hist = `Tmax media (°C) historica`,
+      tmin_hist = `Tmin media (°C) historica`,
+      tmedia_hist = `Tmedia media (°C) historica`,
+      prec_hist = `Prec acum (mm) historica`,
+      tmax_nino = `Tmax media (°C)`,
+      tmin_nino = `Tmin media (°C)`,
+      tmedia_nino = `Tmedia media (°C)`,
+      prec_nino = `Prec acum (mm)`,
+      tmax_pct = `Tmax % cambio`,
+      tmin_pct = `Tmin % cambio`,
+      tmedia_pct = `Tmedia % cambio`,
+      prec_pct = `Prec % cambio`
+    ) %>%
+    dplyr::mutate(
+      dplyr::across(
+        c(
+          tmax_hist,
+          tmin_hist,
+          tmedia_hist,
+          prec_hist,
+          tmax_nino,
+          tmin_nino,
+          tmedia_nino,
+          prec_nino,
+          tmax_pct,
+          tmin_pct,
+          tmedia_pct,
+          prec_pct
+        ),
+        limpiar_num
+      ),
+      trimestre = dplyr::case_when(
+        mes %in% c("Junio", "Julio", "Agosto") ~ "JJA",
+        mes %in% c("Septiembre", "Octubre", "Noviembre") ~ "SON",
+        mes %in% c("Diciembre", "Enero", "Febrero") ~ "DEF",
+        TRUE ~ NA_character_
+      )
+    )
+
+  resumen_mensual_pp <- datos_nino_mensual %>%
+    dplyr::filter(!is.na(prec_pct)) %>%
+    dplyr::group_by(localidad, trimestre, mes) %>%
+    dplyr::summarise(
+      n_mes = dplyr::n(),
+      n_mes_positivo = sum(prec_pct > 0, na.rm = TRUE),
+      frecuencia_mes_positivo = mean(prec_pct > 0, na.rm = TRUE) * 100,
+      anomalia_positiva_promedio_mes = mean(
+        prec_pct[prec_pct > 0],
+        na.rm = TRUE
+      ),
+      .groups = "drop"
+    ) %>%
+    dplyr::group_by(localidad, trimestre) %>%
+    dplyr::slice_max(
+      order_by = anomalia_positiva_promedio_mes,
+      n = 1,
+      with_ties = FALSE
+    ) %>%
+    dplyr::ungroup() %>%
+    dplyr::rename(
+      mes_mayor_anomalia = mes,
+      n_mes_mayor = n_mes,
+      n_mes_positivo_mayor = n_mes_positivo,
+      frecuencia_mes_positivo_mayor = frecuencia_mes_positivo,
+      anomalia_positiva_promedio_mayor = anomalia_positiva_promedio_mes
+    )
+
+  resumen_nino_pp <- datos_nino %>%
+    dplyr::filter(!is.na(prec_pct)) %>%
+    dplyr::group_by(localidad, trimestre) %>%
+    dplyr::summarise(
+      n = dplyr::n(),
+      frecuencia_aumento = mean(prec_pct > 0) * 100,
+      aumento_promedio = mean(prec_pct[prec_pct > 0], na.rm = TRUE),
+      anomalia_media = mean(prec_pct, na.rm = TRUE),
+      mayor_aumento = max(prec_pct, na.rm = TRUE),
+      anio_mayor_aumento = anio[which.max(prec_pct)][1],
+      prec_hist_mayor_aumento = prec_hist[which.max(prec_pct)][1],
+      prec_nino_mayor_aumento = prec_nino[which.max(prec_pct)][1],
+      .groups = "drop"
+    )
+
+  resumen_nino_pp <- resumen_nino_pp %>%
+    dplyr::left_join(
+      resumen_mensual_pp,
+      by = c("localidad", "trimestre")
+    )
+
+  mapa_nino_df <- partidos_nino %>%
+    left_join(
+      resumen_nino_pp,
+      by = "localidad"
+    )
+
+  localidad_mapa <- reactiveVal("Balcarce")
+
+  observeEvent(input$mapa_nino_shape_click, {
+    click <- input$mapa_nino_shape_click
+    req(click$id)
+
+    localidad_mapa(click$id)
+  })
+
+  output$mapa_nino <- renderLeaflet({
+    req(input$nino_trimestre)
+
+    df <- mapa_nino_df %>%
+      dplyr::filter(trimestre == input$nino_trimestre | is.na(trimestre))
+
+    req(nrow(df) > 0)
+
+    pal <- leaflet::colorBin(
+      palette = "YlGnBu",
+      domain = c(50, 90),
+      bins = c(50, 60, 70, 80, 90, 91),
+      right = FALSE,
+      na.color = "#d9dee3"
+    )
+
+    leaflet::leaflet(df, 
+                     options = leaflet::leafletOptions(
+      zoomControl = TRUE,
+      minZoom = 6,
+      maxZoom = 11
+    )
+    ) %>%
+      leaflet::addProviderTiles(
+        leaflet::providers$Esri.WorldImagery
+        ) %>%
+      leaflet::fitBounds(
+        lng1 = -61.25,
+        lat1 = -38.55,
+        lng2 = -57.15,
+        lat2 = -36.25
+      ) %>%
+      leaflet::addPolygons(
+        layerId = ~ ifelse(
+          is.na(localidad),
+          paste0("sin_dato_", municipio_id),
+          localidad
+        ),
+        fillColor = ~ ifelse(
+          is.na(frecuencia_aumento),
+          "#d9dee3",
+          pal(frecuencia_aumento)
+        ),
+        fillOpacity = ~ ifelse(is.na(frecuencia_aumento), 0.15, 0.75),
+        color = ~ ifelse(is.na(frecuencia_aumento), "#ffffff", "#0b3d5c"),
+        weight = ~ ifelse(is.na(frecuencia_aumento), 0.4, 2),
+        opacity = 1,
+        label = ~ ifelse(
+          is.na(frecuencia_aumento),
+          municipio_nombre,
+          paste0(localidad, ": ", round(frecuencia_aumento, 0), "%")
+        ),
+        popup = ~ ifelse(
+          is.na(frecuencia_aumento),
+          paste0(
+            "<b>",
+            municipio_nombre,
+            "</b><br>Sin información para este análisis."
+          ),
+          paste0(
+            "<b>",
+            localidad,
+            "</b><br>",
+            "Trimestre: ",
+            trimestre,
+            "<br>",
+            "Frecuencia de años con aumento: ",
+            round(frecuencia_aumento, 0),
+            "%<br>",
+            "Aumento promedio: ",
+            round(aumento_promedio, 1),
+            "%<br>",
+            "Máximo aumento: ",
+            round(mayor_aumento, 1),
+            "% (",
+            anio_mayor_aumento,
+            ")"
+          )
+        ),
+        highlightOptions = leaflet::highlightOptions(
+          weight = 3,
+          color = "#0b3d5c",
+          fillOpacity = 0.95,
+          bringToFront = TRUE
+        )
+      ) 
+  })
+
+  series_localidades <- tibble::tribble(
+    ~localidad,            ~serie,
+    "Balcarce",            "1980–2026",
+    "Necochea",            "2010–2026",
+    "Tandil",              "1980–2026",
+    "Olavarría",           "1985–2026",
+    "Azul",                "1980–2026",
+    "Mar del Plata",       "1980–2026",
+    "Miramar",             "2010–2026",
   )
   
-  roni <- readxl::read_excel("RONI_trimestral.xlsx")
+  output$nino_meses_trimestre <- renderUI({
+    
+    req(input$nino_trimestre)
+    
+    meses <- dplyr::case_when(
+      input$nino_trimestre == "JJA" ~ "Junio · Julio · Agosto",
+      input$nino_trimestre == "SON" ~ "Septiembre · Octubre · Noviembre",
+      input$nino_trimestre == "DEF" ~ "Diciembre · Enero · Febrero",
+      TRUE ~ ""
+    )
+    
+    tags$span(meses)
+  })
   
-  roni_nino <- roni %>%   
+  output$card_mapa_nino <- renderUI({
+    req(localidad_mapa(), input$nino_trimestre)
+
+    df <- resumen_nino_pp %>%
+      filter(
+        localidad == localidad_mapa(),
+        trimestre == input$nino_trimestre
+      )
+
+    req(nrow(df) > 0)
+    
+    serie_localidad <- series_localidades %>%
+      dplyr::filter(localidad == df$localidad) %>%
+      dplyr::pull(serie)
+    
+    
+    sin_aumentos <- is.na(df$frecuencia_aumento[1]) ||
+      df$frecuencia_aumento[1] == 0
+
+    trimestre_txt <- dplyr::case_when(
+      df$trimestre == "JJA" ~ "Invierno · junio-julio-agosto",
+      df$trimestre == "SON" ~ "Primavera · septiembre-octubre-noviembre",
+      df$trimestre == "DEF" ~ "Verano · diciembre-enero-febrero"
+    )
+
+    div(
+      class = "nino-map-card-pro",
+
+      div(
+        class = "nino-map-title",
+        h2(
+          df$localidad,
+          tags$span(
+            paste0(" (serie ", serie_localidad, ")"),
+            class = "serie-localidad"
+          )
+        ),
+        span(trimestre_txt)
+      ),
+
+      div(
+        class = "nino-kpi-grid",
+
+        div(
+          class = "nino-kpi-card",
+          span("Años Niño con aumento de precipitación"),
+          strong(paste0(round(df$frecuencia_aumento, 0), "%")),
+          tags$small(paste0("sobre ", df$n, " años Niño analizados"))
+        ),
+
+        div(
+          class = "nino-kpi-card",
+          span("Aumento promedio en años húmedos"),
+          strong(
+            if (sin_aumentos) {
+              "-"
+            } else {
+              paste0(round(df$aumento_promedio, 1), "%")
+            }
+          ),
+          tags$small(
+            if (sin_aumentos) {
+              "No se registraron años con aumento"
+            } else {
+              "considerando sólo años con aumento"
+            }
+          )
+        ),
+
+        div(
+          class = "nino-kpi-card",
+          span("Anomalía media total"),
+          strong(paste0(round(df$anomalia_media, 1), "%")),
+          tags$small("promedio de todos los años Niño")
+        ),
+
+        div(
+          class = "nino-kpi-card destacado",
+          span("Máximo aumento registrado"),
+          strong(
+            if (sin_aumentos) {
+              "-"
+            } else {
+              paste0(round(df$mayor_aumento, 1), "%")
+            }
+          ),
+          tags$small(
+            if (sin_aumentos) {
+              "No se registraron aumentos de precipitación"
+            } else {
+              paste0(
+                "año ",
+                df$anio_mayor_aumento,
+                " · Histórico: ",
+                round(df$prec_hist_mayor_aumento, 0),
+                " mm",
+                " · Niño: ",
+                round(df$prec_nino_mayor_aumento, 0),
+                " mm"
+              )
+            }
+          )
+        )
+      ),
+
+      br(),
+
+      div(
+        class = "nino-mes-detalle",
+
+        div(
+          class = "mes-detalle-title",
+          icon("calendar-days"),
+          " Mes con mayor aumento dentro del trimestre"
+        ),
+
+        div(
+          class = "mes-detalle-grid",
+
+          div(
+            class = "mes-detalle-item destacado",
+            span("Mes"),
+            strong(
+              if (sin_aumentos) {
+                "-"
+              } else {
+                df$mes_mayor_anomalia
+              }
+            )
+          ),
+
+          div(
+            class = "mes-detalle-item",
+            span("Frecuencia de aumento"),
+            strong(
+              if (sin_aumentos) {
+                "-"
+              } else {
+                paste0(
+                  round(df$frecuencia_mes_positivo_mayor, 0),
+                  "%"
+                )
+              }
+            ),
+            tags$small(
+              if (sin_aumentos) {
+                ""
+              } else {
+                paste0(
+                  df$n_mes_positivo_mayor,
+                  " de ",
+                  df$n_mes_mayor,
+                  " años"
+                )
+              }
+            )
+          ),
+
+          div(
+            class = "mes-detalle-item",
+            span("Aumento promedio"),
+            strong(
+              if (sin_aumentos) {
+                "-"
+              } else {
+                paste0(
+                  round(df$anomalia_positiva_promedio_mayor, 1),
+                  "%"
+                )
+              }
+            ),
+            tags$small(
+              if (sin_aumentos) {
+                ""
+              } else {
+                "considerando sólo años con aumento"
+              }
+            )
+          )
+        ),
+        
+        if (sin_aumentos) {
+          div(
+            class = "nino-sin-aumentos",
+            icon("circle-info"),
+            " En los eventos El Niño disponibles para esta localidad no se registraron aumentos de precipitación durante el trimestre seleccionado."
+          )
+        }
+      )
+    )
+  })
+
+  observeEvent(
+    list(localidad_mapa(), input$nino_trimestre),
+    {
+      req(localidad_mapa())
+      req(input$nino_trimestre)
+
+      anios <- datos_nino %>%
+        filter(
+          localidad == localidad_mapa(),
+          trimestre == input$nino_trimestre
+        ) %>%
+        pull(anio) %>%
+        unique() %>%
+        sort()
+
+      req(length(anios) > 0)
+
+      anio_actual <- isolate(input$nino_anio)
+
+      anio_seleccionado <- if (
+        !is.null(anio_actual) &&
+          length(anio_actual) > 0 &&
+          as.numeric(anio_actual) %in% anios
+      ) {
+        as.numeric(anio_actual)
+      } else {
+        max(anios, na.rm = TRUE)
+      }
+
+      updateSelectInput(
+        session,
+        "nino_anio",
+        choices = anios,
+        selected = anio_seleccionado
+      )
+    },
+    ignoreInit = FALSE
+  )
+
+  datos_filtrados_nino <- reactive({
+    req(localidad_mapa(), input$nino_trimestre)
+
+    datos_nino %>%
+      filter(
+        localidad == localidad_mapa(),
+        trimestre == input$nino_trimestre
+      )
+  })
+
+  observeEvent(input$nino_trimestre, {
+    req(input$nino_trimestre)
+
+    opciones <- dplyr::case_when(
+      input$nino_trimestre == "JJA" ~ list(c(
+        "Trimestre JJA" = "TRIMESTRE",
+        "Junio" = "Junio",
+        "Julio" = "Julio",
+        "Agosto" = "Agosto"
+      )),
+      input$nino_trimestre == "SON" ~ list(c(
+        "Trimestre SON" = "TRIMESTRE",
+        "Septiembre" = "Septiembre",
+        "Octubre" = "Octubre",
+        "Noviembre" = "Noviembre"
+      )),
+      input$nino_trimestre == "DEF" ~ list(c(
+        "Trimestre DEF" = "TRIMESTRE",
+        "Diciembre" = "Diciembre",
+        "Enero" = "Enero",
+        "Febrero" = "Febrero"
+      ))
+    )[[1]]
+
+    updateSelectInput(
+      session,
+      "nino_periodo_grafico",
+      choices = opciones,
+      selected = "TRIMESTRE"
+    )
+  })
+
+  datos_grafico_nino <- reactive({
+    req(localidad_mapa(), input$nino_trimestre, input$nino_periodo_grafico)
+
+    if (input$nino_periodo_grafico == "TRIMESTRE") {
+      datos_nino %>%
+        dplyr::filter(
+          localidad == localidad_mapa(),
+          trimestre == input$nino_trimestre
+        )
+    } else {
+      datos_nino_mensual %>%
+        dplyr::filter(
+          localidad == localidad_mapa(),
+          trimestre == input$nino_trimestre,
+          mes == input$nino_periodo_grafico
+        )
+    }
+  })
+
+  output$ranking_nino <- renderPlotly({
+    df <- datos_grafico_nino() %>%
+      dplyr::group_by(anio) %>%
+      dplyr::summarise(
+        prec_pct = mean(prec_pct, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      dplyr::arrange(prec_pct) %>%
+      dplyr::mutate(
+        anio_txt = factor(as.character(anio), levels = as.character(anio))
+      )
+
+    req(nrow(df) > 0)
+
+    plotly::plot_ly(
+      df,
+      x = ~prec_pct,
+      y = ~anio_txt,
+      type = "bar",
+      orientation = "h",
+      text = ~ paste0(round(prec_pct, 1), "%"),
+      textposition = "auto",
+      hovertemplate = paste(
+        "Año: %{y}<br>",
+        "Precipitación: %{x:.1f}%<extra></extra>"
+      )
+    ) %>%
+      plotly::layout(
+        title = list(
+          text = paste0(
+            "<b>",
+            localidad_mapa(),
+            "</b>"
+          ),
+          x = 0.5
+        ),
+        xaxis = list(
+          title = list(
+            text = "Anomalía de precipitación (%)",
+            font = list(
+              size = 18,
+              color = "#0b3d5c"
+            )
+          ),
+          tickfont = list(
+            size = 16
+          )
+        ),
+        yaxis = list(
+          title = "",
+          tickfont = list(
+            size = 16
+          )
+        ),
+        margin = list(l = 70, r = 20, t = 60, b = 60)
+      )
+  })
+
+  output$bar_temp_nino <- renderPlotly({
+    df0 <- datos_grafico_nino() %>%
+      dplyr::slice(1)
+
+    req(nrow(df0) > 0)
+
+    df <- tibble::tibble(
+      variable = factor(
+        c(
+          "Temperatura\nmáxima (°C)",
+          "Temperatura\nmedia (°C)",
+          "Temperatura\nmínima (°C)"
+        ),
+        levels = c(
+          "Temperatura\nmáxima (°C)",
+          "Temperatura\nmedia (°C)",
+          "Temperatura\nmínima (°C)"
+        )
+      ),
+      historico = c(
+        df0$tmax_hist,
+        df0$tmedia_hist,
+        df0$tmin_hist
+      ),
+      nino = c(
+        df0$tmax_nino,
+        df0$tmedia_nino,
+        df0$tmin_nino
+      )
+    ) %>%
+      tidyr::pivot_longer(
+        cols = c(historico, nino),
+        names_to = "tipo",
+        values_to = "valor"
+      ) %>%
+      dplyr::mutate(
+        tipo = dplyr::recode(
+          tipo,
+          historico = "Mediana histórica",
+          nino = "Año Niño"
+        )
+      )
+
+    plotly::plot_ly(
+      df,
+      x = ~variable,
+      y = ~valor,
+      color = ~tipo,
+      colors = c("#66c2a5", "#8da0cb"),
+      type = "bar",
+      text = ~ paste0(round(valor, 1), " °C"),
+      textposition = "inside",
+      insidetextanchor = "middle",
+      textfont = list(
+        color = "white",
+        size = 16
+      ),
+      hovertemplate = "%{x}<br>%{y:.1f} °C<extra></extra>"
+    ) %>%
+      plotly::layout(
+        barmode = "group",
+        showlegend = TRUE,
+        xaxis = list(
+          title = list(
+            text = "",
+            font = list(
+              size = 18
+            )
+          ),
+          tickfont = list(
+            size = 17,
+            color = "#0b3d5c"
+          ),
+          tickangle = 0,
+          automargin = TRUE
+        ),
+        yaxis = list(
+          title = "",
+          showticklabels = FALSE,
+          showgrid = FALSE,
+          zeroline = FALSE
+        ),
+        legend = list(
+          orientation = "h",
+          x = 0.35,
+          y = -0.25,
+          font = list(
+            size = 16,
+            color = "#0b3d5c"
+          )
+        ),
+        margin = list(
+          l = 20,
+          r = 20,
+          t = 20,
+          b = 75
+        )
+      )
+  })
+
+  anios_nino <- c(1972, 1982, 1987, 1991, 1994, 1997, 2002, 2004, 2015, 2023)
+
+  orden_trimestres <- c(
+    "DJF",
+    "JFM",
+    "FMA",
+    "MAM",
+    "AMJ",
+    "MJJ",
+    "JJA",
+    "JAS",
+    "ASO",
+    "SON",
+    "OND",
+    "NDJ"
+  )
+
+  roni <- readxl::read_excel("RONI_trimestral.xlsx")
+
+  roni_nino <- roni %>%
     mutate(
       ANOM = as.numeric(gsub(",", ".", ANOM)),
       SEAS = factor(SEAS, levels = orden_trimestres),
       SEAS_num = as.numeric(SEAS)
     ) %>%
     filter(YR %in% anios_nino)
-  
+
   roni_promedio <- roni_nino %>%
     group_by(SEAS, SEAS_num) %>%
     summarise(
       ANOM = mean(ANOM, na.rm = TRUE),
       .groups = "drop"
     )
-  
+
   grafico_oni_v1 <- ggplot() +
     annotate(
       "rect",
-      xmin = -Inf, xmax = Inf,
-      ymin = 0.5, ymax = Inf,
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = 0.5,
+      ymax = Inf,
       fill = "#fee2e2",
       alpha = 0.75
     ) +
     annotate(
       "rect",
-      xmin = -Inf, xmax = Inf,
-      ymin = -0.5, ymax = 0.5,
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = -0.5,
+      ymax = 0.5,
       fill = "#f8fafc",
       alpha = 0.95
     ) +
     annotate(
       "rect",
-      xmin = -Inf, xmax = Inf,
-      ymin = -Inf, ymax = -0.5,
+      xmin = -Inf,
+      xmax = Inf,
+      ymin = -Inf,
+      ymax = -0.5,
       fill = "#dbeafe",
       alpha = 0.65
     ) +
     annotate(
       "rect",
-      xmin = 6.5, xmax = 12.5,
-      ymin = 0.5, ymax = Inf,
+      xmin = 6.5,
+      xmax = 12.5,
+      ymin = 0.5,
+      ymax = Inf,
       fill = "#fecaca",
       alpha = 0.35
     ) +
@@ -4794,9 +5970,9 @@ server <- function(input, output, session) {
     ) +
     labs(
       title = "Años seleccionados con presencia de El Niño sostenida",
-      subtitle = "Evolución trimestral del Oceanic Niño Index (ONI). Línea negra: promedio de los años seleccionados.",
+      subtitle = "Evolución trimestral del Relative Oceanic Niño Index (RONI). Línea negra: promedio de los años seleccionados.",
       x = NULL,
-      y = "Anomalía ONI (°C)",
+      y = "Anomalía RONI (°C)",
       color = "Año"
     ) +
     theme_minimal(base_size = 13) +
@@ -4840,683 +6016,9 @@ server <- function(input, output, session) {
         color = NA
       )
     )
-  
+
   output$grafico_oni_v1 <- renderPlot({
     grafico_oni_v1
-  })
-  
-  partidos_pba <- sf::st_read("partidos-pba.geojson")
-
-  partidos_nino <- partidos_pba %>%
-    mutate(
-      localidad = case_when(
-        municipio_nombre == "Balcarce" ~ "Balcarce",
-        municipio_nombre == "Tandil" ~ "Tandil",
-        municipio_nombre == "Olavarría" ~ "Olavarría",
-        municipio_nombre == "General Pueyrredón" ~ "Mar del Plata",
-        TRUE ~ NA_character_
-      )
-    )
-
-  limpiar_num <- function(x) {
-    x <- as.character(x)
-    x <- gsub(",", ".", x)
-    x <- gsub("%", "", x)
-    x <- gsub("[^0-9.-]", "", x)
-    x[x == ""] <- NA
-    as.numeric(x)
-  }
-
-  datos_nino <- readxl::read_excel("datos_nino.xlsx") %>%
-    dplyr::rename(
-      anio = Año,
-      localidad = Localidad,
-      trimestre = Trimestre,
-      tmax_hist = `Tmax media (°C) historica`,
-      tmin_hist = `Tmin media (°C) historica`,
-      tmedia_hist = `Tmedia media (°C) historica`,
-      prec_hist = `Prec acum (mm) historica`,
-      tmax_nino = `Tmax media (°C)`,
-      tmin_nino = `Tmin media (°C)`,
-      tmedia_nino = `Tmedia media (°C)`,
-      prec_nino = `Prec acum (mm)`,
-      tmax_pct = `Tmax % cambio`,
-      tmin_pct = `Tmin % cambio`,
-      tmedia_pct = `Tmedia % cambio`,
-      prec_pct = `Prec % cambio`
-    ) %>%
-    dplyr::mutate(
-      dplyr::across(
-        c(
-          tmax_hist,
-          tmin_hist,
-          tmedia_hist,
-          prec_hist,
-          tmax_nino,
-          tmin_nino,
-          tmedia_nino,
-          prec_nino,
-          tmax_pct,
-          tmin_pct,
-          tmedia_pct,
-          prec_pct
-        ),
-        limpiar_num
-      )
-    )
-
-  resumen_nino_pp <- datos_nino %>%
-    dplyr::filter(!is.na(prec_pct)) %>%
-    dplyr::group_by(localidad, trimestre) %>%
-    dplyr::summarise(
-      n = dplyr::n(),
-      frecuencia_aumento = mean(prec_pct > 0) * 100,
-      aumento_promedio = mean(prec_pct[prec_pct > 0], na.rm = TRUE),
-      anomalia_media = mean(prec_pct, na.rm = TRUE),
-      mayor_aumento = max(prec_pct, na.rm = TRUE),
-      anio_mayor_aumento = anio[which.max(prec_pct)][1],
-      prec_hist_mayor_aumento = prec_hist[which.max(prec_pct)][1],
-      prec_nino_mayor_aumento = prec_nino[which.max(prec_pct)][1],
-      .groups = "drop"
-    )
-
-  mapa_nino_df <- partidos_nino %>%
-    left_join(
-      resumen_nino_pp,
-      by = "localidad"
-    )
-
-  localidad_mapa <- reactiveVal("Balcarce")
-
-  observeEvent(input$mapa_nino_shape_click, {
-    click <- input$mapa_nino_shape_click
-    req(click$id)
-
-    localidad_mapa(click$id)
-  })
-
-  output$mapa_nino <- renderLeaflet({
-    req(input$nino_trimestre)
-
-    df <- mapa_nino_df %>%
-      dplyr::filter(trimestre == input$nino_trimestre | is.na(trimestre))
-
-    req(nrow(df) > 0)
-
-    pal <- leaflet::colorBin(
-      palette = "YlGnBu",
-      domain = c(50, 90),
-      bins = c(50, 60, 70, 80, 90, 91),
-      right = FALSE,
-      na.color = "#d9dee3"
-    )
-
-    leaflet::leaflet(df) %>%
-      leaflet::addProviderTiles(leaflet::providers$Esri.WorldImagery) %>%
-      leaflet::setView(
-        lng = -59.4,
-        lat = -37.4,
-        zoom = 7
-      ) %>%
-      leaflet::addPolygons(
-        layerId = ~ ifelse(
-          is.na(localidad),
-          paste0("sin_dato_", municipio_id),
-          localidad
-        ),
-        fillColor = ~ ifelse(
-          is.na(frecuencia_aumento),
-          "#d9dee3",
-          pal(frecuencia_aumento)
-        ),
-        fillOpacity = ~ ifelse(is.na(frecuencia_aumento), 0.15, 0.75),
-        color = ~ ifelse(is.na(frecuencia_aumento), "#ffffff", "#0b3d5c"),
-        weight = ~ ifelse(is.na(frecuencia_aumento), 0.4, 2),
-        opacity = 1,
-        label = ~ ifelse(
-          is.na(frecuencia_aumento),
-          municipio_nombre,
-          paste0(localidad, ": ", round(frecuencia_aumento, 0), "%")
-        ),
-        popup = ~ ifelse(
-          is.na(frecuencia_aumento),
-          paste0(
-            "<b>",
-            municipio_nombre,
-            "</b><br>Sin información para este análisis."
-          ),
-          paste0(
-            "<b>",
-            localidad,
-            "</b><br>",
-            "Trimestre: ",
-            trimestre,
-            "<br>",
-            "Frecuencia de años con aumento: ",
-            round(frecuencia_aumento, 0),
-            "%<br>",
-            "Aumento promedio: ",
-            round(aumento_promedio, 1),
-            "%<br>",
-            "Máximo aumento: ",
-            round(mayor_aumento, 1),
-            "% (",
-            anio_mayor_aumento,
-            ")"
-          )
-        ),
-        highlightOptions = leaflet::highlightOptions(
-          weight = 3,
-          color = "#0b3d5c",
-          fillOpacity = 0.95,
-          bringToFront = TRUE
-        )
-      ) %>%
-      leaflet::addLegend(
-        pal = pal,
-        values = c(50, 60, 70, 80, 90),
-        title = htmltools::HTML(
-          "% de años Niño<br>con aumento de precipitación"
-        ),
-        position = "bottomright",
-        opacity = 0.9
-      )
-  })
-
-  localidad_mapa <- reactiveVal("Balcarce")
-
-  observeEvent(input$mapa_nino_shape_click, {
-    click <- input$mapa_nino_shape_click
-    req(click$id)
-
-    if (click$id %in% unique(datos_nino$localidad)) {
-      localidad_mapa(click$id)
-    }
-  })
-
-  output$card_mapa_nino <- renderUI({
-    req(localidad_mapa(), input$nino_trimestre)
-
-    df <- resumen_nino_pp %>%
-      filter(
-        localidad == localidad_mapa(),
-        trimestre == input$nino_trimestre
-      )
-
-    req(nrow(df) > 0)
-
-    trimestre_txt <- dplyr::case_when(
-      df$trimestre == "JJA" ~ "Invierno · junio-julio-agosto",
-      df$trimestre == "SON" ~ "Primavera · septiembre-octubre-noviembre",
-      df$trimestre == "DEF" ~ "Verano · diciembre-enero-febrero"
-    )
-
-    div(
-      class = "nino-map-card-pro",
-
-      div(
-        class = "nino-map-title",
-        h2(df$localidad),
-        span(trimestre_txt)
-      ),
-
-      div(
-        class = "nino-kpi-grid",
-
-        div(
-          class = "nino-kpi-card",
-          span("Años Niño con aumento de precipitación"),
-          strong(paste0(round(df$frecuencia_aumento, 0), "%")),
-          tags$small(paste0("sobre ", df$n, " eventos analizados"))
-        ),
-
-        div(
-          class = "nino-kpi-card",
-          span("Aumento promedio en años húmedos"),
-          strong(paste0(round(df$aumento_promedio, 1), "%")),
-          tags$small("considerando sólo años con aumento")
-        ),
-
-        div(
-          class = "nino-kpi-card",
-          span("Anomalía media total"),
-          strong(paste0(round(df$anomalia_media, 1), "%")),
-          tags$small("promedio de todos los años Niño")
-        ),
-
-        div(
-          class = "nino-kpi-card destacado",
-          span("Máximo aumento registrado"),
-          strong(paste0(round(df$mayor_aumento, 1), "%")),
-          tags$small(
-            paste0(
-              "año ",
-              df$anio_mayor_aumento,
-              " · Histórico: ",
-              round(df$prec_hist_mayor_aumento, 0),
-              " mm",
-              " · Niño: ",
-              round(df$prec_nino_mayor_aumento, 0),
-              " mm"
-            )
-          )
-        )
-      )
-    )
-  })
-
-  observeEvent(
-    list(localidad_mapa(), input$nino_trimestre),
-    {
-      req(localidad_mapa())
-      req(input$nino_trimestre)
-
-      anios <- datos_nino %>%
-        filter(
-          localidad == localidad_mapa(),
-          trimestre == input$nino_trimestre
-        ) %>%
-        pull(anio) %>%
-        unique() %>%
-        sort()
-
-      req(length(anios) > 0)
-
-      anio_actual <- isolate(input$nino_anio)
-
-      anio_seleccionado <- if (
-        !is.null(anio_actual) &&
-          length(anio_actual) > 0 &&
-          as.numeric(anio_actual) %in% anios
-      ) {
-        as.numeric(anio_actual)
-      } else {
-        max(anios, na.rm = TRUE)
-      }
-
-      updateSelectInput(
-        session,
-        "nino_anio",
-        choices = anios,
-        selected = anio_seleccionado
-      )
-    },
-    ignoreInit = FALSE
-  )
-
-  datos_filtrados_nino <- reactive({
-    req(localidad_mapa(), input$nino_trimestre)
-
-    datos_nino %>%
-      filter(
-        localidad == localidad_mapa(),
-        trimestre == input$nino_trimestre
-      )
-  })
-
-  output$heatmap_nino <- renderPlotly({
-    df <- datos_filtrados_nino() %>%
-      select(anio, tmax_pct, tmin_pct, tmedia_pct, prec_pct) %>%
-      pivot_longer(
-        cols = -anio,
-        names_to = "variable",
-        values_to = "anomalia"
-      ) %>%
-      mutate(
-        variable = dplyr::recode(
-          variable,
-          tmax_pct = "Temperatura máxima (°C)",
-          tmin_pct = "Temperatura mínima (°C)",
-          tmedia_pct = "Temperatura media (°C)",
-          prec_pct = "Precipitación (mm)"
-        )
-      )
-
-    plot_ly(
-      df,
-      x = ~anio,
-      y = ~variable,
-      z = ~anomalia,
-      type = "heatmap",
-      colors = "RdBu",
-      reversescale = TRUE,
-      hovertemplate = paste(
-        "Año: %{x}<br>",
-        "Variable: %{y}<br>",
-        "Anomalía: %{z:.1f}%<extra></extra>"
-      )
-    ) %>%
-      plotly::layout(
-        xaxis = list(title = ""),
-        yaxis = list(
-          title = "",
-          automargin = TRUE
-        ),
-        margin = list(
-          l = 180,
-          r = 30,
-          t = 60,
-          b = 50
-        )
-      )
-  })
-
-  output$titulo_comparacion <- renderText({
-    req(localidad_mapa(), input$nino_trimestre, input$nino_anio)
-
-    trimestre_txt <- dplyr::case_when(
-      input$nino_trimestre == "JJA" ~ "Invierno (JJA)",
-      input$nino_trimestre == "SON" ~ "Primavera (SON)",
-      input$nino_trimestre == "DEF" ~ "Verano (DEF)"
-    )
-
-    paste(
-      localidad_mapa(),
-      "•",
-      trimestre_txt,
-      "• Evento El Niño",
-      input$nino_anio
-    )
-  })
-
-  output$bar_temp_nino <- renderPlotly({
-    df0 <- dato_anio_nino() %>%
-      dplyr::slice(1)
-
-    req(nrow(df0) > 0)
-
-    df <- tibble::tibble(
-      variable = factor(
-        c(
-          "Temperatura\nmáxima (°C)",
-          "Temperatura\nmedia (°C)",
-          "Temperatura\nmínima (°C)"
-        ),
-        levels = c(
-          "Temperatura\nmáxima (°C)",
-          "Temperatura\nmedia (°C)",
-          "Temperatura\nmínima (°C)"
-        )
-      ),
-      historico = c(
-        df0$tmax_hist,
-        df0$tmedia_hist,
-        df0$tmin_hist
-      ),
-      nino = c(
-        df0$tmax_nino,
-        df0$tmedia_nino,
-        df0$tmin_nino
-      )
-    ) %>%
-      tidyr::pivot_longer(
-        cols = c(historico, nino),
-        names_to = "tipo",
-        values_to = "valor"
-      ) %>%
-      dplyr::mutate(
-        tipo = dplyr::recode(
-          tipo,
-          historico = "Mediana histórica",
-          nino = "Año Niño"
-        )
-      )
-
-    plotly::plot_ly(
-      df,
-      x = ~variable,
-      y = ~valor,
-      color = ~tipo,
-      colors = c("#66c2a5", "#8da0cb"),
-      type = "bar",
-      text = ~ paste0(round(valor, 1), " °C"),
-      textposition = "inside",
-      insidetextanchor = "middle",
-      textfont = list(
-        color = "white",
-        size = 12
-      ),
-      hovertemplate = "%{x}<br>%{y:.1f} °C<extra></extra>"
-    ) %>%
-      plotly::layout(
-        barmode = "group",
-        showlegend = TRUE,
-        xaxis = list(title = ""),
-        yaxis = list(
-          title = "",
-          showticklabels = FALSE,
-          showgrid = FALSE,
-          zeroline = FALSE
-        ),
-        legend = list(
-          orientation = "h",
-          x = 0.2,
-          y = -0.25
-        ),
-        margin = list(
-          l = 20,
-          r = 20,
-          t = 20,
-          b = 75
-        )
-      )
-  })
-
-  output$bar_prec_nino <- renderPlotly({
-    df0 <- dato_anio_nino() %>%
-      dplyr::slice(1)
-
-    req(nrow(df0) > 0)
-
-    df <- tibble::tibble(
-      variable = "Precipitación (mm)",
-      historico = df0$prec_hist,
-      nino = df0$prec_nino
-    ) %>%
-      tidyr::pivot_longer(
-        cols = c(historico, nino),
-        names_to = "tipo",
-        values_to = "valor"
-      ) %>%
-      dplyr::mutate(
-        tipo = dplyr::recode(
-          tipo,
-          historico = "Mediana histórica",
-          nino = "Año Niño"
-        )
-      )
-
-    plotly::plot_ly(
-      df,
-      x = ~valor,
-      y = ~tipo,
-      color = ~tipo,
-      type = "bar",
-      orientation = "h",
-      text = ~ paste0(round(valor, 0), " mm"),
-      textposition = "inside",
-      insidetextanchor = "middle",
-      textfont = list(
-        color = "white",
-        size = 15
-      ),
-      hovertemplate = "%{y}<br>%{x:.0f} mm<extra></extra>"
-    ) %>%
-      plotly::layout(
-        barmode = "group",
-        showlegend = TRUE,
-        xaxis = list(title = ""),
-        yaxis = list(
-          title = "",
-          showticklabels = FALSE,
-          showgrid = FALSE,
-          zeroline = FALSE
-        ),
-        legend = list(
-          orientation = "h",
-          x = 0.2,
-          y = -0.25
-        ),
-        bargap = 0.25,
-        bargroupgap = 0.05,
-        margin = list(
-          l = 20,
-          r = 20,
-          t = 20,
-          b = 75
-        )
-      )
-  })
-
-  output$ranking_nino <- renderPlotly({
-    df <- datos_filtrados_nino() %>%
-      dplyr::group_by(anio) %>%
-      dplyr::summarise(
-        prec_pct = mean(prec_pct, na.rm = TRUE),
-        .groups = "drop"
-      ) %>%
-      dplyr::arrange(prec_pct) %>%
-      dplyr::mutate(
-        anio_txt = factor(as.character(anio), levels = as.character(anio))
-      )
-
-    req(nrow(df) > 0)
-
-    plotly::plot_ly(
-      df,
-      x = ~prec_pct,
-      y = ~anio_txt,
-      type = "bar",
-      orientation = "h",
-      text = ~ paste0(round(prec_pct, 1), "%"),
-      textposition = "auto",
-      hovertemplate = paste(
-        "Año: %{y}<br>",
-        "Precipitación: %{x:.1f}%<extra></extra>"
-      )
-    ) %>%
-      plotly::layout(
-        title = list(
-          text = paste0(
-            "<b>",
-            localidad_mapa(),
-            "</b>"
-          ),
-          x = 0.5
-        ),
-        xaxis = list(title = "Anomalía de precipitación (%)"),
-        yaxis = list(title = ""),
-        margin = list(l = 70, r = 20, t = 60, b = 60)
-      )
-  })
-
-  output$texto_nino <- renderUI({
-    df <- dato_anio_nino()
-
-    req(nrow(df) > 0)
-
-    trimestre_txt <- dplyr::case_when(
-      df$trimestre == "JJA" ~ "junio-julio-agosto (JJA) ",
-      df$trimestre == "SON" ~ "septiembre-octubre-noviembre (SON) ",
-      df$trimestre == "DEF" ~ "diciembre-enero-febrero (DEF) "
-    )
-
-    lluvia <- ifelse(
-      df$prec_pct >= 0,
-      paste0(
-        "Las lluvias superaron la mediana histórica en un ",
-        "<span style='font-size:2.12em;font-weight:700;color:#0b3d5c;'>",
-        format(round(df$prec_pct, 1), decimal.mark = ","),
-        "%</span>"
-      ),
-      paste0(
-        "Las lluvias fueron ",
-        "<span style='font-size:2.12em;font-weight:700;color:#0b3d5c;'>",
-        format(abs(round(df$prec_pct, 1)), decimal.mark = ","),
-        "%</span>",
-        " inferiores</b> a la mediana histórica"
-      )
-    )
-
-    temperatura <- ifelse(
-      df$tmedia_pct >= 0,
-      paste0(
-        "la temperatura media resultó ",
-        "<span style='font-size:2.12em;font-weight:700;color:#0b3d5c;'>",
-        format(round(df$tmedia_pct, 1), decimal.mark = ","),
-        "%</span>",
-        " más cálida</b> que el promedio histórico del período"
-      ),
-      paste0(
-        "la temperatura media resultó ",
-        "<span style='font-size:2.12em;font-weight:700;color:#0b3d5c;'>",
-        format(abs(round(df$tmedia_pct, 1)), decimal.mark = ","),
-        "%</span>",
-        " más fría</b> que el promedio histórico del período"
-      )
-    )
-
-    HTML(
-      paste0(
-        "<p style='text-align:justify;'>",
-
-        "Durante el trimestre ",
-        "<span style='font-size:2.02em;font-weight:700;color:#0b3d5c;'>",
-        trimestre_txt,
-        "</span>",
-        " del año ",
-        "<span style='font-size:2.12em;font-weight:700;color:#0b3d5c;'>",
-        df$anio,
-        "</span>",
-        " en la localidad de ",
-        "<span style='font-size:2.12em;font-weight:700;color:#0b3d5c;'>",
-        df$localidad,
-        "</span>",
-        " se registraron condiciones ",
-
-        ifelse(
-          df$prec_pct >= 0 & df$tmedia_pct >= 0,
-          "por encima de los valores históricos de referencia tanto en precipitaciones como en temperatura.",
-          "diferentes respecto de los valores históricos de referencia."
-        ),
-
-        "</p>",
-
-        "<p style='text-align:justify;'>",
-
-        lluvia,
-
-        ", mientras que ",
-
-        temperatura,
-
-        ".</p>"
-      )
-    )
-  })
-
-  output$tabla_nino <- renderDT({
-    datos_filtrados_nino() %>%
-      select(
-        Año = anio,
-        `Tmax %` = tmax_pct,
-        `Tmin %` = tmin_pct,
-        `T media %` = tmedia_pct,
-        `Precipitación %` = prec_pct,
-        `Tmax Niño` = tmax_nino,
-        `Tmin Niño` = tmin_nino,
-        `T media Niño` = tmedia_nino,
-        `Prec Niño` = prec_nino
-      ) %>%
-      datatable(
-        rownames = FALSE,
-        options = list(
-          pageLength = 10,
-          dom = "tip",
-          scrollX = TRUE
-        )
-      ) %>%
-      formatRound(columns = 2:9, digits = 1)
   })
 
   ##### HELADAS ######
