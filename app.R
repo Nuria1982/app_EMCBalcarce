@@ -27,7 +27,6 @@ library(httr2)
 library(usethis)
 library(zoo)
 library(stringr)
-library(leaflet)
 library(readr)
 library(patchwork)
 library(cowplot)
@@ -1442,32 +1441,32 @@ nino-trimestre-panel .pretty:has(input:checked) {
             fluidRow(
               column(
                 width = 8,
-                
+
                 div(
                   class = "nino-box nino-map-box",
-                  
+
                   div(
                     class = "nino-map-title-ui",
                     h3("Mapa interactivo"),
                     p("Seleccioná un partido para consultar los resultados.")
                   ),
-                  
+
                   leafletOutput(
                     "mapa_nino",
                     height = "430px"
                   ),
-                  
+
                   div(
                     class = "nino-legend-horizontal",
-                    
+
                     div(
                       class = "nino-legend-title",
                       "% de años Niño con aumento de precipitación"
                     ),
-                    
+
                     div(
                       class = "nino-legend-items",
-                      
+
                       div(
                         class = "nino-legend-item",
                         span(
@@ -1476,7 +1475,7 @@ nino-trimestre-panel .pretty:has(input:checked) {
                         ),
                         span("50–60")
                       ),
-                      
+
                       div(
                         class = "nino-legend-item",
                         span(
@@ -1485,7 +1484,7 @@ nino-trimestre-panel .pretty:has(input:checked) {
                         ),
                         span("60–70")
                       ),
-                      
+
                       div(
                         class = "nino-legend-item",
                         span(
@@ -1494,7 +1493,7 @@ nino-trimestre-panel .pretty:has(input:checked) {
                         ),
                         span("70–80")
                       ),
-                      
+
                       div(
                         class = "nino-legend-item",
                         span(
@@ -1503,7 +1502,7 @@ nino-trimestre-panel .pretty:has(input:checked) {
                         ),
                         span("80–90")
                       ),
-                      
+
                       div(
                         class = "nino-legend-item",
                         span(
@@ -1516,15 +1515,15 @@ nino-trimestre-panel .pretty:has(input:checked) {
                   )
                 )
               ),
-              
+
               column(
                 width = 4,
-                
+
                 div(
                   class = "nino-trimestre-panel",
-                  
+
                   h3("Trimestre"),
-                  
+
                   prettyRadioButtons(
                     inputId = "nino_trimestre",
                     label = NULL,
@@ -1539,12 +1538,12 @@ nino-trimestre-panel .pretty:has(input:checked) {
                     shape = "round",
                     outline = TRUE
                   ),
-                  
+
                   div(
                     class = "nino-trimestre-meses",
                     uiOutput("nino_meses_trimestre")
                   ),
-                  
+
                   div(
                     class = "nino-map-ayuda",
                     icon("circle-info"),
@@ -1603,7 +1602,6 @@ nino-trimestre-panel .pretty:has(input:checked) {
             br(),
             br(),
             br(),
-            
 
             div(
               class = "nino-section-divider",
@@ -1612,7 +1610,7 @@ nino-trimestre-panel .pretty:has(input:checked) {
                 "El siguiente panel muestra el criterio utilizado para definir los años incluidos en el análisis."
               )
             ),
-            
+
             br(),
 
             fluidRow(
@@ -1678,18 +1676,18 @@ nino-trimestre-panel .pretty:has(input:checked) {
             ),
 
             br(),
-            
+
             div(
               style = "font-size:0.9rem; color:#555; line-height:1.5;",
-              
+
               tags$b("Fuente de los datos: "),
               "Los datos de Balcarce corresponden a la Estación Agrometeorológica de la EEA INTA Balcarce. ",
-              "Los datos de Necochea y Miramar corresponden a datos de Estaciones Meteorológicas Automáticas (EMA). ",
+              # "Los datos de Necochea y Miramar corresponden a datos de Estaciones Meteorológicas Automáticas (EMA). ",
               "Los datos de Tandil, Azul, Olavarría y General Pueyrredón (Mar del Plata) provienen del ",
               tags$b("Servicio Meteorológico Nacional (SMN)"),
               "."
             ),
-            
+
             br(),
 
             h6(
@@ -5060,8 +5058,8 @@ server <- function(input, output, session) {
         municipio_nombre == "Olavarría" ~ "Olavarría",
         municipio_nombre == "General Pueyrredón" ~ "Mar del Plata",
         municipio_nombre == "Azul" ~ "Azul",
-        municipio_nombre == "Necochea" ~ "Necochea",
-        municipio_nombre == "General Alvarado" ~ "Miramar",
+        # municipio_nombre == "Necochea" ~ "Necochea",
+        # municipio_nombre == "General Alvarado" ~ "Miramar",
         TRUE ~ NA_character_
       )
     )
@@ -5114,8 +5112,7 @@ server <- function(input, output, session) {
     ) %>%
     dplyr::filter(!(localidad == "Balcarce" & anio == 1972))
 
-  
-  datos_nino_mensual <- readxl::read_excel("datos_nino_mensual.xlsx") %>%
+  datos_nino_mensual <- readxl::read_excel("datos_nino_mensual2.xlsx") %>%
     dplyr::rename(
       anio = Año,
       localidad = Localidad,
@@ -5239,16 +5236,17 @@ server <- function(input, output, session) {
       na.color = "#d9dee3"
     )
 
-    leaflet::leaflet(df, 
-                     options = leaflet::leafletOptions(
-      zoomControl = TRUE,
-      minZoom = 6,
-      maxZoom = 11
-    )
+    leaflet::leaflet(
+      df,
+      options = leaflet::leafletOptions(
+        zoomControl = TRUE,
+        minZoom = 6,
+        maxZoom = 11
+      )
     ) %>%
       leaflet::addProviderTiles(
         leaflet::providers$Esri.WorldImagery
-        ) %>%
+      ) %>%
       leaflet::fitBounds(
         lng1 = -61.25,
         lat1 = -38.55,
@@ -5308,34 +5306,33 @@ server <- function(input, output, session) {
           fillOpacity = 0.95,
           bringToFront = TRUE
         )
-      ) 
+      )
   })
 
   series_localidades <- tibble::tribble(
-    ~localidad,            ~serie,
-    "Balcarce",            "1980–2026",
-    "Necochea",            "2010–2026",
-    "Tandil",              "1980–2026",
-    "Olavarría",           "1985–2026",
-    "Azul",                "1980–2026",
-    "Mar del Plata",       "1980–2026",
-    "Miramar",             "2010–2026",
+    ~localidad      , ~serie      ,
+    "Balcarce"      , "1980–2026" ,
+    # "Necochea",            "2010–2026",
+    "Tandil"        , "1980–2026" ,
+    "Olavarría"     , "1985–2026" ,
+    "Azul"          , "1980–2026" ,
+    "Mar del Plata" , "1980–2026"
+    # "Miramar",             "2010–2026",
   )
-  
+
   output$nino_meses_trimestre <- renderUI({
-    
     req(input$nino_trimestre)
-    
+
     meses <- dplyr::case_when(
       input$nino_trimestre == "JJA" ~ "Junio · Julio · Agosto",
       input$nino_trimestre == "SON" ~ "Septiembre · Octubre · Noviembre",
       input$nino_trimestre == "DEF" ~ "Diciembre · Enero · Febrero",
       TRUE ~ ""
     )
-    
+
     tags$span(meses)
   })
-  
+
   output$card_mapa_nino <- renderUI({
     req(localidad_mapa(), input$nino_trimestre)
 
@@ -5346,12 +5343,11 @@ server <- function(input, output, session) {
       )
 
     req(nrow(df) > 0)
-    
+
     serie_localidad <- series_localidades %>%
       dplyr::filter(localidad == df$localidad) %>%
       dplyr::pull(serie)
-    
-    
+
     sin_aumentos <- is.na(df$frecuencia_aumento[1]) ||
       df$frecuencia_aumento[1] == 0
 
@@ -5516,7 +5512,7 @@ server <- function(input, output, session) {
             )
           )
         ),
-        
+
         if (sin_aumentos) {
           div(
             class = "nino-sin-aumentos",
@@ -5688,7 +5684,15 @@ server <- function(input, output, session) {
 
   output$bar_temp_nino <- renderPlotly({
     df0 <- datos_grafico_nino() %>%
-      dplyr::slice(1)
+      dplyr::summarise(
+        tmax_hist = mean(tmax_hist, na.rm = TRUE),
+        tmedia_hist = mean(tmedia_hist, na.rm = TRUE),
+        tmin_hist = mean(tmin_hist, na.rm = TRUE),
+
+        tmax_nino = mean(tmax_nino, na.rm = TRUE),
+        tmedia_nino = mean(tmedia_nino, na.rm = TRUE),
+        tmin_nino = mean(tmin_nino, na.rm = TRUE)
+      )
 
     req(nrow(df0) > 0)
 
@@ -5705,11 +5709,13 @@ server <- function(input, output, session) {
           "Temperatura\nmínima (°C)"
         )
       ),
+
       historico = c(
         df0$tmax_hist,
         df0$tmedia_hist,
         df0$tmin_hist
       ),
+
       nino = c(
         df0$tmax_nino,
         df0$tmedia_nino,
@@ -5724,8 +5730,8 @@ server <- function(input, output, session) {
       dplyr::mutate(
         tipo = dplyr::recode(
           tipo,
-          historico = "Mediana histórica",
-          nino = "Año Niño"
+          historico = "Media histórica",
+          nino = "Promedio años Niño"
         )
       )
 
@@ -5748,13 +5754,9 @@ server <- function(input, output, session) {
       plotly::layout(
         barmode = "group",
         showlegend = TRUE,
+
         xaxis = list(
-          title = list(
-            text = "",
-            font = list(
-              size = 18
-            )
-          ),
+          title = "",
           tickfont = list(
             size = 17,
             color = "#0b3d5c"
@@ -5762,21 +5764,24 @@ server <- function(input, output, session) {
           tickangle = 0,
           automargin = TRUE
         ),
+
         yaxis = list(
           title = "",
           showticklabels = FALSE,
           showgrid = FALSE,
           zeroline = FALSE
         ),
+
         legend = list(
           orientation = "h",
-          x = 0.35,
+          x = 0.30,
           y = -0.25,
           font = list(
             size = 16,
             color = "#0b3d5c"
           )
         ),
+
         margin = list(
           l = 20,
           r = 20,
@@ -7442,7 +7447,22 @@ server <- function(input, output, session) {
     )
 
     for (ano in 1991:2024) {
-      # Filtrar los datos de cada año específico
+      fecha_siembra <- as.Date(
+        sprintf(
+          "%d-%02d-%02d",
+          ano,
+          mes_siembra,
+          dia_siembra
+        )
+      )
+
+      fecha_limite <- as.Date(
+        sprintf(
+          "%d-12-31",
+          ano + 1
+        )
+      )
+
       datos_ano <- datos %>%
         filter(
           (format(Fecha, "%Y") == as.character(ano) &
@@ -7462,7 +7482,7 @@ server <- function(input, output, session) {
               pmax(Temperatura_Abrigo_150cm - 8, 0)
             ),
 
-            input$cultivo_balcarce == "soja" ~ if_else(
+            input$cultivo_ambiente == "soja" ~ if_else(
               Temperatura_Abrigo_150cm_Minima < 11,
               0,
               pmax(Temperatura_Abrigo_150cm - 11, 0)
@@ -7470,7 +7490,10 @@ server <- function(input, output, session) {
 
             TRUE ~ NA_real_
           ),
-          GD_acum = cumsum(TTB)
+
+          GD_acum = cumsum(
+            dplyr::coalesce(TTB, 0)
+          )
         )
 
       datos_periodo_critico <- datos_ano %>%
@@ -11336,9 +11359,6 @@ shinyApp(ui = ui, server = server)
 
 # rsconnect::forgetDeployment(appPath = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo")
 
-# rsconnect::setAccountInfo(name='intabalcarce',
-#                           token='77F02260172FAF69FBFBEA5CCA574B99',
-#                           secret='u8vt3UUrp8R9AfAnasDLAwmQilGTd4LctZy9ebnj')
 # rsconnect::deployApp(appDir = "I:/TRABAJO/CERBAS/GrupoAgrometeorologia/App_Meteo", appPrimaryDoc = "app.R",
 #                      appName = "Agromet", account = 'intabalcarce', server = 'shinyapps.io')
 
