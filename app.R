@@ -2593,14 +2593,31 @@ nino-trimestre-panel .pretty:has(input:checked) {
                           value = 100
                         ),
                         br(),
+
+                        selectInput(
+                          "textura_balcarce",
+                          "Textura del suelo:",
+                          choices = c(
+                            "Arenoso",
+                            "Franco arenoso",
+                            "Franco",
+                            "Franco arcilloso",
+                            "Arcilloso-limoso",
+                            "Arcilloso"
+                          ),
+                          selected = "Franco"
+                        ),
+
                         numericInput(
                           "capacidad_campo_balcarce",
                           label = strong(HTML(
-                            "Capacidad de Campo (mm/cm)
+                            "Capacidad de Campo (mm/cm)<sup>3</sup>
                                                         <br><small>
                                                         (Límite máximo de almacenamiento de agua)</small>"
                           )),
-                          value = 3.70
+                          value = 3.10,
+                          min = 0,
+                          step = 0.1
                         ),
                         textOutput("almacenamiento_maximo_balcarce")
                       ),
@@ -2613,7 +2630,8 @@ nino-trimestre-panel .pretty:has(input:checked) {
                           )),
                           value = 0.50,
                           min = 0,
-                          max = 1
+                          max = 1,
+                          step = 0.01
                         ),
                         textOutput("almacenamiento_minimo_balcarce"),
                         textOutput("agua_util_total_balcarce"),
@@ -2670,9 +2688,11 @@ nino-trimestre-panel .pretty:has(input:checked) {
                   )
                 )
               ),
+              br(),
               fluidRow(
-                column(12, br(), div(uiOutput("mensaje_cultivo_balcarce3")))
+                column(12, div(uiOutput("mensaje_cultivo_balcarce3"), )),
               ),
+
               br(),
 
               fluidRow(
@@ -2864,7 +2884,7 @@ nino-trimestre-panel .pretty:has(input:checked) {
                         numericInput(
                           "capacidad_campo",
                           label = strong(HTML(
-                            "Capacidad de Campo (mm/cm)
+                            "Capacidad de Campo (mm/cm)<sup>3</sup>
                                                         <br><small>
                                                         (Límite máximo de almacenamiento de agua)</small>"
                           )),
@@ -9052,6 +9072,37 @@ server <- function(input, output, session) {
     return(datos_actualizados)
   })
 
+  valores_textura_balcarce <- data.frame(
+    textura = c(
+      "Arenoso",
+      "Franco arenoso",
+      "Franco",
+      "Franco arcilloso",
+      "Arcilloso-limoso",
+      "Arcilloso"
+    ),
+    Lmax = c(1.5, 2.1, 3.1, 3.6, 4.0, 4.4),
+    fraccion = c(0.47, 0.43, 0.45, 0.47, 0.50, 0.48)
+  )
+
+  observeEvent(input$textura_balcarce, {
+    valores <- valores_textura_balcarce[
+      valores_textura_balcarce$textura == input$textura_balcarce,
+    ]
+
+    updateNumericInput(
+      session,
+      "capacidad_campo_balcarce",
+      value = valores$Lmax
+    )
+
+    updateNumericInput(
+      session,
+      "fraccion_min_balcarce",
+      value = valores$fraccion
+    )
+  })
+
   observeEvent(input$cultivo_balcarce, {
     if (
       input$cultivo_balcarce == "maiz_largo" ||
@@ -9136,10 +9187,10 @@ server <- function(input, output, session) {
         ),
         p(
           tags$sup("3"),
-          "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
-          respecto del máximo para suelos con diferente textura"
-        ),
-        img(src = "Tabla.png", height = "200px", width = "400px")
+          "Los valores de capacidad de campo (Lmax) y fracción de almacenamiento mínimo
+   se asignan automáticamente según la textura de suelo seleccionada.
+   Estos valores son de referencia y pueden ser modificados por el usuario."
+        )
       )
     } else if (input$cultivo_balcarce == "maiz_corto") {
       tagList(
@@ -9158,10 +9209,10 @@ server <- function(input, output, session) {
         ),
         p(
           tags$sup("3"),
-          "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
-          respecto del máximo para suelos con diferente textura"
-        ),
-        img(src = "Tabla.png", height = "200px", width = "400px")
+          "Los valores de capacidad de campo (Lmax) y fracción de almacenamiento mínimo
+   se asignan automáticamente según la textura de suelo seleccionada.
+   Estos valores son de referencia y pueden ser modificados por el usuario."
+        )
       )
     } else if (input$cultivo_balcarce == "soja") {
       tagList(
@@ -9180,10 +9231,10 @@ server <- function(input, output, session) {
         ),
         p(
           tags$sup("3"),
-          "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
-          respecto del máximo para suelos con diferente textura"
-        ),
-        img(src = "Tabla.png", height = "200px", width = "400px")
+          "Los valores de capacidad de campo (Lmax) y fracción de almacenamiento mínimo
+   se asignan automáticamente según la textura de suelo seleccionada.
+   Estos valores son de referencia y pueden ser modificados por el usuario."
+        )
       )
     }
   })
@@ -10493,10 +10544,10 @@ server <- function(input, output, session) {
         ),
         p(
           tags$sup("3"),
-          "Valores de referencia de contenidos de agua en el límite mínimo (Lmin), límite máximo (Lmax) y fracción de almacenamiento mínimo 
-          respecto del máximo para suelos con diferente textura"
-        ),
-        img(src = "Tabla.png", height = "200px", width = "400px")
+          "Los valores de capacidad de campo (Lmax) y fracción de almacenamiento mínimo
+            se asignan automáticamente según la textura de suelo seleccionada.
+            Estos valores son de referencia y pueden ser modificados por el usuario."
+        )
       )
     } else if (input$cultivo == "maiz_corto") {
       tagList(
