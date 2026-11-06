@@ -243,55 +243,73 @@ col_meteo <- "#D55E00"
 ###############################################################################
 # Actualizar df ----
 
-balcarce_EMC <- read_excel(
-  "balcarce_EMC.xlsx",
-  col_types = c(
-    "date",
-    "text",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "text",
-    "numeric",
-    "text",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric",
-    "numeric"
-  )
-)
+# balcarce_EMC <- read_excel(
+#   "balcarce_EMC.xlsx",
+#   col_types = c(
+#     "date",
+#     "text",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "text",
+#     "numeric",
+#     "text",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric",
+#     "numeric"
+#   )
+# )
 
 #dalbulus <- read_excel("dalbulus.xlsx")
 
-datos_EMC <- balcarce_EMC
+#datos_EMC <- balcarce_EMC
+
+# Actualizar df ----
+
+source("siga_api.R")
+source("actualizar_emc_siga.R")
+
+balcarce_EMC <- actualizar_emc_siga(
+  archivo_historico = "balcarce_EMC.xlsx",
+  estacion = "NH0400"
+)
+
+datos_EMC <- balcarce_EMC %>%
+  dplyr::mutate(Fecha = as.Date(Fecha)) %>%
+  dplyr::filter(Año >= 1970) %>%
+  dplyr::arrange(dplyr::desc(Fecha))
+
+
 datos_EMC <- datos_EMC %>%
   filter(Año >= 1970)
 datos_EMC$Fecha <- as.Date(datos_EMC$Fecha, format = "%Y-%m-%d")
 datos_EMC <- datos_EMC[order(datos_EMC$Fecha, decreasing = TRUE), ]
+names(balcarce_EMC)
 
 
 datos_actuales <- datos_EMC[
