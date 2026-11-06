@@ -20,6 +20,7 @@ tipos <- c(
   rep("numeric", 9)
 )
 tipos[32] <- "text"
+tipos[30] <- "text"
 
 historico <- readxl::read_excel(
   archivo,
@@ -27,6 +28,13 @@ historico <- readxl::read_excel(
 )
 
 historico$Fecha <- as.Date(historico$Fecha)
+historico$Radiacion_Global <- suppressWarnings(
+  as.numeric(historico$Radiacion_Global)
+)
+
+historico$Evaporacion_Tanque <- suppressWarnings(
+  as.numeric(historico$Evaporacion_Tanque)
+)
 
 stopifnot(
   ncol(historico) == 36,
@@ -41,7 +49,13 @@ desde <- min(
   hasta - 29L
 )
 
-cat("Consultando SIGA:", desde, "a", hasta, "\n")
+cat(
+  "Consultando SIGA:",
+  as.character(desde),
+  "a",
+  as.character(hasta),
+  "\n"
+)
 
 nuevos <- siga_diario(
   id = "NH0400",

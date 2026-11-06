@@ -32,7 +32,6 @@ library(patchwork)
 library(cowplot)
 library(grid)
 
-usethis::use_git_ignore(".Renviron")
 
 #Cuando actualizamos Rstudio##
 # renv::install("rsconnect")
@@ -42,7 +41,9 @@ usethis::use_git_ignore(".Renviron")
 # .rs.restartR()
 
 # Forecast de Meteored ----
-source("config.R", local = TRUE)
+if (file.exists("config.R")) {
+  source("config.R", local = TRUE)
+}
 
 # message("After config.R - option length = ", nchar(getOption("METEORED_API_KEY")))
 
