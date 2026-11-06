@@ -2,10 +2,10 @@
 name: Actualizar datos y publicar Agromet
 
 on:
-  schedule:
-    - cron: "0 12 * * *"
+  # schedule:
+  #   - cron: "0 12 * * *"
   workflow_dispatch:
-
+  
 permissions:
   contents: write
 
