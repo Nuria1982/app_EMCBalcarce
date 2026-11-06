@@ -100,7 +100,7 @@ jobs:
 
       - name: Publicar Agromet en shinyapps.io
         if: ${{ false }}
-        #if: steps.cambios.outputs.actualizado == 'true' || github.event_name == 'workflow_dispatch'
+        
         env:
           SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
           SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
