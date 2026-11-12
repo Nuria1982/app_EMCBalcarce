@@ -68,6 +68,20 @@ jobs:
       - name: Actualizar Excel desde SIGA
         run: Rscript scripts/actualizar_datos.R
 
+      - name: Probar descarga directa de SIGA
+        shell: bash
+        run: |
+          curl -L \
+            --connect-timeout 30 \
+            --max-time 180 \
+            --retry 2 \
+            --retry-delay 10 \
+            -o /tmp/NH0400.xls \
+            -w "HTTP: %{http_code}\nDescargado: %{size_download} bytes\n" \
+            https://siga.inta.gob.ar/document/series/NH0400.xls
+
+          ls -lh /tmp/NH0400.xls
+
       - name: Detectar cambios
         id: cambios
         shell: bash
