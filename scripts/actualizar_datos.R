@@ -4,6 +4,7 @@
 library(readxl)
 library(openxlsx)
 library(dplyr)
+options(timeout = 600)
 
 source("scripts/siga_api.R")
 
