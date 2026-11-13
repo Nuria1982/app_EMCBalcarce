@@ -1,10 +1,11 @@
 name: Actualizar datos y publicar Agromet
 
-# Todos los días baja de Dropbox el Excel de la EMC Balcarce, lo controla,
-# lo guarda en el repo y, si cambió, vuelve a publicar la app en shinyapps.io.
+# Todos los días baja de Dropbox las libretas mensuales de la EMC Balcarce,
+# completa balcarce_EMC.xlsx con los días nuevos, lo guarda en el repo y,
+# si cambió, vuelve a publicar la app en shinyapps.io.
 #
 # Secrets necesarios (Settings > Secrets and variables > Actions):
-#   DROPBOX_URL        link compartido del balcarce_EMC.xlsx en Dropbox
+#   DROPBOX_URL        link compartido de la CARPETA BALCARCE de Dropbox
 #   SHINYAPPS_ACCOUNT  intabalcarce
 #   SHINYAPPS_TOKEN    token de shinyapps.io (Account > Tokens)
 #   SHINYAPPS_SECRET   secret de ese token
@@ -87,10 +88,10 @@ jobs:
             any::packrat
             github::AgRoMeteorologiaINTA/siga
 
-      - name: Actualizar Excel desde Dropbox
+      - name: Completar Excel con las libretas de Dropbox
         env:
           DROPBOX_URL: ${{ secrets.DROPBOX_URL }}
-        run: Rscript scripts/actualizar_desde_dropbox.R
+        run: Rscript scripts/actualizar_desde_libretas.R
 
       - name: Detectar cambios
         id: cambios
@@ -110,7 +111,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add balcarce_EMC.xlsx
-          git commit -m "Datos EMC Balcarce desde Dropbox ($(date +%F))"
+          git commit -m "Datos EMC Balcarce desde libretas ($(date +%F))"
           git push
 
       # Se publica si cambiaron los datos o si se corrió a mano
