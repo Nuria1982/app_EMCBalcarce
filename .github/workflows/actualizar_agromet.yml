@@ -78,6 +78,11 @@ jobs:
             any::patchwork
             any::cowplot
             any::remotes
+            any::cpp11
+            any::progress
+            any::prettyunits
+            any::fansi
+            any::PKI
             github::AgRoMeteorologiaINTA/siga
 
       - name: Actualizar Excel desde Dropbox
