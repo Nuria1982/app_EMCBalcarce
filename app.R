@@ -288,7 +288,7 @@ col_meteo <- "#D55E00"
 
 #dalbulus <- read_excel("dalbulus.xlsx")
 
-#datos_EMC <- balcarce_EMC
+datos_EMC <- balcarce_EMC
 
 # Actualizar df ----
 

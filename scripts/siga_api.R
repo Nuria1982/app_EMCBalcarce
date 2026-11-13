@@ -303,4 +303,3 @@ siga_diario_cache <- function(
     sort = TRUE
   )
 }
-
