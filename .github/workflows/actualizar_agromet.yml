@@ -149,12 +149,13 @@ jobs:
               )
             )
 
-            rsconnect::deployApp(
-              appDir = ".",
-              appName = "Agromet",
-              account = Sys.getenv("SHINYAPPS_ACCOUNT"),
-              server = "shinyapps.io",
-              forceUpdate = TRUE,
-              launch.browser = FALSE
-            )
+           rsconnect::deployApp(
+            appDir = ".",
+            appName = "Agromet",
+            account = Sys.getenv("SHINYAPPS_ACCOUNT"),
+            server = "shinyapps.io",
+            repos = c(CRAN = "https://cloud.r-project.org"),
+            forceUpdate = TRUE,
+            launch.browser = FALSE
+          )
           '
