@@ -84,6 +84,7 @@ jobs:
             any::prettyunits
             any::fansi
             any::PKI
+            any::packrat
             github::AgRoMeteorologiaINTA/siga
 
       - name: Actualizar Excel desde Dropbox
@@ -136,10 +137,15 @@ jobs:
           Rscript -e '
             # shinyapps.io no reconoce el nombre "RSPM" que usa GitHub:
             # se lo asocia a CRAN para que pueda bajar los paquetes
-            options(repos = c(
-              RSPM = "https://cloud.r-project.org",
-              CRAN = "https://cloud.r-project.org"
-            ))
+            options(
+              repos = c(
+                RSPM = "https://cloud.r-project.org",
+                CRAN = "https://cloud.r-project.org"
+              ),
+              # detecta los paquetes con packrat (método clásico) en vez de renv:
+              # con renv, shinyapps.io recibía "CRAN" sin la dirección web
+              rsconnect.packrat = TRUE
+            )
 
             rsconnect::setAccountInfo(
               name = Sys.getenv("SHINYAPPS_ACCOUNT"),
