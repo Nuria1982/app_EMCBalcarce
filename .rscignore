@@ -1,0 +1,19 @@
+renv.lock
+.RData
+.RDataTmp
+.RDataTmp1
+-DESKTOP-4F3C75E.RData
+-DESKTOP-4F3C75E.Rhistory
+-DESKTOP-4F3C75E-2.Rhistory
+.Rhistory
+.github
+actualizar_datos.bat
+Balance_agua_app.mp4
+partidos-pba.kml
+ajuste umbral R.xlsx
+dalbulus.xlsx
+nuevos ajustes balances.xlsx
+pp_climatico_abr_sept.jpg
+pp_climatico_anual.jpg
+pp_climatico_oct_marz.jpg
+precios_plan.png

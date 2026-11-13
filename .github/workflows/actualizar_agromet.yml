@@ -1,15 +1,30 @@
-
 name: Actualizar datos y publicar Agromet
 
-on:  
-  workflow_dispatch:
-  
+# Todos los días baja de Dropbox el Excel de la EMC Balcarce, lo controla,
+# lo guarda en el repo y, si cambió, vuelve a publicar la app en shinyapps.io.
+#
+# Secrets necesarios (Settings > Secrets and variables > Actions):
+#   DROPBOX_URL        link compartido del balcarce_EMC.xlsx en Dropbox
+#   SHINYAPPS_ACCOUNT  intabalcarce
+#   SHINYAPPS_TOKEN    token de shinyapps.io (Account > Tokens)
+#   SHINYAPPS_SECRET   secret de ese token
+#   METEORED_API_KEY   clave de Meteored
+
+on:
+  schedule:
+    - cron: "17 11 * * *"   # todos los días 8:17 hora Argentina
+  workflow_dispatch:         # botón "Run workflow" para correrlo a mano
+
 permissions:
   contents: write
 
 concurrency:
   group: actualizar-agromet
   cancel-in-progress: false
+
+env:
+  # El .Rprofile activa renv; en GitHub se usan los paquetes instalados abajo.
+  RENV_CONFIG_AUTOLOADER_ENABLED: "FALSE"
 
 jobs:
   actualizar:
@@ -65,22 +80,10 @@ jobs:
             any::remotes
             github::AgRoMeteorologiaINTA/siga
 
-      - name: Actualizar Excel desde SIGA
-        run: Rscript scripts/actualizar_datos.R
-
-      - name: Probar descarga directa de SIGA
-        shell: bash
-        run: |
-          curl -L \
-            --connect-timeout 30 \
-            --max-time 180 \
-            --retry 2 \
-            --retry-delay 10 \
-            -o /tmp/NH0400.xls \
-            -w "HTTP: %{http_code}\nDescargado: %{size_download} bytes\n" \
-            https://siga.inta.gob.ar/document/series/NH0400.xls
-
-          ls -lh /tmp/NH0400.xls
+      - name: Actualizar Excel desde Dropbox
+        env:
+          DROPBOX_URL: ${{ secrets.DROPBOX_URL }}
+        run: Rscript scripts/actualizar_desde_dropbox.R
 
       - name: Detectar cambios
         id: cambios
@@ -100,9 +103,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add balcarce_EMC.xlsx
-          git commit -m "Actualización automática SIGA Balcarce"
+          git commit -m "Datos EMC Balcarce desde Dropbox ($(date +%F))"
           git push
 
+      # Se publica si cambiaron los datos o si se corrió a mano
       - name: Preparar configuración privada de Meteored
         if: steps.cambios.outputs.actualizado == 'true' || github.event_name == 'workflow_dispatch'
         env:
@@ -113,8 +117,7 @@ jobs:
           printf 'options(METEORED_API_KEY = Sys.getenv("METEORED_API_KEY"))\n' > config.R
 
       - name: Publicar Agromet en shinyapps.io
-        if: ${{ false }}
-        
+        if: steps.cambios.outputs.actualizado == 'true' || github.event_name == 'workflow_dispatch'
         env:
           SHINYAPPS_ACCOUNT: ${{ secrets.SHINYAPPS_ACCOUNT }}
           SHINYAPPS_TOKEN: ${{ secrets.SHINYAPPS_TOKEN }}
@@ -128,16 +131,14 @@ jobs:
               secret = Sys.getenv("SHINYAPPS_SECRET")
             )
 
+            # Sin appFiles: se sube todo lo que usa la app (Excel de El Niño,
+            # www/, shapes, scripts/...). Lo que no hace falta se excluye en .rscignore
             rsconnect::deployApp(
               appDir = ".",
               appName = "Agromet",
               account = Sys.getenv("SHINYAPPS_ACCOUNT"),
               server = "shinyapps.io",
-              appFiles = c(
-                "app.R",
-                "balcarce_EMC.xlsx",
-                "config.R"
-              ),
+              forceUpdate = TRUE,
               launch.browser = FALSE
             )
           '

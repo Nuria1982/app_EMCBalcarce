@@ -288,12 +288,12 @@ col_meteo <- "#D55E00"
 
 #dalbulus <- read_excel("dalbulus.xlsx")
 
-datos_EMC <- balcarce_EMC
+#datos_EMC <- balcarce_EMC
 
 # Actualizar df ----
 
-source("siga_api.R")
-source("actualizar_emc_siga.R")
+source(file.path("scripts", "siga_api.R"))
+source(file.path("scripts", "actualizar_emc_siga.R"))
 
 balcarce_EMC <- actualizar_emc_siga(
   archivo_historico = "balcarce_EMC.xlsx",

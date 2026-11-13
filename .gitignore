@@ -4,5 +4,7 @@
 .Ruserdata
 .Renviron
 .positai
-.RData
-.Rhistory
+*.RData
+.RDataTmp*
+*.Rhistory
+config.R
