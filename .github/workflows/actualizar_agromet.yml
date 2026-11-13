@@ -124,6 +124,9 @@ jobs:
           SHINYAPPS_SECRET: ${{ secrets.SHINYAPPS_SECRET }}
           METEORED_API_KEY: ${{ secrets.METEORED_API_KEY }}
         run: |
+          # Sin renv.lock, rsconnect usa los paquetes instalados en este paso.
+          # Solo se borra en la máquina de GitHub, no en el repo.
+          rm -f renv.lock
           Rscript -e '
             # shinyapps.io no reconoce el nombre "RSPM" que usa GitHub:
             # se lo asocia a CRAN para que pueda bajar los paquetes
