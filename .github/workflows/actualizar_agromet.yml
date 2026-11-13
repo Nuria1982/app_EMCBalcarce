@@ -142,6 +142,13 @@ jobs:
               file.rename("renv.lock", "renv.lock.backup")
             }
 
+            # Utilizar CRAN para resolver las dependencias
+            options(
+              repos = c(
+                CRAN = "https://cloud.r-project.org"
+              )
+            )
+
             rsconnect::deployApp(
               appDir = ".",
               appName = "Agromet",
