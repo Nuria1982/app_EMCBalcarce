@@ -136,14 +136,17 @@ jobs:
               secret = Sys.getenv("SHINYAPPS_SECRET")
             )
 
-            # Usar los paquetes instalados en GitHub Actions
-            # sin depender del archivo renv.lock.
+            # Evitar que rsconnect utilice el renv.lock
+            # durante la detección de dependencias.
+            if (file.exists("renv.lock")) {
+              file.rename("renv.lock", "renv.lock.backup")
+            }
+
             rsconnect::deployApp(
               appDir = ".",
               appName = "Agromet",
               account = Sys.getenv("SHINYAPPS_ACCOUNT"),
               server = "shinyapps.io",
-              renv = FALSE,
               forceUpdate = TRUE,
               launch.browser = FALSE
             )
