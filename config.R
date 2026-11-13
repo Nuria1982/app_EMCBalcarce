@@ -1,3 +1,0 @@
-options(
-  METEORED_API_KEY = "c214226148f6a0adb2b766b49b6b494415dd8d41dd0085fcd729d595fd7fae14"
-)
