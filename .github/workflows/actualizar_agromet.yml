@@ -11,10 +11,10 @@ name: Actualizar datos y publicar Agromet
 #   SHINYAPPS_SECRET   secret de ese token
 #   METEORED_API_KEY   clave de Meteored
 
-on:
-  schedule:
-    - cron: "17 11 * * *"   # todos los días 8:17 hora Argentina
-  workflow_dispatch:         # botón "Run workflow" para correrlo a mano
+# on:
+#   schedule:
+#     - cron: "17 11 * * *"   # todos los días 8:17 hora Argentina
+#   workflow_dispatch:         # botón "Run workflow" para correrlo a mano
 
 permissions:
   contents: write
